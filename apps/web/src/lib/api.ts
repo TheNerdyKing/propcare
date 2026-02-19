@@ -1,8 +1,23 @@
 import axios from 'axios';
 
+const getBaseURL = () => {
+    // If set in environment (e.g. Vercel Dashboard), use it
+    if (process.env.NEXT_PUBLIC_API_URL) return process.env.NEXT_PUBLIC_API_URL;
+
+    // In production (browser), if no URL is set, we try to use the current origin
+    if (typeof window !== 'undefined') {
+        const hostname = window.location.hostname;
+        if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
+            return ''; // Relative path
+        }
+    }
+
+    // Default for local development
+    return 'http://localhost:3001';
+};
+
 const api = axios.create({
-    // In production, we usually want to hit the same domain's /api or a specific backend URL
-    baseURL: process.env.NEXT_PUBLIC_API_URL || '',
+    baseURL: getBaseURL(),
 });
 
 api.interceptors.request.use((config) => {
