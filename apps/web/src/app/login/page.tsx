@@ -1,12 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import api from '@/lib/api';
+import { supabase } from '@/lib/supabaseClient';
 
 const loginSchema = z.object({
     email: z.string().email('Invalid email address'),
@@ -17,8 +17,16 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const [error, setError] = useState<string | null>(null);
+    const [success, setSuccess] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        if (searchParams?.get('registered') === 'true') {
+            setSuccess('Registration successful! You can now sign in.');
+        }
+    }, [searchParams]);
 
     const {
         register,
@@ -31,13 +39,36 @@ export default function LoginPage() {
     const onSubmit = async (data: LoginFormValues) => {
         setLoading(true);
         setError(null);
+        setSuccess(null);
         try {
-            const response = await api.post('/auth/login', data);
-            localStorage.setItem('accessToken', response.data.accessToken);
-            localStorage.setItem('user', JSON.stringify(response.data.user));
+            // 1. Sign in with Supabase Auth
+            const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+                email: data.email,
+                password: data.password,
+            });
+
+            if (authError) throw authError;
+
+            // 2. Fetch User Profile from our custom table
+            const { data: userData, error: userError } = await supabase
+                .from('users')
+                .select('*, tenants(*)')
+                .eq('id', authData.user.id)
+                .single();
+
+            if (userError) {
+                console.warn('User profile not found in custom table:', userError);
+                // Fallback: Use basic auth info if profile fetch fails
+                localStorage.setItem('user', JSON.stringify(authData.user));
+            } else {
+                localStorage.setItem('user', JSON.stringify(userData));
+            }
+
+            localStorage.setItem('accessToken', authData.session.access_token);
             router.push('/dashboard');
         } catch (err: any) {
-            setError(err.response?.data?.message || 'Login failed. Please check your credentials.');
+            console.error('Login error:', err);
+            setError(err.message || 'Login failed. Please check your credentials.');
         } finally {
             setLoading(false);
         }
@@ -51,13 +82,18 @@ export default function LoginPage() {
                         PropCare Login
                     </h2>
                     <p className="mt-2 text-center text-sm text-slate-400">
-                        Staff & Admin Portal
+                        Sign in with Supabase Auth
                     </p>
                 </div>
                 <form className="mt-8 space-y-4" onSubmit={handleSubmit(onSubmit)}>
                     {error && (
-                        <div className="rounded-lg bg-red-500/10 border border-red-500/50 p-4 font-sans">
+                        <div className="rounded-lg bg-red-500/10 border border-red-500/50 p-4">
                             <div className="text-sm text-red-400">{error}</div>
+                        </div>
+                    )}
+                    {success && (
+                        <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/50 p-4">
+                            <div className="text-sm text-emerald-400">{success}</div>
                         </div>
                     )}
 
