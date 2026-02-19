@@ -9,7 +9,8 @@
   "scripts": {
     "dev": "pnpm recursive run dev",
     "build": "pnpm recursive run build",
-    "lint": "pnpm recursive run lint"
+    "lint": "pnpm recursive run lint",
+    "postinstall": "pnpm --filter @propcare/api exec prisma generate --schema=./prisma/schema.prisma"
   },
   "prisma": {
     "seed": "ts-node apps/api/prisma/seed.ts"
