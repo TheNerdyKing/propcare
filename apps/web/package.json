@@ -9,27 +9,28 @@
         "lint": "next lint"
     },
     "dependencies": {
-        "next": "latest",
-        "react": "latest",
-        "react-dom": "latest",
-        "typescript": "latest",
+        "@hookform/resolvers": "^3.2.0",
+        "@propcare/shared": "workspace:*",
+        "@shadcn/ui": "latest",
+        "@supabase/supabase-js": "^2.38.4",
         "@types/node": "latest",
         "@types/react": "latest",
         "@types/react-dom": "latest",
-        "tailwindcss": "latest",
-        "postcss": "latest",
         "autoprefixer": "latest",
-        "lucide-react": "^0.263.1",
-        "@shadcn/ui": "latest",
-        "react-hook-form": "^7.45.4",
-        "@hookform/resolvers": "^3.2.0",
-        "zod": "^3.22.0",
-        "qrcode": "^1.5.3",
         "axios": "^1.4.0",
-        "@supabase/supabase-js": "^2.38.4",
-        "@propcare/shared": "workspace:*"
+        "lucide-react": "^0.263.1",
+        "next": "latest",
+        "postcss": "latest",
+        "qrcode": "^1.5.3",
+        "react": "latest",
+        "react-dom": "latest",
+        "react-hook-form": "^7.45.4",
+        "tailwindcss": "latest",
+        "typescript": "latest",
+        "zod": "^3.22.0"
     },
     "devDependencies": {
+        "@tailwindcss/postcss": "^4.2.0",
         "eslint": "latest",
         "eslint-config-next": "latest"
     }

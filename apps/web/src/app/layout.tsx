@@ -4,8 +4,8 @@ import { Inter } from 'next/font/google'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata = {
-    title: 'PropCare',
-    description: 'AI-Powered Property Management',
+    title: 'PropCare | AI-Driven Property Management',
+    description: 'Elevate your property operations with the PropCare AI Staff Portal.',
 }
 
 export default function RootLayout({
