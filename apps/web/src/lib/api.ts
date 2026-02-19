@@ -1,7 +1,8 @@
 import axios from 'axios';
 
 const api = axios.create({
-    baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001',
+    // In production, we usually want to hit the same domain's /api or a specific backend URL
+    baseURL: process.env.NEXT_PUBLIC_API_URL || '',
 });
 
 api.interceptors.request.use((config) => {
