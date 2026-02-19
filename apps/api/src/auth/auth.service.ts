@@ -47,24 +47,34 @@ export class AuthService {
         };
     }
     async register(tenantName: string, name: string, email: string, pass: string) {
-        const passwordHash = await bcrypt.hash(pass, 10);
+        try {
+            console.log(`Starting registration for: ${email} (${tenantName})`);
+            const passwordHash = await bcrypt.hash(pass, 10);
 
-        return this.prisma.$transaction(async (tx) => {
-            const tenant = await tx.tenant.create({
-                data: { name: tenantName },
+            return await this.prisma.$transaction(async (tx) => {
+                console.log('Creating tenant...');
+                const tenant = await tx.tenant.create({
+                    data: { name: tenantName },
+                });
+                console.log('Tenant created:', tenant.id);
+
+                console.log('Creating admin user...');
+                const user = await tx.user.create({
+                    data: {
+                        tenantId: tenant.id,
+                        email,
+                        name,
+                        passwordHash,
+                        role: 'ADMIN',
+                    },
+                });
+                console.log('User created:', user.id);
+
+                return this.login(user);
             });
-
-            const user = await tx.user.create({
-                data: {
-                    tenantId: tenant.id,
-                    email,
-                    name,
-                    passwordHash,
-                    role: 'ADMIN',
-                },
-            });
-
-            return this.login(user);
-        });
+        } catch (error) {
+            console.error('Registration service error:', error);
+            throw error;
+        }
     }
 }

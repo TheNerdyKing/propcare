@@ -39,7 +39,20 @@ export default function RegisterPage() {
             localStorage.setItem('user', JSON.stringify(response.data.user));
             router.push('/dashboard');
         } catch (err: any) {
-            setError(err.response?.data?.message || 'Registration failed. Please try again.');
+            console.error('Registration error details:', {
+                message: err.message,
+                response: err.response?.data,
+                status: err.response?.status,
+                config: err.config
+            });
+            const apiMessage = err.response?.data?.message;
+            const status = err.response?.status;
+
+            if (!err.response) {
+                setError(`Cannot reach API at "${err.config?.baseURL}". Check if your backend is running and NEXT_PUBLIC_API_URL is set.`);
+            } else {
+                setError(apiMessage || `Error ${status}: Registration failed.`);
+            }
         } finally {
             setLoading(false);
         }
