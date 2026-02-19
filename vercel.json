@@ -1,0 +1,12 @@
+{
+    "version": 2,
+    "buildCommand": "pnpm build",
+    "installCommand": "pnpm install",
+    "devCommand": "pnpm dev",
+    "framework": "nextjs",
+    "buildCommand": "pnpm --filter @propcare/web build",
+    "ignoreCommand": "git diff --quiet HEAD^ HEAD .",
+    "outputs": [
+        "apps/web/.next"
+    ]
+}
