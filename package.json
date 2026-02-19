@@ -1,0 +1,17 @@
+{
+  "name": "propcare",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "pnpm recursive run dev",
+    "build": "pnpm recursive run build",
+    "lint": "pnpm recursive run lint"
+  },
+  "prisma": {
+    "seed": "ts-node apps/api/prisma/seed.ts"
+  }
+}

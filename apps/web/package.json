@@ -1,0 +1,36 @@
+{
+    "name": "@propcare/web",
+    "version": "1.0.0",
+    "private": true,
+    "scripts": {
+        "dev": "next dev",
+        "build": "next build",
+        "start": "next start",
+        "lint": "next lint"
+    },
+    "dependencies": {
+        "next": "latest",
+        "react": "latest",
+        "react-dom": "latest",
+        "typescript": "latest",
+        "@types/node": "latest",
+        "@types/react": "latest",
+        "@types/react-dom": "latest",
+        "tailwindcss": "latest",
+        "postcss": "latest",
+        "autoprefixer": "latest",
+        "lucide-react": "^0.263.1",
+        "@shadcn/ui": "latest",
+        "react-hook-form": "^7.45.4",
+        "@hookform/resolvers": "^3.2.0",
+        "zod": "^3.22.0",
+        "qrcode": "^1.5.3",
+        "axios": "^1.4.0",
+        "@supabase/supabase-js": "^2.38.4",
+        "@propcare/shared": "workspace:*"
+    },
+    "devDependencies": {
+        "eslint": "latest",
+        "eslint-config-next": "latest"
+    }
+}

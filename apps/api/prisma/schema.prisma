@@ -1,0 +1,250 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  EMPLOYEE
+}
+
+enum TicketType {
+  DAMAGE_REPORT
+  GENERAL_INQUIRY
+}
+
+enum TicketStatus {
+  NEW
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum InternalStatus {
+  AI_PROCESSING
+  AI_READY
+  NEEDS_ATTENTION
+  SENT
+}
+
+enum Urgency {
+  EMERGENCY
+  URGENT
+  NORMAL
+  UNKNOWN
+}
+
+model Tenant {
+  id         String   @id @default(uuid())
+  name       String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  users       User[]
+  properties  Property[]
+  tickets     Ticket[]
+  contractors Contractor[]
+  auditLogs   AuditLog[]
+  messages    TicketMessage[]
+
+  @@map("tenants")
+}
+
+model User {
+  id           String   @id @default(uuid())
+  tenantId     String   @map("tenant_id")
+  email        String
+  name         String
+  role         Role     @default(EMPLOYEE)
+  passwordHash String   @map("password_hash")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  tenant    Tenant     @relation(fields: [tenantId], references: [id])
+  auditLogs AuditLog[]
+
+  @@unique([tenantId, email])
+  @@map("users")
+}
+
+model Property {
+  id           String   @id @default(uuid())
+  tenantId     String   @map("tenant_id")
+  name         String
+  addressLine1 String   @map("address_line1")
+  zip          String
+  city         String
+  country      String   @default("CH")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  tenant      Tenant                 @relation(fields: [tenantId], references: [id])
+  units       Unit[]
+  tickets     Ticket[]
+  contractors ContractorProperty[]
+
+  @@map("properties")
+}
+
+model Unit {
+  id         String   @id @default(uuid())
+  tenantId   String   @map("tenant_id")
+  propertyId String   @map("property_id")
+  unitLabel  String   @map("unit_label")
+  createdAt  DateTime @default(now())
+
+  property Property @relation(fields: [propertyId], references: [id])
+
+  @@map("units")
+}
+
+model Ticket {
+  id                String         @id @default(uuid())
+  tenantId          String         @map("tenant_id")
+  referenceCode     String         @unique @map("reference_code")
+  type              TicketType     @default(DAMAGE_REPORT)
+  status            TicketStatus   @default(NEW)
+  internalStatus    InternalStatus? @map("internal_status")
+  propertyId        String?        @map("property_id")
+  unitLabel         String?        @map("unit_label")
+  category          String?        // AI or manual
+  urgency           Urgency        @default(UNKNOWN)
+  description       String
+  tenantName        String         @map("tenant_name")
+  tenantEmail       String         @map("tenant_email")
+  tenantPhone       String?        @map("tenant_phone")
+  permissionToEnter Boolean        @default(false) @map("permission_to_enter")
+  costEstimateChf   Decimal?       @map("cost_estimate_chf")
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  closedAt          DateTime?      @map("closed_at")
+
+  tenant         Tenant          @relation(fields: [tenantId], references: [id])
+  property       Property?       @relation(fields: [propertyId], references: [id])
+  attachments    Attachment[]
+  aiResults      AiResult[]
+  outboundEmails OutboundEmail[]
+  auditLogs      AuditLog[]
+  messages       TicketMessage[]
+
+  @@map("tickets")
+}
+
+model Attachment {
+  id          String   @id @default(uuid())
+  tenantId    String   @map("tenant_id")
+  ticketId    String   @map("ticket_id")
+  fileKey     String   @map("file_key")
+  fileName    String   @map("file_name")
+  contentType String   @map("content_type")
+  sizeBytes   Int      @map("size_bytes")
+  createdAt   DateTime @default(now())
+
+  ticket Ticket @relation(fields: [ticketId], references: [id])
+
+  @@map("attachments")
+}
+
+model Contractor {
+  id               String   @id @default(uuid())
+  tenantId         String   @map("tenant_id")
+  name             String
+  email            String
+  phone            String?
+  tradeTypes       String[] @map("trade_types")
+  serviceZipCodes  String[] @map("service_zip_codes")
+  serviceCities    String[] @map("service_cities")
+  serviceRadiusKm  Int?     @map("service_radius_km")
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  tenant     Tenant               @relation(fields: [tenantId], references: [id])
+  properties ContractorProperty[]
+
+  @@map("contractors")
+}
+
+model ContractorProperty {
+  id           String @id @default(uuid())
+  tenantId     String @map("tenant_id")
+  contractorId String @map("contractor_id")
+  propertyId   String @map("property_id")
+
+  contractor Contractor @relation(fields: [contractorId], references: [id])
+  property   Property   @relation(fields: [propertyId], references: [id])
+
+  @@map("contractor_property_map")
+}
+
+model AiResult {
+  id         String   @id @default(uuid())
+  tenantId   String   @map("tenant_id")
+  ticketId   String   @map("ticket_id")
+  modelName  String   @map("model_name")
+  promptVersion String   @map("prompt_version")
+  outputJson Json     @map("output_json") // classification, urgency, contractors, draft email, missing prompts
+  createdAt  DateTime @default(now())
+
+  ticket Ticket @relation(fields: [ticketId], references: [id])
+
+  @@map("ai_results")
+}
+
+model OutboundEmail {
+  id           String    @id @default(uuid())
+  tenantId     String    @map("tenant_id")
+  ticketId     String    @map("ticket_id")
+  toEmail      String    @map("to_email")
+  subject      String
+  body         String
+  sentByUserId String?   @map("sent_by_user_id")
+  sentAt       DateTime  @default(now()) @map("sent_at")
+  status       String    // SENT, FAILED
+  errorMessage String?   @map("error_message")
+
+  ticket Ticket @relation(fields: [ticketId], references: [id])
+
+  @@map("outbound_emails")
+}
+
+model AuditLog {
+  id           String   @id @default(uuid())
+  tenantId     String   @map("tenant_id")
+  actorUserId  String?  @map("actor_user_id")
+  action       String   // TICKET_CREATED, AI_CLASSIFIED, etc.
+  targetType   String   @map("target_type")
+  targetId     String   @map("target_id")
+  metadataJson Json?    @map("metadata_json")
+  createdAt    DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  user   User?  @relation(fields: [actorUserId], references: [id])
+  ticket Ticket? @relation(fields: [targetId], references: [id], map: "audit_log_ticket_id")
+
+  @@map("audit_logs")
+}
+
+enum SenderType {
+  STAFF
+  TENANT
+}
+
+model TicketMessage {
+  id        String     @id @default(uuid())
+  tenantId  String     @map("tenant_id")
+  ticketId  String     @map("ticket_id")
+  senderType SenderType @map("sender_type")
+  content   String
+  createdAt DateTime   @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  ticket Ticket @relation(fields: [ticketId], references: [id])
+
+  @@map("ticket_messages")
+}

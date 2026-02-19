@@ -1,0 +1,77 @@
+import { Injectable } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
+import { CreateTicketDto } from './dto/create-ticket.dto';
+import { TicketType, InternalStatus } from '@prisma/client';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
+
+@Injectable()
+export class PublicService {
+    constructor(
+        private prisma: PrismaService,
+        @InjectQueue('ai-processing') private aiQueue: Queue
+    ) { }
+
+    async createTicket(dto: CreateTicketDto) {
+        // ... (reference code logic)
+        const referenceCode = `PC-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+        const defaultTenantId = 'default-tenant-uuid';
+
+        const ticket = await this.prisma.ticket.create({
+            data: {
+                tenantId: defaultTenantId,
+                referenceCode,
+                type: dto.type || TicketType.DAMAGE_REPORT,
+                propertyId: dto.propertyId,
+                unitLabel: dto.unitLabel,
+                description: dto.description,
+                tenantName: dto.tenantName,
+                tenantEmail: dto.tenantEmail,
+                tenantPhone: dto.tenantPhone,
+                permissionToEnter: dto.permissionToEnter,
+                urgency: dto.urgency,
+                internalStatus: InternalStatus.AI_PROCESSING,
+            },
+        });
+
+        // Enqueue AI job
+        await this.aiQueue.add('process-ticket', { ticketId: ticket.id });
+
+        return ticket;
+    }
+
+    async getProperties() {
+        return this.prisma.property.findMany({
+            where: { tenantId: 'default-tenant-uuid' },
+            select: { id: true, name: true },
+        });
+    }
+
+    async getTicketByReference(referenceCode: string) {
+        return this.prisma.ticket.findUnique({
+            where: { referenceCode },
+            include: {
+                property: { select: { name: true } },
+                messages: { orderBy: { createdAt: 'asc' } },
+            }
+        });
+    }
+
+    async addPublicMessage(referenceCode: string, content: string) {
+        const ticket = await this.prisma.ticket.findUnique({
+            where: { referenceCode },
+            select: { id: true, tenantId: true }
+        });
+
+        if (!ticket) throw new Error('Ticket not found');
+
+        return this.prisma.ticketMessage.create({
+            data: {
+                tenantId: ticket.tenantId,
+                ticketId: ticket.id,
+                content,
+                senderType: 'TENANT',
+            },
+        });
+    }
+}
