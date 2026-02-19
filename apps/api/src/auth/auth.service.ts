@@ -31,8 +31,8 @@ export class AuthService {
             role: user.role
         };
 
-        const secret = this.configService.get<string>('JWT_SECRET');
-        const refreshSecret = this.configService.get<string>('JWT_REFRESH_SECRET');
+        const secret = this.configService.get<string>('JWT_SECRET') || 'default-secret';
+        const refreshSecret = this.configService.get<string>('JWT_REFRESH_SECRET') || 'default-refresh-secret';
 
         return {
             accessToken: jwt.sign(payload, secret, { expiresIn: '1h' }),
@@ -45,5 +45,26 @@ export class AuthService {
                 tenantId: user.tenantId,
             },
         };
+    }
+    async register(tenantName: string, name: string, email: string, pass: string) {
+        const passwordHash = await bcrypt.hash(pass, 10);
+
+        return this.prisma.$transaction(async (tx) => {
+            const tenant = await tx.tenant.create({
+                data: { name: tenantName },
+            });
+
+            const user = await tx.user.create({
+                data: {
+                    tenantId: tenant.id,
+                    email,
+                    name,
+                    passwordHash,
+                    role: 'ADMIN',
+                },
+            });
+
+            return this.login(user);
+        });
     }
 }
