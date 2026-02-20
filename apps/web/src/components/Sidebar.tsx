@@ -16,7 +16,7 @@ import { useState } from 'react';
 
 const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-    { name: 'Tickets', href: '/dashboard', icon: ClipboardList }, // Using dashboard as ticket list for now
+    { name: 'Tickets', href: '/tickets', icon: ClipboardList },
     { name: 'Properties', href: '/properties', icon: Building2 },
     { name: 'Contractors', href: '/contractors', icon: Users },
 ];
@@ -48,13 +48,13 @@ export default function Sidebar() {
 
             {/* Sidebar */}
             <aside className={`
-                fixed top-0 left-0 h-full bg-slate-950 text-slate-400 w-64 z-40 transition-transform duration-300 transform
+                fixed top-0 left-0 h-full bg-[#0F172A] text-slate-400 w-64 z-40 transition-transform duration-300 transform
                 ${isOpen ? 'translate-x-0' : '-translate-x-full'}
-                lg:translate-x-0 lg:static flex flex-col border-r border-white/5
+                lg:translate-x-0 lg:static flex flex-col border-r border-white/5 shadow-2xl
             `}>
                 <div className="p-8">
                     <div className="flex items-center space-x-3">
-                        <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center font-black text-white">
+                        <div className="w-9 h-9 bg-indigo-600 rounded-xl flex items-center justify-center font-black text-white shadow-lg shadow-indigo-600/20">
                             PC
                         </div>
                         <span className="text-xl font-bold text-white tracking-tight">
@@ -63,37 +63,37 @@ export default function Sidebar() {
                     </div>
                 </div>
 
-                <nav className="flex-1 px-4 space-y-1">
+                <nav className="flex-1 px-4 space-y-1.5 mt-4">
                     {navigation.map((item) => {
-                        const isActive = pathname === item.href;
+                        const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
                         return (
                             <Link
                                 key={item.name}
                                 href={item.href}
                                 onClick={() => setIsOpen(false)}
                                 className={`
-                                    flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 group
+                                    flex items-center px-4 py-3 text-sm font-bold rounded-xl transition-all duration-200 group
                                     ${isActive
-                                        ? 'bg-indigo-600/10 text-white'
+                                        ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20'
                                         : 'hover:bg-white/5 hover:text-white'}
                                 `}
                             >
                                 <item.icon className={`
                                     w-5 h-5 mr-3 transition-colors
-                                    ${isActive ? 'text-indigo-500' : 'group-hover:text-indigo-400'}
+                                    ${isActive ? 'text-white' : 'group-hover:text-indigo-400'}
                                 `} />
                                 {item.name}
                                 {isActive && (
-                                    <div className="ml-auto w-1.5 h-1.5 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.6)]" />
+                                    <div className="ml-auto w-1.5 h-1.5 rounded-full bg-indigo-200" />
                                 )}
                             </Link>
                         );
                     })}
                 </nav>
 
-                <div className="p-4 mt-auto border-t border-white/5">
+                <div className="p-4 mt-auto border-t border-white/5 bg-black/10">
                     <button
-                        className="flex items-center w-full px-4 py-3 text-sm font-medium text-slate-400 rounded-xl hover:bg-red-500/10 hover:text-red-400 transition-all duration-200"
+                        className="flex items-center w-full px-4 py-3 text-sm font-bold text-slate-400 rounded-xl hover:bg-red-500/10 hover:text-red-400 transition-all duration-200"
                         onClick={() => {
                             localStorage.removeItem('accessToken');
                             window.location.href = '/login';
