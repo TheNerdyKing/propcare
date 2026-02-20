@@ -32,7 +32,7 @@ export default function Sidebar() {
             {/* Mobile Menu Button */}
             <button
                 onClick={toggleSidebar}
-                className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-white rounded-lg shadow-md text-gray-600 hover:text-indigo-600 transition-colors"
+                className="lg:hidden fixed top-6 left-6 z-50 p-3 bg-white rounded-xl shadow-xl text-indigo-600 hover:scale-110 active:scale-95 transition-all"
                 aria-label="Toggle navigation"
             >
                 {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -41,29 +41,29 @@ export default function Sidebar() {
             {/* Backdrop */}
             {isOpen && (
                 <div
-                    className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-40 lg:hidden"
+                    className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-40 lg:hidden"
                     onClick={toggleSidebar}
                 />
             )}
 
             {/* Sidebar */}
             <aside className={`
-                fixed top-0 left-0 h-full bg-[#0F172A] text-slate-400 w-64 z-40 transition-transform duration-300 transform
+                fixed top-0 left-0 h-full bg-[#0F172A] text-slate-400 w-72 z-40 transition-all duration-500 ease-in-out transform
                 ${isOpen ? 'translate-x-0' : '-translate-x-full'}
-                lg:translate-x-0 lg:static flex flex-col border-r border-white/5 shadow-2xl
+                lg:translate-x-0 lg:static flex flex-col border-r border-white/5 shadow-[20px_0_40px_rgba(0,0,0,0.1)]
             `}>
-                <div className="p-8">
-                    <div className="flex items-center space-x-3">
-                        <div className="w-9 h-9 bg-indigo-600 rounded-xl flex items-center justify-center font-black text-white shadow-lg shadow-indigo-600/20">
+                <div className="p-10">
+                    <div className="flex items-center space-x-4">
+                        <div className="w-10 h-10 bg-indigo-600 rounded-[1rem] flex items-center justify-center font-black text-white shadow-2xl shadow-indigo-600/40 transform -rotate-6 group-hover:rotate-0 transition-transform">
                             PC
                         </div>
-                        <span className="text-xl font-bold text-white tracking-tight">
+                        <span className="text-2xl font-black text-white tracking-tighter">
                             Prop<span className="text-indigo-500">Care</span>
                         </span>
                     </div>
                 </div>
 
-                <nav className="flex-1 px-4 space-y-1.5 mt-4">
+                <nav className="flex-1 px-6 space-y-2 mt-6">
                     {navigation.map((item) => {
                         const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
                         return (
@@ -72,35 +72,35 @@ export default function Sidebar() {
                                 href={item.href}
                                 onClick={() => setIsOpen(false)}
                                 className={`
-                                    flex items-center px-4 py-3 text-sm font-bold rounded-xl transition-all duration-200 group
+                                    flex items-center px-5 py-4 text-sm font-black rounded-2xl transition-all duration-300 group relative overflow-hidden
                                     ${isActive
-                                        ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20'
-                                        : 'hover:bg-white/5 hover:text-white'}
+                                        ? 'bg-indigo-600 text-white shadow-2xl shadow-indigo-600/30 translate-x-1'
+                                        : 'hover:bg-white/5 hover:text-white hover:translate-x-1'}
                                 `}
                             >
                                 <item.icon className={`
-                                    w-5 h-5 mr-3 transition-colors
-                                    ${isActive ? 'text-white' : 'group-hover:text-indigo-400'}
+                                    w-5 h-5 mr-4 transition-all duration-300
+                                    ${isActive ? 'text-white scale-110' : 'text-slate-500 group-hover:text-indigo-400 group-hover:scale-110'}
                                 `} />
                                 {item.name}
                                 {isActive && (
-                                    <div className="ml-auto w-1.5 h-1.5 rounded-full bg-indigo-200" />
+                                    <div className="ml-auto w-2 h-2 rounded-full bg-white shadow-lg animate-pulse" />
                                 )}
                             </Link>
                         );
                     })}
                 </nav>
 
-                <div className="p-4 mt-auto border-t border-white/5 bg-black/10">
+                <div className="p-6 mt-auto border-t border-white/5 bg-black/20">
                     <button
-                        className="flex items-center w-full px-4 py-3 text-sm font-bold text-slate-400 rounded-xl hover:bg-red-500/10 hover:text-red-400 transition-all duration-200"
+                        className="flex items-center w-full px-5 py-4 text-xs font-black text-slate-500 uppercase tracking-[0.2em] rounded-2xl hover:bg-red-500/10 hover:text-red-400 transition-all duration-300 group"
                         onClick={() => {
                             localStorage.removeItem('accessToken');
                             window.location.href = '/login';
                         }}
                     >
-                        <LogOut className="w-5 h-5 mr-3" />
-                        Sign Out
+                        <LogOut className="w-4 h-4 mr-4 group-hover:rotate-180 transition-transform duration-500" />
+                        Term. Session
                     </button>
                 </div>
             </aside>

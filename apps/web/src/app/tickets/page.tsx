@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import api from '@/lib/api';
 import Link from 'next/link';
-import { ClipboardList, Search, Filter, ArrowRight } from 'lucide-react';
+import { ClipboardList, Search, Filter, ArrowRight, ChevronRight } from 'lucide-react';
 import AuthenticatedLayout from '@/components/AuthenticatedLayout';
 
 export default function TicketsPage() {
@@ -25,9 +25,10 @@ export default function TicketsPage() {
                     search: search || undefined,
                 },
             });
-            setTickets(response.data || []);
+            setTickets(Array.isArray(response.data) ? response.data : []);
         } catch (err) {
             console.error('Failed to fetch tickets', err);
+            setTickets([]);
         } finally {
             setLoading(false);
         }
@@ -42,100 +43,102 @@ export default function TicketsPage() {
         }
     };
 
+    const safeTickets = Array.isArray(tickets) ? tickets : [];
+
     return (
         <AuthenticatedLayout>
-            <div className="p-8 max-w-7xl mx-auto">
-                <div className="mb-10">
-                    <h1 className="text-4xl font-black text-slate-900 tracking-tight mb-2">Service Tickets</h1>
-                    <p className="text-slate-500 font-medium text-lg">Detailed view of all active and historical maintenance requests.</p>
+            <div className="p-10 max-w-7xl mx-auto">
+                <div className="mb-12">
+                    <h1 className="text-5xl font-black text-slate-900 tracking-tighter mb-4">Service Queue</h1>
+                    <p className="text-slate-500 font-medium text-xl max-w-2xl">Access and manage the full history of maintenance and repair requests across all properties.</p>
                 </div>
 
-                {/* Filters Bar */}
-                <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200/60 mb-8 flex flex-col md:flex-row gap-4 items-center justify-between">
-                    <div className="relative w-full md:w-96">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                {/* Advanced Search & Filter Bar */}
+                <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-200/60 mb-10 flex flex-col lg:flex-row gap-6 items-center justify-between">
+                    <div className="relative w-full lg:w-[32rem]">
+                        <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                         <input
                             type="text"
-                            placeholder="Search by ID, property or unit..."
-                            className="w-full bg-slate-50 border-none rounded-2xl pl-11 pr-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 shadow-inner"
+                            placeholder="Filter by reference, property, or specific unit..."
+                            className="w-full bg-slate-50 border-none rounded-2xl pl-14 pr-6 py-4 text-sm font-bold focus:ring-2 focus:ring-indigo-500 shadow-inner"
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                             onKeyPress={(e) => e.key === 'Enter' && fetchTickets()}
                         />
                     </div>
 
-                    <div className="flex items-center gap-3 w-full md:w-auto">
-                        <div className="relative flex-1 md:flex-none">
-                            <Filter className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <div className="flex items-center gap-4 w-full lg:w-auto">
+                        <div className="relative flex-1 lg:flex-none">
+                            <Filter className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                             <select
-                                className="w-full bg-slate-50 border-none rounded-2xl pl-11 pr-10 py-3 text-sm focus:ring-2 focus:ring-indigo-500 shadow-inner appearance-none cursor-pointer font-bold text-slate-700"
+                                className="w-full lg:w-64 bg-slate-50 border-none rounded-2xl pl-12 pr-10 py-4 text-sm font-black text-slate-600 appearance-none cursor-pointer focus:ring-2 focus:ring-indigo-500 shadow-inner"
                                 value={statusFilter}
                                 onChange={(e) => setStatusFilter(e.target.value)}
                             >
-                                <option value="">All Statuses</option>
+                                <option value="">All Lifecycle Stages</option>
                                 <option value="NEW">New Requests</option>
-                                <option value="IN_PROGRESS">In Progress</option>
-                                <option value="COMPLETED">Successfully Resolved</option>
+                                <option value="IN_PROGRESS">Active Operations</option>
+                                <option value="COMPLETED">Resolved Cases</option>
                             </select>
-                            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                            <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
                                 ▾
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div className="bg-white shadow-xl shadow-slate-200/50 border border-slate-200/60 overflow-hidden rounded-[2rem]">
+                <div className="bg-white shadow-2xl shadow-slate-200/50 border border-slate-200/60 overflow-hidden rounded-[3rem]">
                     {loading ? (
-                        <div className="p-24 text-center">
-                            <div className="animate-spin w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full mx-auto mb-6" />
-                            <p className="text-slate-400 font-black uppercase tracking-widest text-xs">Synchronizing Tickets...</p>
+                        <div className="p-32 text-center">
+                            <div className="animate-spin w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full mx-auto mb-8" />
+                            <p className="text-slate-400 font-black uppercase tracking-[0.3em] text-[10px]">Accessing Database Archive...</p>
                         </div>
-                    ) : tickets.length === 0 ? (
-                        <div className="p-24 text-center">
-                            <div className="w-24 h-24 bg-slate-50 rounded-[2rem] flex items-center justify-center mx-auto mb-8 border border-slate-100">
-                                <ClipboardList className="w-10 h-10 text-slate-300" />
+                    ) : safeTickets.length === 0 ? (
+                        <div className="p-32 text-center">
+                            <div className="w-28 h-28 bg-slate-50 rounded-[2.5rem] flex items-center justify-center mx-auto mb-10 border border-slate-100 shadow-inner">
+                                <ClipboardList className="w-12 h-12 text-slate-200" />
                             </div>
-                            <h3 className="text-2xl font-black text-slate-900 mb-2">No tickets found</h3>
-                            <p className="text-slate-500 font-medium max-w-sm mx-auto">Try adjusting your filters or search query to find what you're looking for.</p>
+                            <h3 className="text-3xl font-black text-slate-900 mb-4 tracking-tight">No records found</h3>
+                            <p className="text-slate-500 font-medium text-lg max-w-sm mx-auto">Refine your search parameters or check alternative status categories.</p>
                         </div>
                     ) : (
                         <div className="overflow-x-auto">
                             <table className="w-full text-left border-collapse">
                                 <thead>
-                                    <tr className="bg-slate-50/50 border-b border-slate-100">
-                                        <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Reference</th>
-                                        <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Property & Unit</th>
-                                        <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
-                                        <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Created</th>
-                                        <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Action</th>
+                                    <tr className="bg-slate-50/80 border-b border-slate-100">
+                                        <th className="px-10 py-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Ref ID</th>
+                                        <th className="px-10 py-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Asset Location</th>
+                                        <th className="px-10 py-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Operational Status</th>
+                                        <th className="px-10 py-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Archived On</th>
+                                        <th className="px-10 py-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] text-right">Navigation</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-slate-50">
-                                    {tickets.map((ticket) => (
-                                        <tr key={ticket.id} className="group hover:bg-indigo-50/30 transition-colors">
-                                            <td className="px-8 py-6">
-                                                <span className="font-mono font-black text-indigo-500 bg-indigo-50 px-3 py-1.5 rounded-xl text-xs">
+                                <tbody className="divide-y divide-slate-50/50">
+                                    {safeTickets.map((ticket) => (
+                                        <tr key={ticket.id} className="group hover:bg-indigo-50/30 transition-all duration-300">
+                                            <td className="px-10 py-8">
+                                                <span className="font-mono font-black text-indigo-500 bg-indigo-50/50 px-4 py-2 rounded-xl text-xs border border-indigo-100/50">
                                                     {ticket.referenceCode}
                                                 </span>
                                             </td>
-                                            <td className="px-8 py-6">
-                                                <div className="font-black text-slate-900 text-lg">{ticket.property?.name || '---'}</div>
-                                                <div className="text-slate-500 font-bold text-sm">{ticket.unitLabel || 'Common Area'}</div>
+                                            <td className="px-10 py-8">
+                                                <div className="font-black text-slate-900 text-xl tracking-tight mb-0.5 group-hover:text-indigo-600 transition-colors uppercase">{ticket.property?.name || '---'}</div>
+                                                <div className="text-slate-400 font-bold text-xs uppercase tracking-widest">{ticket.unitLabel || 'Main Facility'}</div>
                                             </td>
-                                            <td className="px-8 py-6">
-                                                <span className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${getStatusColor(ticket.status)}`}>
+                                            <td className="px-10 py-8">
+                                                <span className={`px-4 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest border transition-all ${getStatusColor(ticket.status)}`}>
                                                     {ticket.status.replace('_', ' ')}
                                                 </span>
                                             </td>
-                                            <td className="px-8 py-6 text-sm font-bold text-slate-500">
+                                            <td className="px-10 py-8 text-sm font-black text-slate-400 uppercase tracking-tighter">
                                                 {new Date(ticket.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
                                             </td>
-                                            <td className="px-8 py-6 text-right">
+                                            <td className="px-10 py-8 text-right">
                                                 <Link
                                                     href={`/tickets/${ticket.id}`}
-                                                    className="inline-flex items-center justify-center p-3 bg-white border border-slate-200 rounded-xl text-indigo-600 hover:bg-indigo-600 hover:text-white hover:border-indigo-600 transition-all shadow-sm"
+                                                    className="inline-flex items-center justify-center w-12 h-12 bg-white border border-slate-200 rounded-2xl text-slate-400 group-hover:bg-indigo-600 group-hover:text-white group-hover:border-indigo-600 group-hover:shadow-xl group-hover:shadow-indigo-600/30 transition-all group-hover:-translate-x-2"
                                                 >
-                                                    <ArrowRight className="w-5 h-5" />
+                                                    <ChevronRight className="w-6 h-6" />
                                                 </Link>
                                             </td>
                                         </tr>

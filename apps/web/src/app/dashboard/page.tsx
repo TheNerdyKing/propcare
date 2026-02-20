@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import api from '@/lib/api';
 import Link from 'next/link';
-import { ClipboardList } from 'lucide-react';
+import { ClipboardList, Search, Plus, ArrowRight } from 'lucide-react';
 import AuthenticatedLayout from '@/components/AuthenticatedLayout';
 
 export default function DashboardPage() {
@@ -25,9 +25,11 @@ export default function DashboardPage() {
                     search: search || undefined,
                 },
             });
-            setTickets(response.data);
+            // Defensive: ensure tickets is always an array
+            setTickets(Array.isArray(response.data) ? response.data : []);
         } catch (err) {
             console.error('Failed to fetch tickets', err);
+            setTickets([]);
         } finally {
             setLoading(false);
         }
@@ -47,121 +49,136 @@ export default function DashboardPage() {
 
     const getStatusColor = (status: string) => {
         switch (status) {
-            case 'NEW': return 'bg-blue-100 text-blue-800';
-            case 'IN_PROGRESS': return 'bg-yellow-100 text-yellow-800';
-            case 'COMPLETED': return 'bg-green-100 text-green-800';
-            default: return 'bg-gray-100 text-gray-800';
+            case 'NEW': return 'bg-blue-100 text-blue-700 border-blue-200';
+            case 'IN_PROGRESS': return 'bg-amber-100 text-amber-700 border-amber-200';
+            case 'COMPLETED': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
+            default: return 'bg-slate-100 text-slate-700 border-slate-200';
         }
     };
+
+    // Safe stats calculation
+    const safeTickets = Array.isArray(tickets) ? tickets : [];
+    const openTickets = safeTickets.filter(t => t.status !== 'COMPLETED').length;
+    const resolvedTickets = safeTickets.filter(t => t.status === 'COMPLETED').length;
 
     return (
         <AuthenticatedLayout>
             <div className="p-8 max-w-7xl mx-auto">
-                <div className="flex justify-between items-end mb-8">
+                <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
                     <div>
-                        <h1 className="text-3xl font-black text-slate-900 tracking-tight">Staff Dashboard</h1>
-                        <p className="text-slate-500 font-medium">Manage and track property maintenance requests.</p>
+                        <h1 className="text-4xl font-black text-slate-900 tracking-tight mb-2">Staff Dashboard</h1>
+                        <p className="text-slate-500 font-medium text-lg italic">Welcome back. Here is what requires your attention today.</p>
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200/60 transition-all hover:shadow-md">
-                        <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Total Tickets</p>
-                        <p className="text-4xl font-black text-indigo-950 mt-2">{loading ? '...' : tickets.length}</p>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+                    <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-200/60 transition-all hover:shadow-xl hover:shadow-indigo-500/5 group">
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Total Request Volume</p>
+                        <div className="flex items-baseline space-x-2">
+                            <p className="text-5xl font-black text-slate-900 tracking-tighter">{loading ? '...' : safeTickets.length}</p>
+                            <span className="text-slate-300 font-bold">tickets</span>
+                        </div>
                     </div>
-                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200/60 transition-all hover:shadow-md">
-                        <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Open Tickets</p>
-                        <p className="text-4xl font-black text-indigo-600 mt-2">
-                            {loading ? '...' : tickets.filter(t => t.status !== 'COMPLETED').length}
-                        </p>
+                    <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-200/60 transition-all hover:shadow-xl hover:shadow-amber-500/5 group border-l-4 border-l-amber-400">
+                        <p className="text-[10px] font-black text-amber-600/60 uppercase tracking-[0.2em] mb-4">Action Required</p>
+                        <div className="flex items-baseline space-x-2">
+                            <p className="text-5xl font-black text-amber-600 tracking-tighter">{loading ? '...' : openTickets}</p>
+                            <span className="text-amber-200 font-bold">open</span>
+                        </div>
                     </div>
-                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200/60 transition-all hover:shadow-md">
-                        <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Resolved</p>
-                        <p className="text-4xl font-black text-emerald-600 mt-2">
-                            {loading ? '...' : tickets.filter(t => t.status === 'COMPLETED').length}
-                        </p>
-                    </div>
-                </div>
-
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-                    <h2 className="text-xl font-bold text-slate-800">Recent Activity</h2>
-                    <div className="flex items-center space-x-3">
-                        <input
-                            type="text"
-                            placeholder="Search tickets..."
-                            className="bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm"
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                            onKeyPress={(e) => e.key === 'Enter' && fetchTickets()}
-                        />
-                        <select
-                            className="bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm cursor-pointer"
-                            value={statusFilter}
-                            onChange={(e) => setStatusFilter(e.target.value)}
-                        >
-                            <option value="">All Statuses</option>
-                            <option value="NEW">New</option>
-                            <option value="IN_PROGRESS">In Progress</option>
-                            <option value="COMPLETED">Completed</option>
-                        </select>
+                    <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-200/60 transition-all hover:shadow-xl hover:shadow-emerald-500/5 group border-l-4 border-l-emerald-400">
+                        <p className="text-[10px] font-black text-emerald-600/60 uppercase tracking-[0.2em] mb-4">Success Rate</p>
+                        <div className="flex items-baseline space-x-2">
+                            <p className="text-5xl font-black text-emerald-600 tracking-tighter">{loading ? '...' : resolvedTickets}</p>
+                            <span className="text-emerald-200 font-bold">resolved</span>
+                        </div>
                     </div>
                 </div>
 
-                <div className="bg-white shadow-sm border border-slate-200/60 overflow-hidden rounded-2xl">
-                    <ul className="divide-y divide-slate-100">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 px-2">
+                    <h2 className="text-2xl font-black text-slate-900 tracking-tight">Recent Activity</h2>
+                    <div className="flex items-center gap-3">
+                        <div className="relative">
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                            <input
+                                type="text"
+                                placeholder="Search..."
+                                className="bg-white border-none rounded-2xl pl-11 pr-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 shadow-inner w-64"
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                onKeyPress={(e) => e.key === 'Enter' && fetchTickets()}
+                            />
+                        </div>
+                        <Link href="/tickets">
+                            <button className="bg-slate-900 text-white px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-800 transition shadow-lg shadow-slate-200">
+                                View All Tickets
+                            </button>
+                        </Link>
+                    </div>
+                </div>
+
+                <div className="bg-white shadow-xl shadow-slate-200/40 border border-slate-200/60 overflow-hidden rounded-[2.5rem]">
+                    <ul className="divide-y divide-slate-50">
                         {loading ? (
-                            <li className="p-12 text-center text-slate-400 font-medium">
-                                <div className="animate-spin w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full mx-auto mb-4" />
-                                Loading tickets...
+                            <li className="p-24 text-center">
+                                <div className="animate-spin w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full mx-auto mb-6" />
+                                <p className="text-slate-400 font-black uppercase tracking-widest text-xs">Synchronizing data...</p>
                             </li>
-                        ) : tickets.length === 0 ? (
-                            <li className="p-16 text-center text-slate-400 flex flex-col items-center">
-                                <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-6">
+                        ) : safeTickets.length === 0 ? (
+                            <li className="p-24 text-center flex flex-col items-center">
+                                <div className="w-24 h-24 bg-slate-50 rounded-[2rem] flex items-center justify-center mb-8 border border-slate-100 italic">
                                     <ClipboardList className="w-10 h-10 text-slate-300" />
                                 </div>
-                                <h3 className="text-lg font-bold text-slate-900">No tickets found</h3>
-                                <p className="mt-2 text-sm text-slate-500 max-w-xs mx-auto">Get started by seeding some demo data or creating a new ticket.</p>
+                                <h3 className="text-2xl font-black text-slate-900 mb-2">Zero tickets active</h3>
+                                <p className="text-slate-500 font-medium max-w-xs mx-auto mb-10">Your maintenance queue is currently empty. Ready to start fresh?</p>
                                 <button
                                     onClick={seedDemoData}
-                                    className="mt-8 px-6 py-2.5 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition shadow-[0_4px_12px_rgba(79,70,229,0.3)]"
+                                    className="px-10 py-4 bg-indigo-600 text-white rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-indigo-700 transition shadow-xl shadow-indigo-600/30"
                                 >
-                                    Seed Demo Data
+                                    Seed Demo Data Package
                                 </button>
                             </li>
                         ) : (
-                            tickets.map((ticket) => (
+                            safeTickets.slice(0, 5).map((ticket) => (
                                 <li key={ticket.id} className="group">
-                                    <Link href={`/tickets/${ticket.id}`} className="block hover:bg-slate-50/80 transition-all duration-200 px-6 py-5">
-                                        <div className="flex items-center justify-between mb-2">
-                                            <div className="flex items-center space-x-3">
-                                                <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest font-mono bg-indigo-50 px-2 py-0.5 rounded">
+                                    <Link href={`/tickets/${ticket.id}`} className="block hover:bg-indigo-50/30 transition-all duration-300 px-10 py-8">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <div className="flex items-center space-x-4">
+                                                <span className="text-[10px] font-black text-indigo-500 bg-indigo-50 px-3 py-1.5 rounded-xl font-mono border border-indigo-100">
                                                     {ticket.referenceCode}
                                                 </span>
-                                                <div className={`px-2.5 py-0.5 text-[10px] font-black rounded-full uppercase tracking-wider ${getStatusColor(ticket.status)}`}>
+                                                <div className={`px-3 py-1.5 text-[10px] font-black rounded-full uppercase tracking-widest border ${getStatusColor(ticket.status)}`}>
                                                     {ticket.status.replace('_', ' ')}
                                                 </div>
                                             </div>
-                                            <span className="text-xs text-slate-400 font-medium">
+                                            <span className="text-xs text-slate-400 font-black uppercase tracking-widest">
                                                 {new Date(ticket.createdAt).toLocaleDateString()}
                                             </span>
                                         </div>
                                         <div className="flex items-end justify-between">
                                             <div>
-                                                <h4 className="text-lg font-bold text-slate-900">
-                                                    {ticket.property?.name || 'Unknown Property'}
+                                                <h4 className="text-2xl font-black text-slate-900 mb-1 group-hover:text-indigo-600 transition-colors">
+                                                    {ticket.property?.name || 'Unassigned Property'}
                                                 </h4>
-                                                <p className="text-sm text-slate-500 font-medium">{ticket.unitLabel || 'Common Area'}</p>
+                                                <p className="text-sm text-slate-500 font-bold">{ticket.unitLabel || 'Common Area • Facility'}</p>
                                             </div>
-                                            <div className="text-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity translate-x-4 group-hover:translate-x-0">
-                                                <span className="text-sm font-bold mr-1">View Details</span> ➔
+                                            <div className="w-12 h-12 bg-white border border-slate-100 rounded-2xl flex items-center justify-center text-indigo-600 opacity-0 group-hover:opacity-100 transition-all group-hover:shadow-lg shadow-indigo-100">
+                                                <ArrowRight className="w-6 h-6" />
                                             </div>
                                         </div>
-                                        <p className="mt-3 text-sm text-slate-600 line-clamp-1 italic font-light">
+                                        <p className="mt-6 text-sm text-slate-600 line-clamp-1 italic font-light font-serif">
                                             "{ticket.description}"
                                         </p>
                                     </Link>
                                 </li>
                             ))
+                        )}
+                        {safeTickets.length > 5 && (
+                            <li className="bg-slate-50/50 p-6 text-center">
+                                <Link href="/tickets" className="text-xs font-black text-indigo-600 uppercase tracking-[0.2em] hover:text-indigo-800 transition-colors">
+                                    View all {safeTickets.length} tickets ➔
+                                </Link>
+                            </li>
                         )}
                     </ul>
                 </div>
