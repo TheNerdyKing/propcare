@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { AuthModule } from './auth/auth.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { PublicModule } from './public/public.module';
+import { AdminController } from './admin/admin.controller';
 import { TicketsModule } from './tickets/tickets.module';
 import { ContractorsModule } from './contractors/contractors.module';
 import { PropertiesModule } from './properties/properties.module';
@@ -31,6 +32,7 @@ import { RolesGuard } from './auth/guards/roles.guard';
             },
         }),
     ],
+    controllers: [AdminController],
     providers: [
         {
             provide: APP_GUARD,
