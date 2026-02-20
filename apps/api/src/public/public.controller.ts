@@ -33,4 +33,10 @@ export class PublicController {
     ) {
         return this.publicService.addPublicMessage(referenceCode, content);
     }
+
+    @Public()
+    @Post('seed-demo-data')
+    async seedDemoData() {
+        return this.publicService.seedDemoData();
+    }
 }

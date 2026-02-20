@@ -74,4 +74,42 @@ export class PublicService {
             },
         });
     }
+
+    async seedDemoData() {
+        const tenantId = 'default-tenant-uuid';
+
+        // Create Properties
+        const prop1 = await this.prisma.property.upsert({
+            where: { id: 'prop-1' },
+            update: {},
+            create: {
+                id: 'prop-1',
+                tenantId,
+                name: 'Seaside Apartments',
+                addressLine1: 'Marina Drive 101',
+                zip: '8000',
+                city: 'Zurich',
+            },
+        });
+
+        // Create Tickets
+        await this.prisma.ticket.upsert({
+            where: { referenceCode: 'TKT-2024-001' },
+            update: {},
+            create: {
+                tenantId,
+                referenceCode: 'TKT-2024-001',
+                type: TicketType.DAMAGE_REPORT,
+                status: 'NEW',
+                propertyId: prop1.id,
+                unitLabel: 'Apt 4B',
+                description: 'Water leak under the kitchen sink.',
+                tenantName: 'John Doe',
+                tenantEmail: 'john.doe@example.com',
+                urgency: 'URGENT',
+            },
+        });
+
+        return { success: true };
+    }
 }
