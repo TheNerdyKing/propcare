@@ -110,39 +110,42 @@ export class PublicService {
             },
         });
 
-    async seeddemoDataForTenant(tenantId: string) {
-            // Create Properties
-            const prop1 = await this.prisma.property.upsert({
-                where: { id: `demo-prop-${tenantId.slice(0, 8)}` },
-                update: {},
-                create: {
-                    id: `demo-prop-${tenantId.slice(0, 8)}`,
-                    tenantId,
-                    name: 'Riverside Towers',
-                    addressLine1: 'Main Street 42',
-                    zip: '10001',
-                    city: 'Metropolis',
-                },
-            });
-
-            // Create Tickets
-            await this.prisma.ticket.upsert({
-                where: { referenceCode: `DEMO-${tenantId.slice(0, 4)}-001` },
-                update: {},
-                create: {
-                    tenantId,
-                    referenceCode: `DEMO-${tenantId.slice(0, 4)}-001`,
-                    type: TicketType.DAMAGE_REPORT,
-                    status: 'NEW',
-                    propertyId: prop1.id,
-                    unitLabel: 'Penthouse A',
-                    description: 'AC unit is making a loud buzzing sound and not cooling properly.',
-                    tenantName: 'Alice Johnson',
-                    tenantEmail: 'alice.j@example.com',
-                    urgency: 'NORMAL',
-                },
-            });
-
-            return { success: true };
-        }
+        return { success: true };
     }
+
+    async seedDemoDataForTenant(tenantId: string) {
+        // Create Properties
+        const prop1 = await this.prisma.property.upsert({
+            where: { id: `demo-prop-${tenantId.slice(0, 8)}` },
+            update: {},
+            create: {
+                id: `demo-prop-${tenantId.slice(0, 8)}`,
+                tenantId,
+                name: 'Riverside Towers',
+                addressLine1: 'Main Street 42',
+                zip: '10001',
+                city: 'Metropolis',
+            },
+        });
+
+        // Create Tickets
+        await this.prisma.ticket.upsert({
+            where: { referenceCode: `DEMO-${tenantId.slice(0, 4)}-001` },
+            update: {},
+            create: {
+                tenantId,
+                referenceCode: `DEMO-${tenantId.slice(0, 4)}-001`,
+                type: TicketType.DAMAGE_REPORT,
+                status: 'NEW',
+                propertyId: prop1.id,
+                unitLabel: 'Penthouse A',
+                description: 'AC unit is making a loud buzzing sound and not cooling properly.',
+                tenantName: 'Alice Johnson',
+                tenantEmail: 'alice.j@example.com',
+                urgency: 'NORMAL',
+            },
+        });
+
+        return { success: true };
+    }
+}

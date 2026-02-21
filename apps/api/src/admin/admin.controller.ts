@@ -8,6 +8,6 @@ export class AdminController {
     @Post('seed-demo-data')
     async seedDemoData(@Request() req: any) {
         // Use the tenantId from the authenticated user's token
-        return this.publicService.seeddemoDataForTenant(req.user.tenantId);
+        return this.publicService.seedDemoDataForTenant(req.user.tenantId);
     }
 }
