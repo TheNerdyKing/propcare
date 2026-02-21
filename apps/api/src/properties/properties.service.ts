@@ -31,9 +31,16 @@ export class PropertiesService {
     }
 
     async create(tenantId: string, data: any) {
+        if (!data.name || !data.addressLine1 || !data.zip || !data.city) {
+            throw new BadRequestException('Missing required property fields (name, address, zip, city)');
+        }
+
         return this.prisma.property.create({
             data: {
-                ...data,
+                name: data.name,
+                addressLine1: data.addressLine1,
+                zip: data.zip,
+                city: data.city,
                 tenantId,
             },
         });
@@ -69,16 +76,27 @@ export class PropertiesService {
 
         for (let i = 1; i < lines.length; i++) {
             const values = lines[i].split(',').map(v => v.trim());
-            const propertyData: any = { tenantId };
+            const propertyData: any = {
+                tenantId,
+                zip: '', // Default to empty string if missing
+                city: '',
+            };
 
             headers.forEach((header, idx) => {
-                if (header === 'name') propertyData.name = values[idx];
-                if (header === 'address' || header === 'addressline1') propertyData.addressLine1 = values[idx];
-                if (header === 'zip') propertyData.zip = values[idx];
-                if (header === 'city') propertyData.city = values[idx];
+                const val = values[idx];
+                if (!val) return;
+
+                if (header === 'name') propertyData.name = val;
+                if (header === 'address' || header === 'addressline1' || header === 'street') propertyData.addressLine1 = val;
+                if (header === 'zip' || header === 'postcode') propertyData.zip = val;
+                if (header === 'city') propertyData.city = val;
             });
 
             if (propertyData.name && propertyData.addressLine1) {
+                // Ensure required fields exist even if not in CSV
+                if (!propertyData.zip) propertyData.zip = '0000';
+                if (!propertyData.city) propertyData.city = 'Unknown';
+
                 const prop = await this.prisma.property.create({ data: propertyData });
                 results.push(prop);
             }

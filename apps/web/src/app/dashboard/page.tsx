@@ -15,10 +15,17 @@ export default function DashboardPage() {
 
     useEffect(() => {
         fetchTickets();
+
+        // Real-time updates: Poll every 10 seconds
+        const interval = setInterval(() => {
+            fetchTickets(false); // background fetch
+        }, 10000);
+
+        return () => clearInterval(interval);
     }, [statusFilter]);
 
-    const fetchTickets = async () => {
-        setLoading(true);
+    const fetchTickets = async (showLoading = true) => {
+        if (showLoading) setLoading(true);
         try {
             const response = await api.get('/tickets', {
                 params: {
