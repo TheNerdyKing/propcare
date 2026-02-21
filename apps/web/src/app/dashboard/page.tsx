@@ -82,7 +82,7 @@ export default function DashboardPage() {
                 {loading ? (
                     <div className="py-32 text-center">
                         <div className="animate-spin w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full mx-auto mb-8" />
-                        <p className="text-slate-400 font-black uppercase tracking-[0.3em] text-[10px]">Accessing Local Network...</p>
+                        <p className="text-slate-400 font-black uppercase tracking-[0.3em] text-[10px]">Synchronizing Live Data...</p>
                     </div>
                 ) : safeTickets.length === 0 ? (
                     /* High-End Onboarding Guide */

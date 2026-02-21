@@ -7,7 +7,14 @@ export class AdminController {
 
     @Post('seed-demo-data')
     async seedDemoData(@Request() req: any) {
-        // Use the tenantId from the authenticated user's token
-        return this.publicService.seedDemoDataForTenant(req.user.tenantId);
+        console.log(`[Admin] Seeding demo data for tenant: ${req.user?.tenantId}`);
+        try {
+            const result = await this.publicService.seedDemoDataForTenant(req.user.tenantId);
+            console.log(`[Admin] Seeding successful`);
+            return result;
+        } catch (error) {
+            console.error(`[Admin] Seeding failed:`, error);
+            throw error;
+        }
     }
 }
