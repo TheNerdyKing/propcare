@@ -3,7 +3,6 @@ import { ConfigModule } from '@nestjs/config';
 import { AuthModule } from './auth/auth.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { PublicModule } from './public/public.module';
-import { AdminModule } from './admin/admin.module';
 import { TicketsModule } from './tickets/tickets.module';
 import { ContractorsModule } from './contractors/contractors.module';
 import { PropertiesModule } from './properties/properties.module';
@@ -21,7 +20,6 @@ import { RolesGuard } from './auth/guards/roles.guard';
         PrismaModule,
         AuthModule,
         PublicModule,
-        AdminModule,
         TicketsModule,
         ContractorsModule,
         PropertiesModule,

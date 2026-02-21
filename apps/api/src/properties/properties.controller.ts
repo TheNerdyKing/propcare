@@ -1,9 +1,14 @@
 import { Controller, Get, Post, Patch, Delete, Param, Body, Request, UseInterceptors, UploadedFile } from '@nestjs/common';
 import { PropertiesService } from './properties.service';
 
+import { PublicService } from '../public/public.service';
+
 @Controller('properties')
 export class PropertiesController {
-    constructor(private propertiesService: PropertiesService) { }
+    constructor(
+        private propertiesService: PropertiesService,
+        private publicService: PublicService
+    ) { }
 
     @Get()
     async findAll(@Request() req: any) {
@@ -33,5 +38,11 @@ export class PropertiesController {
     @Post('import')
     async import(@Request() req: any, @Body('csv') csv: string) {
         return this.propertiesService.importFromCsv(req.user.tenantId, csv);
+    }
+
+    @Post('seed-sandbox')
+    async seedSandbox(@Request() req: any) {
+        console.log(`[Properties] Seeding sandbox for tenant: ${req.user.tenantId}`);
+        return this.publicService.seedDemoDataForTenant(req.user.tenantId);
     }
 }
