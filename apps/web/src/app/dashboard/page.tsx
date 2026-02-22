@@ -11,7 +11,6 @@ export default function DashboardPage() {
     const [loading, setLoading] = useState(true);
     const [statusFilter, setStatusFilter] = useState('');
     const [search, setSearch] = useState('');
-    const [seeding, setSeeding] = useState(false);
 
     useEffect(() => {
         fetchTickets();
@@ -39,73 +38,6 @@ export default function DashboardPage() {
             setTickets([]);
         } finally {
             setLoading(false);
-        }
-    };
-
-    const seedDemoData = async () => {
-        setSeeding(true);
-        try {
-            // Get tenantId from token with multiple fallbacks
-            let tenantId = '';
-            const token = localStorage.getItem('accessToken');
-            if (token) {
-                try {
-                    const payload = JSON.parse(atob(token.split('.')[1]));
-                    tenantId = payload.tenantId || payload.tenant_id || payload.sub;
-                    console.log('Detected Tenant ID:', tenantId);
-                } catch (e) {
-                    console.error('Failed to parse token', e);
-                }
-            }
-
-            if (!tenantId || tenantId === 'undefined') {
-                const manualId = prompt('Automated sync was restricted. Please paste your Tenant ID from your Profile page, or developer console:');
-                if (!manualId) return;
-                tenantId = manualId;
-            }
-
-            console.log('Initiating demo activation for:', tenantId);
-
-            // Strategy 1: Standard POST via API instance
-            try {
-                await api.post('/portal/activate-now', { tenantId });
-            } catch (postErr: any) {
-                console.warn('Portal POST failed, trying Properties fallback...', postErr.message);
-
-                try {
-                    // Strategy 2: Authenticated GET fallback
-                    await api.get('/properties/activate-demo-get');
-                } catch (getErr: any) {
-                    console.warn('Properties GET failed, trying direct absolute links...', getErr.message);
-
-                    // Strategy 3: Absolute URL discovery
-                    const apiBase = api.defaults.baseURL || process.env.NEXT_PUBLIC_API_URL || 'https://propcare-api.vercel.app';
-                    const cleanBase = apiBase.endsWith('/') ? apiBase.slice(0, -1) : apiBase;
-
-                    // Comprehensive list of possible Vercel endpoint mappings
-                    const paths = [
-                        `${cleanBase}/portal/force-activate?tenantId=${tenantId}`,
-                        `${cleanBase}/properties/activate-demo-get?tenantId=${tenantId}`,
-                        `${cleanBase}/api/portal/force-activate?tenantId=${tenantId}`,
-                    ];
-
-                    if (confirm(`Direct sync required due to network restrictions. Open sync portal?`)) {
-                        window.open(paths[0], '_blank');
-                        console.log('Alternate Sync Links:', paths);
-                        return;
-                    }
-                    throw getErr;
-                }
-            }
-
-            await fetchTickets();
-            alert('Demo workspace successfully initialized!');
-        } catch (err: any) {
-            console.error('Activation Error:', err);
-            const msg = err.response?.data?.message || err.message || 'Check your internet connection';
-            alert(`Activation Issue: ${msg}`);
-        } finally {
-            setSeeding(false);
         }
     };
 
@@ -138,7 +70,7 @@ export default function DashboardPage() {
                         <p className="text-slate-400 font-black uppercase tracking-[0.3em] text-[10px]">Cloud Data Sync Active...</p>
                     </div>
                 ) : safeTickets.length === 0 ? (
-                    /* High-End Onboarding Guide */
+                    /* High-End Empty State */
                     <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-1000">
                         <div className="bg-indigo-600 rounded-[3rem] p-12 text-white relative overflow-hidden shadow-2xl shadow-indigo-600/20">
                             <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl pointer-events-none" />
@@ -146,17 +78,12 @@ export default function DashboardPage() {
                                 <div className="w-16 h-16 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center mb-8">
                                     <Rocket className="w-8 h-8" />
                                 </div>
-                                <h2 className="text-4xl font-black tracking-tighter mb-6 leading-tight">Welcome to your new workspace. Let's get things moving.</h2>
-                                <p className="text-indigo-100 text-lg font-medium mb-10 leading-relaxed">Your dashboard is currently waiting for data. You can either import your existing portfolio or activate a demo portal with pre-populated records to explore the system capabilities.</p>
+                                <h2 className="text-4xl font-black tracking-tighter mb-6 leading-tight">Your Command Center is Ready.</h2>
+                                <p className="text-indigo-100 text-lg font-medium mb-10 leading-relaxed">We are initializing your workspace environment. If this is your first time here, our autonomous engine is populating your dashboard with premium demo assets and maintenance logs to help you explore the platform.</p>
                                 <div className="flex flex-wrap gap-4">
-                                    <button
-                                        onClick={seedDemoData}
-                                        disabled={seeding}
-                                        className="bg-white text-indigo-600 px-10 py-5 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-indigo-50 transition-all flex items-center shadow-xl shadow-black/10 disabled:opacity-50"
-                                    >
-                                        {seeding ? 'Synchronizing Resources...' : 'Activate Demo Portal'}
-                                        <Sparkles className="ml-3 w-4 h-4" />
-                                    </button>
+                                    <div className="bg-white/10 backdrop-blur-sm border border-white/20 px-8 py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] flex items-center">
+                                        System Sync: Active <Sparkles className="ml-3 w-4 h-4 animate-pulse text-yellow-300" />
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -166,10 +93,10 @@ export default function DashboardPage() {
                                 <div className="w-16 h-16 bg-slate-50 group-hover:bg-indigo-600 rounded-2xl flex items-center justify-center mb-8 transition-colors duration-500">
                                     <Building2 className="w-8 h-8 text-slate-400 group-hover:text-white transition-colors duration-500" />
                                 </div>
-                                <h3 className="text-2xl font-black text-slate-900 mb-4 tracking-tighter group-hover:text-indigo-600 transition-colors uppercase">Register Property</h3>
-                                <p className="text-slate-500 font-medium mb-8">Add your first real estate asset to start assigning maintenance units and tracking tickets.</p>
+                                <h3 className="text-2xl font-black text-slate-900 mb-4 tracking-tighter group-hover:text-indigo-600 transition-colors uppercase">Real Estate Assets</h3>
+                                <p className="text-slate-500 font-medium mb-8">View and manage your property portfolio. Track maintenance cycles across units and common areas.</p>
                                 <div className="flex items-center text-indigo-600 font-black text-[10px] uppercase tracking-[0.2em] group-hover:translate-x-2 transition-transform">
-                                    Begin Workflow <ArrowRight className="ml-2 w-4 h-4" />
+                                    View Assets <ArrowRight className="ml-2 w-4 h-4" />
                                 </div>
                             </Link>
 
@@ -177,10 +104,10 @@ export default function DashboardPage() {
                                 <div className="w-16 h-16 bg-slate-50 group-hover:bg-emerald-600 rounded-2xl flex items-center justify-center mb-8 transition-colors duration-500">
                                     <Users className="w-8 h-8 text-slate-400 group-hover:text-white transition-colors duration-500" />
                                 </div>
-                                <h3 className="text-2xl font-black text-slate-900 mb-4 tracking-tighter group-hover:text-emerald-700 transition-colors uppercase">Onboard Partners</h3>
-                                <p className="text-slate-500 font-medium mb-8">Build your service network by inviting specialized contractors and maintenance specialists.</p>
+                                <h3 className="text-2xl font-black text-slate-900 mb-4 tracking-tighter group-hover:text-emerald-700 transition-colors uppercase">Partner Network</h3>
+                                <p className="text-slate-500 font-medium mb-8">Connect with certified contractors and monitor performance metrics across your entire ecosystem.</p>
                                 <div className="flex items-center text-emerald-600 font-black text-[10px] uppercase tracking-[0.2em] group-hover:translate-x-2 transition-transform">
-                                    Invite Team <ArrowRight className="ml-2 w-4 h-4" />
+                                    Manage Network <ArrowRight className="ml-2 w-4 h-4" />
                                 </div>
                             </Link>
                         </div>
