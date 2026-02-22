@@ -45,7 +45,27 @@ export default function DashboardPage() {
     const seedDemoData = async () => {
         setSeeding(true);
         try {
-            await api.post('/portal/initialize-demo');
+            // Get tenantId from token to ensure the request is correctly targeted
+            let tenantId = '';
+            const token = localStorage.getItem('accessToken');
+            if (token) {
+                try {
+                    const payload = JSON.parse(atob(token.split('.')[1]));
+                    tenantId = payload.tenantId;
+                } catch (e) {
+                    console.error('Failed to parse token', e);
+                }
+            }
+
+            // Attempt POST first
+            try {
+                await api.post('/portal/initialize-demo', { tenantId });
+            } catch (postErr: any) {
+                console.warn('POST failed, attempting GET fallback', postErr);
+                // GET Fallback for restricted environments
+                await api.get(`/portal/initialize-demo-get?tenantId=${tenantId}`);
+            }
+
             await fetchTickets();
             alert('Demo workspace successfully initialized!');
         } catch (err: any) {

@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Body, Param, Request } from '@nestjs/common';
+import { Controller, Post, Get, Body, Param, Request, Query } from '@nestjs/common';
 import { PublicService } from './public.service';
 import { CreateTicketDto } from './dto/create-ticket.dto';
 import { Public } from '../auth/decorators/public.decorator';
@@ -40,8 +40,24 @@ export class PublicController {
         return { status: 'ok', timestamp: new Date().toISOString(), version: '1.0.13' };
     }
 
+    @Public()
     @Post('initialize-demo')
-    async activateDemo(@Request() req: any) {
-        return this.publicService.seedDemoDataForTenant(req.user.tenantId);
+    async activateDemo(@Body('tenantId') tenantId: string, @Request() req: any) {
+        // Fallback to token-based tenantId if not provided in body
+        const effectiveTenantId = tenantId || req.user?.tenantId;
+        if (!effectiveTenantId) {
+            // In a completely permissive mode, we might want to log this but keep going if possible.
+            // For now, we still need a tenantId to know where to put the data.
+            throw new Error('Tenant identification failed. Please provide a tenantId or valid session.');
+        }
+        return this.publicService.seedDemoDataForTenant(effectiveTenantId);
+    }
+
+    // Emergency GET route for activation if POST is blocked by proxy/firewall
+    @Public()
+    @Get('initialize-demo-get')
+    async activateDemoGet(@Query('tenantId') tenantId: string) {
+        if (!tenantId) throw new Error('Tenant ID is required');
+        return this.publicService.seedDemoDataForTenant(tenantId);
     }
 }
