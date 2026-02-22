@@ -208,21 +208,22 @@ export default function ContractorsPage() {
                 {showModal && (
                     <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-xl flex items-center justify-center p-6 z-50 overflow-y-auto">
                         <div className="bg-white rounded-[3rem] shadow-[0_40px_100px_rgba(0,0,0,0.1)] max-w-xl w-full p-12 border border-slate-200/50 animate-in zoom-in-95 duration-300 my-8">
-                            <h2 className="text-4xl font-black text-slate-900 mb-10 tracking-tighter uppercase">Commission Partner</h2>
+                            <h2 className="text-4xl font-black text-slate-900 mb-10 tracking-tighter uppercase font-mono italic">Authorize Partner</h2>
                             <form onSubmit={handleSubmit} className="space-y-8">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                     <div>
-                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-4">Entity Identifier</label>
+                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-4">Company Name</label>
                                         <input
                                             type="text"
                                             required
-                                            className="w-full bg-slate-50/50 border-2 border-slate-100 rounded-2xl px-6 py-5 text-slate-900 font-black focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 shadow-inner transition-all uppercase placeholder:italic"
+                                            className="w-full bg-slate-50/50 border-2 border-slate-100 rounded-2xl px-6 py-5 text-slate-900 font-black focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 shadow-inner transition-all uppercase placeholder:opacity-30"
                                             value={formData.name}
                                             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                            placeholder="e.g. ELITE PLUMBING"
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-4">Primary Liaison</label>
+                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-4">Contact Person</label>
                                         <input
                                             type="text"
                                             required
@@ -235,22 +236,24 @@ export default function ContractorsPage() {
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                     <div>
-                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-4">Communication Hub</label>
+                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-4">Email Address</label>
                                         <input
                                             type="email"
                                             required
                                             className="w-full bg-slate-50/50 border-2 border-slate-100 rounded-2xl px-6 py-5 text-slate-900 font-black focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 shadow-inner transition-all font-mono"
                                             value={formData.email}
                                             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                            placeholder="partner@example.com"
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-4">Direct Contact</label>
+                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-4">Phone Number</label>
                                         <input
-                                            type="text"
+                                            type="tel"
                                             className="w-full bg-slate-50/50 border-2 border-slate-100 rounded-2xl px-6 py-5 text-slate-900 font-black focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 shadow-inner transition-all font-mono"
                                             value={formData.phone}
                                             onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                                            placeholder="+41 00 000 00 00"
                                         />
                                     </div>
                                 </div>

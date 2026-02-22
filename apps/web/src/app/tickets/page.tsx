@@ -3,17 +3,31 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import Link from 'next/link';
-import { ClipboardList, Search, Filter, ArrowRight, ChevronRight } from 'lucide-react';
+import { ClipboardList, Search, Filter, ArrowRight, ChevronRight, Plus, X, Loader2 } from 'lucide-react';
 import AuthenticatedLayout from '@/components/AuthenticatedLayout';
 
 export default function TicketsPage() {
     const [tickets, setTickets] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [actionLoading, setActionLoading] = useState(false);
+    const [showModal, setShowModal] = useState(false);
     const [statusFilter, setStatusFilter] = useState('');
     const [search, setSearch] = useState('');
+    const [properties, setProperties] = useState<any[]>([]);
+
+    const [formData, setFormData] = useState({
+        propertyId: '',
+        unitLabel: '',
+        description: '',
+        tenantName: '',
+        tenantEmail: '',
+        tenantPhone: '',
+        urgency: 'NORMAL'
+    });
 
     useEffect(() => {
         fetchTickets();
+        fetchProperties();
     }, [statusFilter]);
 
     const getTenantId = () => {
@@ -44,16 +58,12 @@ export default function TicketsPage() {
             }
 
             if (search) {
-                // Refined search across multiple fields
                 query = query.or(`reference_code.ilike.%${search}%,description.ilike.%${search}%,tenant_name.ilike.%${search}%,unit_label.ilike.%${search}%`);
-                // Note: RELATIONAL filtering (property name) in a single 'or' is complex in PostgREST unless using !inner.
-                // For simplicity and correctness with the existing schema, we search main fields.
             }
 
             const { data, error } = await query;
             if (error) throw error;
 
-            // Map snake_case from DB to camelCase for UI
             const mappedData = (data || []).map(t => ({
                 ...t,
                 referenceCode: t.reference_code,
@@ -72,6 +82,66 @@ export default function TicketsPage() {
         }
     };
 
+    const fetchProperties = async () => {
+        const tenantId = getTenantId();
+        if (!tenantId) return;
+        try {
+            const { data, error } = await supabase
+                .from('properties')
+                .select('id, name')
+                .eq('tenant_id', tenantId)
+                .order('name');
+            if (error) throw error;
+            setProperties(data || []);
+        } catch (err) {
+            console.error('Failed to fetch properties', err);
+        }
+    };
+
+    const handleManualLog = async (e: React.FormEvent) => {
+        e.preventDefault();
+        const tenantId = getTenantId();
+        if (!tenantId) return;
+
+        setActionLoading(true);
+        try {
+            const referenceCode = `M-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
+
+            const { error } = await supabase
+                .from('tickets')
+                .insert([{
+                    tenant_id: tenantId,
+                    property_id: formData.propertyId,
+                    unit_label: formData.unitLabel,
+                    description: formData.description,
+                    tenant_name: formData.tenantName,
+                    tenant_email: formData.tenantEmail,
+                    tenant_phone: formData.tenantPhone,
+                    urgency: formData.urgency,
+                    reference_code: referenceCode,
+                    status: 'NEW'
+                }]);
+
+            if (error) throw error;
+
+            setShowModal(false);
+            setFormData({
+                propertyId: '',
+                unitLabel: '',
+                description: '',
+                tenantName: '',
+                tenantEmail: '',
+                tenantPhone: '',
+                urgency: 'NORMAL'
+            });
+            fetchTickets();
+        } catch (err: any) {
+            alert(`Failed to log ticket: ${err.message}`);
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
     const getStatusColor = (status: string) => {
         switch (status) {
             case 'NEW': return 'bg-blue-100 text-blue-700 border-blue-200';
@@ -86,9 +156,18 @@ export default function TicketsPage() {
     return (
         <AuthenticatedLayout>
             <div className="p-10 max-w-7xl mx-auto">
-                <div className="mb-12">
-                    <h1 className="text-5xl font-black text-slate-900 tracking-tighter mb-4">Service Queue</h1>
-                    <p className="text-slate-500 font-medium text-xl max-w-2xl">Access and manage the full history of maintenance and repair requests across all properties.</p>
+                <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-12">
+                    <div>
+                        <h1 className="text-5xl font-black text-slate-900 tracking-tighter mb-4">Service Queue</h1>
+                        <p className="text-slate-500 font-medium text-xl max-w-2xl">Access and manage the full history of maintenance and repair requests across all properties.</p>
+                    </div>
+                    <button
+                        onClick={() => setShowModal(true)}
+                        className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] flex items-center shadow-2xl shadow-indigo-600/30 transition-all hover:-translate-y-1 active:translate-y-0"
+                    >
+                        <Plus className="w-4 h-4 mr-3" />
+                        Manual Log
+                    </button>
                 </div>
 
                 {/* Advanced Search & Filter Bar */}
@@ -137,7 +216,13 @@ export default function TicketsPage() {
                                 <ClipboardList className="w-12 h-12 text-slate-200" />
                             </div>
                             <h3 className="text-3xl font-black text-slate-900 mb-4 tracking-tight">No records found</h3>
-                            <p className="text-slate-500 font-medium text-lg max-w-sm mx-auto">Refine your search parameters or check alternative status categories.</p>
+                            <p className="text-slate-500 font-medium text-lg max-w-sm mx-auto mb-10">Refine your search parameters or check alternative status categories.</p>
+                            <button
+                                onClick={() => setShowModal(true)}
+                                className="bg-slate-900 text-white px-10 py-5 rounded-[2rem] font-black uppercase tracking-[0.2em] text-[10px] hover:bg-indigo-600 transition-all shadow-xl"
+                            >
+                                Log First Ticket
+                            </button>
                         </div>
                     ) : (
                         <div className="overflow-x-auto">
@@ -186,6 +271,119 @@ export default function TicketsPage() {
                         </div>
                     )}
                 </div>
+
+                {showModal && (
+                    <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-xl flex items-center justify-center p-6 z-50 overflow-y-auto">
+                        <div className="bg-white rounded-[3rem] shadow-[0_40px_100px_rgba(0,0,0,0.1)] max-w-2xl w-full p-12 border border-slate-200/50 animate-in zoom-in-95 duration-300 my-8">
+                            <div className="flex justify-between items-start mb-10">
+                                <h2 className="text-4xl font-black text-slate-900 tracking-tighter uppercase font-mono italic">Manual Maintenance Log</h2>
+                                <button onClick={() => setShowModal(false)} className="p-2 hover:bg-slate-50 rounded-xl transition-colors">
+                                    <X className="w-6 h-6 text-slate-400" />
+                                </button>
+                            </div>
+
+                            <form onSubmit={handleManualLog} className="space-y-8">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                    <div>
+                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-4">Select Property</label>
+                                        <select
+                                            required
+                                            className="w-full bg-slate-50/50 border-2 border-slate-100 rounded-2xl px-6 py-5 text-slate-900 font-black focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 shadow-inner transition-all appearance-none"
+                                            value={formData.propertyId}
+                                            onChange={(e) => setFormData({ ...formData, propertyId: e.target.value })}
+                                        >
+                                            <option value="">Choose Property...</option>
+                                            {properties.map(p => (
+                                                <option key={p.id} value={p.id}>{p.name}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-4">Unit / Facility</label>
+                                        <input
+                                            type="text"
+                                            required
+                                            placeholder="e.g. Suite 402"
+                                            className="w-full bg-slate-50/50 border-2 border-slate-100 rounded-2xl px-6 py-5 text-slate-900 font-black focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 shadow-inner transition-all uppercase"
+                                            value={formData.unitLabel}
+                                            onChange={(e) => setFormData({ ...formData, unitLabel: e.target.value })}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-4">Issue Description</label>
+                                    <textarea
+                                        required
+                                        rows={3}
+                                        placeholder="Detailed description of the requirement..."
+                                        className="w-full bg-slate-50/50 border-2 border-slate-100 rounded-2xl px-6 py-5 text-slate-900 font-black focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 shadow-inner transition-all"
+                                        value={formData.description}
+                                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                    />
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                    <div>
+                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-4">Tenant Name</label>
+                                        <input
+                                            type="text"
+                                            required
+                                            className="w-full bg-slate-50/50 border-2 border-slate-100 rounded-2xl px-6 py-5 text-slate-900 font-black focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 shadow-inner transition-all"
+                                            value={formData.tenantName}
+                                            onChange={(e) => setFormData({ ...formData, tenantName: e.target.value })}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-4">Urgency Level</label>
+                                        <select
+                                            className="w-full bg-slate-50/50 border-2 border-slate-100 rounded-2xl px-6 py-5 text-slate-900 font-black focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 shadow-inner transition-all"
+                                            value={formData.urgency}
+                                            onChange={(e) => setFormData({ ...formData, urgency: e.target.value })}
+                                        >
+                                            <option value="NORMAL">NORMAL</option>
+                                            <option value="URGENT">URGENT</option>
+                                            <option value="EMERGENCY">EMERGENCY</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                    <div>
+                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-4">Email Address</label>
+                                        <input
+                                            type="email"
+                                            required
+                                            className="w-full bg-slate-50/50 border-2 border-slate-100 rounded-2xl px-6 py-5 text-slate-900 font-black focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 shadow-inner transition-all font-mono"
+                                            value={formData.tenantEmail}
+                                            onChange={(e) => setFormData({ ...formData, tenantEmail: e.target.value })}
+                                            placeholder="tenant@example.com"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-4">Phone Number</label>
+                                        <input
+                                            type="tel"
+                                            className="w-full bg-slate-50/50 border-2 border-slate-100 rounded-2xl px-6 py-5 text-slate-900 font-black focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 shadow-inner transition-all font-mono"
+                                            value={formData.tenantPhone}
+                                            onChange={(e) => setFormData({ ...formData, tenantPhone: e.target.value })}
+                                            placeholder="+41 00 000 00 00"
+                                        />
+                                    </div>
+                                </div>
+
+                                <button
+                                    type="submit"
+                                    disabled={actionLoading}
+                                    className="w-full py-6 rounded-[2rem] font-black text-white bg-indigo-600 hover:bg-indigo-700 shadow-2xl shadow-indigo-600/40 transition-all uppercase tracking-[0.2em] text-[10px] flex items-center justify-center disabled:opacity-50"
+                                >
+                                    {actionLoading ? <Loader2 className="w-4 h-4 animate-spin mr-3" /> : null}
+                                    Archive Maintenance Request
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                )}
             </div>
         </AuthenticatedLayout>
     );

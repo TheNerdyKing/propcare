@@ -279,14 +279,14 @@ export default function PropertiesPage() {
                     <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-xl flex items-center justify-center p-6 z-50 overflow-y-auto">
                         <div className="bg-white rounded-[3rem] shadow-[0_40px_100px_rgba(0,0,0,0.1)] max-w-md w-full p-12 border border-slate-200/50 animate-in zoom-in-95 duration-300 my-8">
                             <div className="flex justify-between items-start mb-10">
-                                <h2 className="text-4xl font-black text-slate-900 tracking-tighter uppercase">{editingProperty ? 'Edit' : 'Add'} Asset</h2>
+                                <h2 className="text-4xl font-black text-slate-900 tracking-tighter uppercase">{editingProperty ? 'Edit' : 'Add'} Property</h2>
                                 <button onClick={() => setShowModal(false)} className="p-2 hover:bg-slate-50 rounded-xl transition-colors">
                                     <X className="w-6 h-6 text-slate-400" />
                                 </button>
                             </div>
                             <form onSubmit={handleSubmit} className="space-y-8">
                                 <div>
-                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-4">Registry Name</label>
+                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-4">Property Name</label>
                                     <input
                                         type="text"
                                         required
@@ -297,7 +297,7 @@ export default function PropertiesPage() {
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-4">Street Identifier</label>
+                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-4">Address</label>
                                     <input
                                         type="text"
                                         required
@@ -308,7 +308,7 @@ export default function PropertiesPage() {
                                 </div>
                                 <div className="flex gap-6">
                                     <div className="w-1/3">
-                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-4">Post-Code</label>
+                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-4">Zip Code</label>
                                         <input
                                             type="text"
                                             required
@@ -318,7 +318,7 @@ export default function PropertiesPage() {
                                         />
                                     </div>
                                     <div className="flex-1">
-                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-4">Regional Center</label>
+                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-4">City</label>
                                         <input
                                             type="text"
                                             required
@@ -335,7 +335,7 @@ export default function PropertiesPage() {
                                         className="w-full py-5 rounded-2xl font-black text-white bg-indigo-600 hover:bg-indigo-700 shadow-2xl shadow-indigo-600/40 transition-all uppercase tracking-[0.2em] text-[10px] flex items-center justify-center disabled:opacity-50"
                                     >
                                         {actionLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                                        {editingProperty ? 'Update Registry' : 'Record Property'}
+                                        {editingProperty ? 'Update Property' : 'Add Property'}
                                     </button>
                                 </div>
                             </form>
