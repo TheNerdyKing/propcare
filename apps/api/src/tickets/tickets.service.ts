@@ -18,11 +18,12 @@ export class TicketsService {
     async findAll(tenantId: string, filters: { status?: TicketStatus, search?: string, propertyId?: string }) {
         const count = await this.prisma.ticket.count({ where: { tenantId } });
         if (count === 0) {
-            console.log(`[TicketsService] Auto-seeding for tenant: ${tenantId}`);
+            console.log(`[TicketsService] NO DATA detected for tenant: ${tenantId}. Triggering robust seeding...`);
             try {
-                await this.publicService.seedDemoDataForTenant(tenantId);
-            } catch (e) {
-                console.error('[TicketsService] Auto-seed failed', e);
+                const result = await this.publicService.seedDemoDataForTenant(tenantId);
+                console.log(`[TicketsService] Seeding result: ${result.success ? 'SUCCESS' : 'FAILED - ' + result.error}`);
+            } catch (e: any) {
+                console.error('[TicketsService] Seeding crashed:', e.message);
             }
         }
 

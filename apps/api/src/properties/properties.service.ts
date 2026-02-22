@@ -12,11 +12,12 @@ export class PropertiesService {
     async findAll(tenantId: string) {
         const count = await this.prisma.property.count({ where: { tenantId } });
         if (count === 0) {
-            console.log(`[PropertiesService] Auto-seeding for tenant: ${tenantId}`);
+            console.log(`[PropertiesService] NO DATA detected for tenant: ${tenantId}. Triggering robust seeding...`);
             try {
-                await this.publicService.seedDemoDataForTenant(tenantId);
-            } catch (e) {
-                console.error('[PropertiesService] Auto-seed failed', e);
+                const result = await this.publicService.seedDemoDataForTenant(tenantId);
+                console.log(`[PropertiesService] Seeding result: ${result.success ? 'SUCCESS' : 'FAILED - ' + result.error}`);
+            } catch (e: any) {
+                console.error('[PropertiesService] Seeding crashed:', e.message);
             }
         }
 

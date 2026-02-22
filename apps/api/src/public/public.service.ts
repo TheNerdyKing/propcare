@@ -77,7 +77,7 @@ export class PublicService {
 
     async seedDemoDataForTenant(tenantId: string) {
         try {
-            console.log(`[PublicService] ULTIMATE SEED START for tenant: ${tenantId}`);
+            console.log(`[PublicService] SEED START for tenant: ${tenantId}`);
 
             const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
             if (!tenant) return { success: false, error: 'Tenant record missing' };
@@ -91,7 +91,6 @@ export class PublicService {
 
             const createdProps = [];
             for (const prop of propsData) {
-                // Find by name + tenantId for idempotency
                 let p = await this.prisma.property.findFirst({
                     where: { tenantId, name: prop.name }
                 });
@@ -185,10 +184,10 @@ export class PublicService {
                 }
             }
 
-            console.log(`[PublicService] ULTIMATE SEED SUCCESS for tenant: ${tenantId}`);
+            console.log(`[PublicService] SEED SUCCESS for tenant: ${tenantId}`);
             return { success: true };
         } catch (error: any) {
-            console.error(`[PublicService] ULTIMATE SEED CRITICAL ERROR:`, error);
+            console.error(`[PublicService] SEED ERROR:`, error);
             return { success: false, error: error.message };
         }
     }
