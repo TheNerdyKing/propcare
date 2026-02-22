@@ -49,9 +49,10 @@ export default function PropertiesPage() {
             setEditingProperty(null);
             setFormData({ name: '', addressLine1: '', zip: '', city: '' });
             await fetchProperties();
-        } catch (err) {
+        } catch (err: any) {
             console.error('Failed to save property', err);
-            alert('Failed to save property. Please ensure all fields are filled.');
+            const msg = err.response?.data?.message || err.message || 'Unknown error';
+            alert(`Failed to save property: ${msg}`);
         } finally {
             setActionLoading(false);
         }

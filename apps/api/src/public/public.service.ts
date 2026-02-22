@@ -79,72 +79,76 @@ export class PublicService {
         try {
             console.log(`[PublicService] ULTIMATE SEED START for tenant: ${tenantId}`);
 
-            // 1. Verify Tenant
             const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
             if (!tenant) return { success: false, error: 'Tenant record missing' };
 
-            const hash = tenantId.slice(-6); // Stable suffix for IDs
-
-            // 2. Properties (Upsert with deterministic IDs)
+            // 1. Properties
             const propsData = [
-                { id: `demo-prop-${hash}-1`, name: 'Riverside Towers', addressLine1: 'Main Street 42', zip: '1001', city: 'Zurich' },
-                { id: `demo-prop-${hash}-2`, name: 'Mountain View Residences', addressLine1: 'Alpine Strasse 15', zip: '6000', city: 'Lucerne' },
-                { id: `demo-prop-${hash}-3`, name: 'Lakeside Lofts', addressLine1: 'Quai du Lac 8', zip: '1201', city: 'Geneva' }
+                { name: 'Riverside Towers', addressLine1: 'Main Street 42', zip: '1001', city: 'Zurich' },
+                { name: 'Mountain View Residences', addressLine1: 'Alpine Strasse 15', zip: '6000', city: 'Lucerne' },
+                { name: 'Lakeside Lofts', addressLine1: 'Quai du Lac 8', zip: '1201', city: 'Geneva' }
             ];
 
             const createdProps = [];
             for (const prop of propsData) {
-                const p = await this.prisma.property.upsert({
-                    where: { id: prop.id },
-                    update: {},
-                    create: { ...prop, tenantId }
+                // Find by name + tenantId for idempotency
+                let p = await this.prisma.property.findFirst({
+                    where: { tenantId, name: prop.name }
                 });
+
+                if (!p) {
+                    p = await this.prisma.property.create({
+                        data: { ...prop, tenantId }
+                    });
+                }
                 createdProps.push(p);
 
                 // Units
                 const unitLabels = ['Unit 101', 'Penthouse A', 'Commercial Suite B'];
-                for (let i = 0; i < unitLabels.length; i++) {
-                    const label = unitLabels[i];
-                    await this.prisma.unit.upsert({
-                        where: { id: `demo-unit-${hash}-${p.id.slice(-4)}-${i}` },
-                        update: {},
-                        create: {
-                            id: `demo-unit-${hash}-${p.id.slice(-4)}-${i}`,
-                            tenantId,
-                            propertyId: p.id,
-                            unitLabel: label
-                        }
+                for (const label of unitLabels) {
+                    const exists = await this.prisma.unit.findFirst({
+                        where: { propertyId: p.id, unitLabel: label }
                     });
+                    if (!exists) {
+                        await this.prisma.unit.create({
+                            data: { tenantId, propertyId: p.id, unitLabel: label }
+                        });
+                    }
                 }
             }
 
-            // 3. Contractors
+            // 2. Contractors
             const contractors = [
-                { id: `demo-cont-${hash}-1`, name: 'Elite Plumbing Services', email: 'contact@eliteplumbing.demo', tradeTypes: ['Plumbing'] },
-                { id: `demo-cont-${hash}-2`, name: 'Volt Master Electrical', email: 'info@voltmaster.demo', tradeTypes: ['Electrical'] }
+                { name: 'Elite Plumbing Services', email: 'contact@eliteplumbing.demo', tradeTypes: ['Plumbing'] },
+                { name: 'Volt Master Electrical', email: 'info@voltmaster.demo', tradeTypes: ['Electrical'] }
             ];
 
             for (const cont of contractors) {
-                const c = await this.prisma.contractor.upsert({
-                    where: { id: cont.id },
-                    update: {},
-                    create: { ...cont, tenantId }
+                let c = await this.prisma.contractor.findFirst({
+                    where: { tenantId, name: cont.name }
                 });
+
+                if (!c) {
+                    c = await this.prisma.contractor.create({
+                        data: { ...cont, tenantId }
+                    });
+                }
 
                 // Link to properties
                 for (const p of createdProps) {
-                    await this.prisma.contractorProperty.create({
-                        data: {
-                            id: `demo-cp-${hash}-${c.id.slice(-3)}-${p.id.slice(-3)}`,
-                            tenantId,
-                            contractorId: c.id,
-                            propertyId: p.id
-                        }
-                    }).catch(() => null); // Ignore if link already exists
+                    const linkExists = await this.prisma.contractorProperty.findFirst({
+                        where: { contractorId: c.id, propertyId: p.id }
+                    });
+                    if (!linkExists) {
+                        await this.prisma.contractorProperty.create({
+                            data: { tenantId, contractorId: c.id, propertyId: p.id }
+                        }).catch(() => null);
+                    }
                 }
             }
 
-            // 4. Tickets
+            // 3. Tickets
+            const hash = tenantId.slice(-4);
             const ticketsData = [
                 {
                     referenceCode: `DEMO-${hash}-001`,
@@ -167,33 +171,25 @@ export class PublicService {
                     tenantName: 'Mark Weber',
                     tenantEmail: 'm.weber@example.com',
                     urgency: Urgency.URGENT,
-                },
-                {
-                    referenceCode: `DEMO-${hash}-003`,
-                    type: TicketType.DAMAGE_REPORT,
-                    status: TicketStatus.COMPLETED,
-                    propertyId: createdProps[2].id,
-                    unitLabel: 'Commercial Suite B',
-                    description: 'Light flicker in the main hallway. Needs bulb replacement or ballast check.',
-                    tenantName: 'Office Manager',
-                    tenantEmail: 'manager@techhub.demo',
-                    urgency: Urgency.NORMAL,
                 }
             ];
 
             for (const ticket of ticketsData) {
-                await this.prisma.ticket.upsert({
-                    where: { referenceCode: ticket.referenceCode },
-                    update: {},
-                    create: { ...ticket, tenantId }
+                const exists = await this.prisma.ticket.findUnique({
+                    where: { referenceCode: ticket.referenceCode }
                 });
+                if (!exists) {
+                    await this.prisma.ticket.create({
+                        data: { ...ticket, tenantId }
+                    });
+                }
             }
 
             console.log(`[PublicService] ULTIMATE SEED SUCCESS for tenant: ${tenantId}`);
             return { success: true };
         } catch (error: any) {
             console.error(`[PublicService] ULTIMATE SEED CRITICAL ERROR:`, error);
-            throw error;
+            return { success: false, error: error.message };
         }
     }
 }

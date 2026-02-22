@@ -1,6 +1,7 @@
 import { Controller, Get, Post, Patch, Delete, Param, Body, Request, Query, UseInterceptors, UploadedFile } from '@nestjs/common';
 import { PropertiesService } from './properties.service';
 import { Public } from '../auth/decorators/public.decorator';
+import { CreatePropertyDto } from './dto/create-property.dto';
 
 import { PublicService } from '../public/public.service';
 
@@ -22,7 +23,7 @@ export class PropertiesController {
     }
 
     @Post()
-    async create(@Request() req: any, @Body() data: any) {
+    async create(@Request() req: any, @Body() data: CreatePropertyDto) {
         return this.propertiesService.create(req.user.tenantId, data);
     }
 

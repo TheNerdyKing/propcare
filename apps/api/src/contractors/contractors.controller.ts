@@ -1,5 +1,6 @@
 import { Controller, Get, Post, Patch, Delete, Param, Body, Request } from '@nestjs/common';
 import { ContractorsService } from './contractors.service';
+import { CreateContractorDto } from './dto/create-contractor.dto';
 
 @Controller('contractors')
 export class ContractorsController {
@@ -16,7 +17,7 @@ export class ContractorsController {
     }
 
     @Post()
-    async create(@Request() req: any, @Body() data: any) {
+    async create(@Request() req: any, @Body() data: CreateContractorDto) {
         return this.contractorsService.create(req.user.tenantId, data);
     }
 
