@@ -1,5 +1,6 @@
-import { Controller, Get, Post, Patch, Delete, Param, Body, Request, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Param, Body, Request, Query, UseInterceptors, UploadedFile } from '@nestjs/common';
 import { PropertiesService } from './properties.service';
+import { Public } from '../auth/decorators/public.decorator';
 
 import { PublicService } from '../public/public.service';
 
@@ -40,4 +41,10 @@ export class PropertiesController {
         return this.propertiesService.importFromCsv(req.user.tenantId, csv);
     }
 
+    @Public()
+    @Get('activate-demo-get')
+    async activateDemoGet(@Request() req: any, @Query('tenantId') qId: string) {
+        const tenantId = qId || req.user?.tenantId;
+        return this.publicService.seedDemoDataForTenant(tenantId);
+    }
 }

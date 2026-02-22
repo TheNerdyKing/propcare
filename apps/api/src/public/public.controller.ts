@@ -3,30 +3,36 @@ import { PublicService } from './public.service';
 import { CreateTicketDto } from './dto/create-ticket.dto';
 import { Public } from '../auth/decorators/public.decorator';
 
-@Controller('portal')
-export class PublicController {
+@Controller()
+export class DiagnosticController {
     constructor(private publicService: PublicService) { }
 
     @Public()
-    @Post('tickets')
+    @Get()
+    root() {
+        return { message: 'PropCare API is active', version: '1.0.14' };
+    }
+
+    @Public()
+    @Post('portal/tickets')
     async createTicket(@Body() createTicketDto: CreateTicketDto) {
         return this.publicService.createTicket(createTicketDto);
     }
 
     @Public()
-    @Get('properties')
+    @Get('portal/properties')
     async getProperties() {
         return this.publicService.getProperties();
     }
 
     @Public()
-    @Get('tickets/:referenceCode')
+    @Get('portal/tickets/:referenceCode')
     async getTicketByReference(@Param('referenceCode') referenceCode: string) {
         return this.publicService.getTicketByReference(referenceCode);
     }
 
     @Public()
-    @Post('tickets/:referenceCode/messages')
+    @Post('portal/tickets/:referenceCode/messages')
     async addPublicMessage(
         @Param('referenceCode') referenceCode: string,
         @Body('content') content: string
@@ -35,7 +41,7 @@ export class PublicController {
     }
 
     @Public()
-    @Get('health')
+    @Get('portal/health')
     async health() {
         return {
             status: 'ok',
@@ -46,7 +52,7 @@ export class PublicController {
     }
 
     @Public()
-    @Get('diagnostics')
+    @Get('portal/diagnostics')
     async diagnostics(@Request() req: any) {
         return {
             headers: req.headers,
@@ -57,10 +63,10 @@ export class PublicController {
     }
 
     @Public()
-    @Post('initialize-demo')
-    @Get('initialize-demo')
-    @Post('activate-now')
-    @Get('activate-now')
+    @Post('portal/initialize-demo')
+    @Get('portal/initialize-demo')
+    @Post('portal/activate-now')
+    @Get('portal/activate-now')
     async activateDemo(@Body('tenantId') bodyId: string, @Query('tenantId') queryId: string, @Request() req: any) {
         const tenantId = bodyId || queryId || req.user?.tenantId;
 
@@ -68,7 +74,7 @@ export class PublicController {
             throw new Error('Tenant identification failed. Please provide a tenantId in the URL, e.g., ?tenantId=YOUR_ID');
         }
 
-        console.log(`[PublicController] Activating demo for tenant: ${tenantId}`);
+        console.log(`[DiagnosticController] Activating demo for tenant: ${tenantId}`);
         await this.publicService.seedDemoDataForTenant(tenantId);
 
         return {
@@ -81,7 +87,7 @@ export class PublicController {
 
     // Legacy backup with HTML response for direct browser hits
     @Public()
-    @Get('force-activate')
+    @Get('portal/force-activate')
     async forceActivate(@Query('tenantId') tenantId: string) {
         if (!tenantId) return "<h1>Error</h1><p>Missing tenantId in URL. Please use ?tenantId=xyz</p>";
         try {

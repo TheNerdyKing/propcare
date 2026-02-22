@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { PublicController } from './public.controller';
+import { DiagnosticController } from './public.controller';
 import { PublicService } from './public.service';
 import { PrismaModule } from '../prisma/prisma.module';
 
@@ -12,7 +12,7 @@ import { BullModule } from '@nestjs/bullmq';
             name: 'ai-processing',
         }),
     ],
-    controllers: [PublicController],
+    controllers: [DiagnosticController],
     providers: [PublicService],
     exports: [PublicService],
 })

@@ -66,31 +66,36 @@ export default function DashboardPage() {
 
             console.log('Initiating demo activation for:', tenantId);
 
-            // Strategy 1: Standard POST via API instance (with relative path support)
+            // Strategy 1: Standard POST via API instance
             try {
                 await api.post('/portal/activate-now', { tenantId });
             } catch (postErr: any) {
-                console.warn('Standard API call failed, trying direct link...', postErr.message);
+                console.warn('Portal POST failed, trying Properties fallback...', postErr.message);
 
-                // Strategy 2: Absolute URL discovery
-                const apiBase = api.defaults.baseURL || process.env.NEXT_PUBLIC_API_URL || 'https://propcare-api.vercel.app';
-                // Try to handle cases where baseURL might already have /api or not
-                const cleanBase = apiBase.endsWith('/') ? apiBase.slice(0, -1) : apiBase;
+                try {
+                    // Strategy 2: Authenticated GET fallback
+                    await api.get('/properties/activate-demo-get');
+                } catch (getErr: any) {
+                    console.warn('Properties GET failed, trying direct absolute links...', getErr.message);
 
-                // We'll try a few common Vercel API structures
-                const paths = [
-                    `${cleanBase}/portal/force-activate?tenantId=${tenantId}`,
-                    `${cleanBase}/api/portal/force-activate?tenantId=${tenantId}`,
-                ];
+                    // Strategy 3: Absolute URL discovery
+                    const apiBase = api.defaults.baseURL || process.env.NEXT_PUBLIC_API_URL || 'https://propcare-api.vercel.app';
+                    const cleanBase = apiBase.endsWith('/') ? apiBase.slice(0, -1) : apiBase;
 
-                if (confirm(`Direct sync required due to network restrictions. Open sync portal?`)) {
-                    // Open the first one, the server will handle the fallback
-                    window.open(paths[0], '_blank');
-                    alert('Check the new tab. If it shows 404, please try the secondary sync link in the developer console.');
-                    console.log('Secondary Sync Link:', paths[1]);
-                    return;
+                    // Comprehensive list of possible Vercel endpoint mappings
+                    const paths = [
+                        `${cleanBase}/portal/force-activate?tenantId=${tenantId}`,
+                        `${cleanBase}/properties/activate-demo-get?tenantId=${tenantId}`,
+                        `${cleanBase}/api/portal/force-activate?tenantId=${tenantId}`,
+                    ];
+
+                    if (confirm(`Direct sync required due to network restrictions. Open sync portal?`)) {
+                        window.open(paths[0], '_blank');
+                        console.log('Alternate Sync Links:', paths);
+                        return;
+                    }
+                    throw getErr;
                 }
-                throw postErr;
             }
 
             await fetchTickets();
