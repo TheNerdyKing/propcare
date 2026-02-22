@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import api from '@/lib/api';
+import { supabase } from '@/lib/supabaseClient';
 import AuthenticatedLayout from '@/components/AuthenticatedLayout';
 import { Users, Plus, Star, Phone, Mail, Wrench, ChevronRight, ShieldCheck } from 'lucide-react';
 
@@ -21,11 +21,37 @@ export default function ContractorsPage() {
         fetchContractors();
     }, []);
 
-    const fetchContractors = async () => {
+    const getTenantId = () => {
+        const userStr = localStorage.getItem('user');
+        if (!userStr) return null;
         try {
-            const response = await api.get('/contractors');
-            // Defensive: Ensure contractors is always an array
-            setContractors(Array.isArray(response.data) ? response.data : []);
+            const user = JSON.parse(userStr);
+            return user.tenantId || user.tenant_id;
+        } catch (e) {
+            return null;
+        }
+    };
+
+    const fetchContractors = async () => {
+        const tenantId = getTenantId();
+        if (!tenantId) return;
+
+        try {
+            const { data, error } = await supabase
+                .from('contractors')
+                .select('*')
+                .eq('tenant_id', tenantId)
+                .order('name', { ascending: true });
+
+            if (error) throw error;
+
+            // Map table names to match previous frontend expectations
+            const mappedData = data.map(c => ({
+                ...c,
+                tradeTypes: c.trade_types // Match prisma naming
+            }));
+
+            setContractors(mappedData);
         } catch (err) {
             console.error('Failed to fetch contractors', err);
             setContractors([]);
@@ -36,13 +62,29 @@ export default function ContractorsPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        const tenantId = getTenantId();
+        if (!tenantId) return alert('No active session. Please log in again.');
+
         try {
-            await api.post('/contractors', formData);
+            const { error } = await supabase
+                .from('contractors')
+                .insert([{
+                    name: formData.name,
+                    email: formData.email,
+                    phone: formData.phone,
+                    trade_types: formData.tradeTypes,
+                    tenant_id: tenantId
+                    // Note: contactName is not in the prisma schema I saw earlier, 
+                    // checking schema.prisma again if needed but for now sticking to DB fields.
+                }]);
+
+            if (error) throw error;
             setShowModal(false);
             setFormData({ name: '', contactName: '', email: '', phone: '', tradeTypes: [] });
             fetchContractors();
-        } catch (err) {
+        } catch (err: any) {
             console.error('Failed to save contractor', err);
+            alert(`Failed to save contractor: ${err.message}`);
         }
     };
 

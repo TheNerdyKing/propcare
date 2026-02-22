@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import api from '@/lib/api';
+import { supabase } from '@/lib/supabaseClient';
 import Link from 'next/link';
 import { ClipboardList, Search, Plus, ArrowRight, Building2, Users, Rocket, ExternalLink, Sparkles } from 'lucide-react';
 import AuthenticatedLayout from '@/components/AuthenticatedLayout';
@@ -23,16 +23,39 @@ export default function DashboardPage() {
         return () => clearInterval(interval);
     }, [statusFilter]);
 
+    const getTenantId = () => {
+        const userStr = localStorage.getItem('user');
+        if (!userStr) return null;
+        try {
+            const user = JSON.parse(userStr);
+            return user.tenantId || user.tenant_id;
+        } catch (e) {
+            return null;
+        }
+    };
+
     const fetchTickets = async (showLoading = true) => {
+        const tenantId = getTenantId();
+        if (!tenantId) return;
+
         if (showLoading) setLoading(true);
         try {
-            const response = await api.get('/tickets', {
-                params: {
-                    status: statusFilter || undefined,
-                    search: search || undefined,
-                },
-            });
-            setTickets(Array.isArray(response.data) ? response.data : []);
+            let query = supabase
+                .from('tickets')
+                .select('*, property:properties(name)')
+                .eq('tenant_id', tenantId)
+                .order('createdAt', { ascending: false });
+
+            if (statusFilter) {
+                query = query.eq('status', statusFilter);
+            }
+            if (search) {
+                query = query.or(`reference_code.ilike.%${search}%,description.ilike.%${search}%`);
+            }
+
+            const { data, error } = await query;
+            if (error) throw error;
+            setTickets(data || []);
         } catch (err) {
             console.error('Failed to fetch tickets', err);
             setTickets([]);

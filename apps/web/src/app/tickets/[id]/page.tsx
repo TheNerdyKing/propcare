@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import api from '@/lib/api';
+import { supabase } from '@/lib/supabaseClient';
 import AuthenticatedLayout from '@/components/AuthenticatedLayout';
 import {
     ChevronLeft,
@@ -36,10 +36,48 @@ export default function TicketDetailPage() {
         if (id) fetchTicket();
     }, [id]);
 
-    const fetchTicket = async () => {
+    const getTenantId = () => {
+        const userStr = localStorage.getItem('user');
+        if (!userStr) return null;
         try {
-            const response = await api.get(`/tickets/${id}`);
-            setTicket(response.data);
+            const user = JSON.parse(userStr);
+            return user.tenantId || user.tenant_id;
+        } catch (e) {
+            return null;
+        }
+    };
+
+    const fetchTicket = async () => {
+        const tenantId = getTenantId();
+        if (!tenantId) return;
+
+        try {
+            const { data, error } = await supabase
+                .from('tickets')
+                .select(`
+                    *,
+                    property:properties(*),
+                    contractor:contractors(*),
+                    messages:ticket_messages(*),
+                    results:ai_results(*),
+                    auditLogs:audit_logs(*)
+                `)
+                .eq('id', id)
+                .eq('tenant_id', tenantId)
+                .single();
+
+            if (error) throw error;
+
+            // Map common properties for easy access
+            const result = data.results?.[0]?.output_json || {};
+            setTicket({
+                ...data,
+                aiClassification: result.category || 'General',
+                aiUrgency: result.urgency || 'Normal',
+                aiEmailDraft: result.responseDraft || '',
+                messages: (data.messages || []).sort((a: any, b: any) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()),
+                auditLogs: (data.auditLogs || []).sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+            });
         } catch (err) {
             console.error('Failed to fetch ticket', err);
         } finally {
@@ -49,11 +87,20 @@ export default function TicketDetailPage() {
 
     const sendMessage = async () => {
         if (!newMessage.trim()) return;
+        const tenantId = getTenantId();
+        if (!tenantId) return;
+
         try {
-            await api.post(`/tickets/${id}/messages`, {
-                content: newMessage,
-                senderType: 'STAFF',
-            });
+            const { error } = await supabase
+                .from('ticket_messages')
+                .insert([{
+                    ticket_id: id,
+                    tenant_id: tenantId,
+                    content: newMessage,
+                    sender_type: 'STAFF'
+                }]);
+            if (error) throw error;
+
             setNewMessage('');
             fetchTicket();
         } catch (err) {
@@ -62,8 +109,16 @@ export default function TicketDetailPage() {
     };
 
     const updateStatus = async (status: string) => {
+        const tenantId = getTenantId();
+        if (!tenantId) return;
+
         try {
-            await api.patch(`/tickets/${id}`, { status });
+            const { error } = await supabase
+                .from('tickets')
+                .update({ status })
+                .eq('id', id)
+                .eq('tenant_id', tenantId);
+            if (error) throw error;
             fetchTicket();
         } catch (err) {
             console.error('Failed to update status', err);
@@ -198,8 +253,8 @@ export default function TicketDetailPage() {
                                     key={tab.id}
                                     onClick={() => setActiveTab(tab.id as any)}
                                     className={`flex items-center py-4 text-sm font-bold transition-all relative ${activeTab === tab.id
-                                            ? 'text-indigo-600'
-                                            : 'text-slate-400 hover:text-slate-600'
+                                        ? 'text-indigo-600'
+                                        : 'text-slate-400 hover:text-slate-600'
                                         }`}
                                 >
                                     <tab.icon className="w-4 h-4 mr-2" />
@@ -304,8 +359,8 @@ export default function TicketDetailPage() {
                                         {(ticket.messages || []).map((msg: any) => (
                                             <div key={msg.id} className={`flex ${msg.senderType === 'STAFF' ? 'justify-end' : 'justify-start'}`}>
                                                 <div className={`max-w-[80%] p-4 rounded-2xl shadow-sm text-sm leading-relaxed ${msg.senderType === 'STAFF'
-                                                        ? 'bg-indigo-600 text-white rounded-tr-none'
-                                                        : 'bg-white text-slate-800 rounded-tl-none border border-slate-100'
+                                                    ? 'bg-indigo-600 text-white rounded-tr-none'
+                                                    : 'bg-white text-slate-800 rounded-tl-none border border-slate-100'
                                                     }`}>
                                                     <div className="flex items-center justify-between mb-2 opacity-70">
                                                         <span className="text-[10px] font-black uppercase tracking-widest">{msg.senderType}</span>

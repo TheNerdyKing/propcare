@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import api from '@/lib/api';
+import { supabase } from '@/lib/supabaseClient';
 import AuthenticatedLayout from '@/components/AuthenticatedLayout';
 import { Building2, Plus, Download, ChevronRight, MapPin, X, FileText, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 
@@ -24,10 +24,41 @@ export default function PropertiesPage() {
         fetchProperties();
     }, []);
 
-    const fetchProperties = async () => {
+    const getTenantId = () => {
+        const userStr = localStorage.getItem('user');
+        if (!userStr) return null;
         try {
-            const response = await api.get('/properties');
-            setProperties(Array.isArray(response.data) ? response.data : []);
+            const user = JSON.parse(userStr);
+            return user.tenantId || user.tenant_id;
+        } catch (e) {
+            return null;
+        }
+    };
+
+    const fetchProperties = async () => {
+        const tenantId = getTenantId();
+        if (!tenantId) return;
+
+        try {
+            const { data, error } = await supabase
+                .from('properties')
+                .select('*, _count:units(count), _count_tickets:tickets(count)')
+                .eq('tenant_id', tenantId)
+                .order('name', { ascending: true });
+
+            if (error) throw error;
+
+            // Map table names to match previous frontend expectations if necessary
+            const mappedData = data.map(p => ({
+                ...p,
+                addressLine1: p.address_line1, // Match prisma camelCase mapping
+                _count: {
+                    units: p._count?.[0]?.count || 0,
+                    tickets: p._count_tickets?.[0]?.count || 0
+                }
+            }));
+
+            setProperties(mappedData);
         } catch (err) {
             console.error('Failed to fetch properties', err);
             setProperties([]);
@@ -38,12 +69,31 @@ export default function PropertiesPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        const tenantId = getTenantId();
+        if (!tenantId) return alert('No active session. Please log in again.');
+
         setActionLoading(true);
         try {
+            const dbData = {
+                name: formData.name,
+                address_line1: formData.addressLine1,
+                zip: formData.zip,
+                city: formData.city,
+                tenant_id: tenantId
+            };
+
             if (editingProperty) {
-                await api.patch(`/properties/${editingProperty.id}`, formData);
+                const { error } = await supabase
+                    .from('properties')
+                    .update(dbData)
+                    .eq('id', editingProperty.id)
+                    .eq('tenant_id', tenantId);
+                if (error) throw error;
             } else {
-                await api.post('/properties', formData);
+                const { error } = await supabase
+                    .from('properties')
+                    .insert([dbData]);
+                if (error) throw error;
             }
             setShowModal(false);
             setEditingProperty(null);
@@ -51,8 +101,7 @@ export default function PropertiesPage() {
             await fetchProperties();
         } catch (err: any) {
             console.error('Failed to save property', err);
-            const msg = err.response?.data?.message || err.message || 'Unknown error';
-            alert(`Failed to save property: ${msg}`);
+            alert(`Failed to save property: ${err.message || 'Unknown error'}`);
         } finally {
             setActionLoading(false);
         }
@@ -60,18 +109,38 @@ export default function PropertiesPage() {
 
     const handleImport = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!csvText.trim()) return;
+        const tenantId = getTenantId();
+        if (!tenantId || !csvText.trim()) return;
 
         setActionLoading(true);
         try {
-            await api.post('/properties/import', { csv: csvText });
+            const lines = csvText.trim().split('\n').filter(l => l.includes(','));
+            if (lines.length < 2) throw new Error('Invalid CSV format. Header is required.');
+
+            const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+            const dataToInsert = lines.slice(1).map(line => {
+                const values = line.split(',').map(v => v.trim());
+                const obj: any = { tenant_id: tenantId };
+                headers.forEach((h, i) => {
+                    const val = values[i];
+                    if (h === 'name') obj.name = val;
+                    if (h === 'address' || h === 'addressline1' || h === 'street') obj.address_line1 = val;
+                    if (h === 'zip' || h === 'postcode') obj.zip = val;
+                    if (h === 'city') obj.city = val;
+                });
+                return obj;
+            }).filter(o => o.name && o.address_line1);
+
+            const { error } = await supabase.from('properties').insert(dataToInsert);
+            if (error) throw error;
+
             setShowImportModal(false);
             setCsvText('');
             await fetchProperties();
             alert('Batch import successful!');
-        } catch (err) {
+        } catch (err: any) {
             console.error('Import failed', err);
-            alert('Import failed. Please check your CSV format (Header: name, address, zip, city)');
+            alert(`Import failed: ${err.message}`);
         } finally {
             setActionLoading(false);
         }
