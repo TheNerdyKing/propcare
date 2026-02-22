@@ -4,11 +4,13 @@ import { TicketsService } from './tickets.service';
 import { MailsModule } from '../mails/mails.module';
 import { PrismaModule } from '../prisma/prisma.module';
 import { BullModule } from '@nestjs/bullmq';
+import { PublicModule } from '../public/public.module';
 
 @Module({
     imports: [
         PrismaModule,
         MailsModule,
+        PublicModule,
         BullModule.registerQueue({
             name: 'ai-processing',
         }),

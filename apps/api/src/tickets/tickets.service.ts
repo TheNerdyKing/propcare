@@ -4,16 +4,28 @@ import { TicketStatus, Role, InternalStatus } from '@prisma/client';
 import { MailsService } from '../mails/mails.service';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
+import { PublicService } from '../public/public.service';
 
 @Injectable()
 export class TicketsService {
     constructor(
         private prisma: PrismaService,
         private mailsService: MailsService,
+        private publicService: PublicService,
         @InjectQueue('ai-processing') private aiQueue: Queue,
     ) { }
 
     async findAll(tenantId: string, filters: { status?: TicketStatus, search?: string, propertyId?: string }) {
+        const count = await this.prisma.ticket.count({ where: { tenantId } });
+        if (count === 0) {
+            console.log(`[TicketsService] Auto-seeding for tenant: ${tenantId}`);
+            try {
+                await this.publicService.seedDemoDataForTenant(tenantId);
+            } catch (e) {
+                console.error('[TicketsService] Auto-seed failed', e);
+            }
+        }
+
         const where: any = { tenantId };
         if (filters.status) where.status = filters.status;
         if (filters.propertyId) where.propertyId = filters.propertyId;

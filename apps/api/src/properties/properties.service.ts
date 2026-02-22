@@ -1,11 +1,25 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { PublicService } from '../public/public.service';
 
 @Injectable()
 export class PropertiesService {
-    constructor(private prisma: PrismaService) { }
+    constructor(
+        private prisma: PrismaService,
+        private publicService: PublicService,
+    ) { }
 
     async findAll(tenantId: string) {
+        const count = await this.prisma.property.count({ where: { tenantId } });
+        if (count === 0) {
+            console.log(`[PropertiesService] Auto-seeding for tenant: ${tenantId}`);
+            try {
+                await this.publicService.seedDemoDataForTenant(tenantId);
+            } catch (e) {
+                console.error('[PropertiesService] Auto-seed failed', e);
+            }
+        }
+
         return this.prisma.property.findMany({
             where: { tenantId },
             include: {
