@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Body, Param } from '@nestjs/common';
+import { Controller, Post, Get, Body, Param, Request } from '@nestjs/common';
 import { PublicService } from './public.service';
 import { CreateTicketDto } from './dto/create-ticket.dto';
 import { Public } from '../auth/decorators/public.decorator';
@@ -34,9 +34,8 @@ export class PublicController {
         return this.publicService.addPublicMessage(referenceCode, content);
     }
 
-    @Public()
-    @Post('seed-demo-data')
-    async seedDemoData() {
-        return this.publicService.seedDemoData();
+    @Post('activate-demo')
+    async activateDemo(@Request() req: any) {
+        return this.publicService.seedDemoDataForTenant(req.user.tenantId);
     }
 }

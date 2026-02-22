@@ -40,8 +40,4 @@ export class PropertiesController {
         return this.propertiesService.importFromCsv(req.user.tenantId, csv);
     }
 
-    @Post('seed-sandbox')
-    async seedSandbox(@Request() req: any) {
-        return this.publicService.seedDemoDataForTenant(req.user.tenantId);
-    }
 }
