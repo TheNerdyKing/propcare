@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
+import api from '@/lib/api';
 import AuthenticatedLayout from '@/components/AuthenticatedLayout';
 import {
     ChevronLeft,
