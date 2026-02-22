@@ -78,8 +78,8 @@ export default function DashboardPage() {
                                 <div className="w-16 h-16 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center mb-8">
                                     <Rocket className="w-8 h-8" />
                                 </div>
-                                <h2 className="text-4xl font-black tracking-tighter mb-6 leading-tight">Your Command Center is Ready.</h2>
-                                <p className="text-indigo-100 text-lg font-medium mb-10 leading-relaxed">We are initializing your workspace environment. If this is your first time here, our autonomous engine is populating your dashboard with premium demo assets and maintenance logs to help you explore the platform.</p>
+                                <h2 className="text-4xl font-black tracking-tighter mb-6 leading-tight">Your Dashboard is Ready.</h2>
+                                <p className="text-indigo-100 text-lg font-medium mb-10 leading-relaxed">It looks like your workspace is currently empty. Get started by recording your first property or importing your assets from the Assets section.</p>
                                 <div className="flex flex-wrap gap-6">
                                     <div className="bg-white/10 backdrop-blur-sm border border-white/20 px-8 py-5 rounded-2xl font-black uppercase tracking-widest text-[10px] flex items-center">
                                         System Sync: Active <Sparkles className="ml-3 w-4 h-4 animate-pulse text-yellow-300" />

@@ -46,8 +46,8 @@ export class DiagnosticController {
         return {
             status: 'ok',
             timestamp: new Date().toISOString(),
-            version: '1.0.17',
-            routes: ['portal/initialize-demo', 'portal/activate-now', 'portal/diagnostics']
+            version: '1.0.18',
+            routes: ['portal/diagnostics']
         };
     }
 
@@ -62,39 +62,5 @@ export class DiagnosticController {
         };
     }
 
-    @Public()
-    @Post('portal/initialize-demo')
-    @Get('portal/initialize-demo')
-    @Post('portal/activate-now')
-    @Get('portal/activate-now')
-    async activateDemo(@Body('tenantId') bodyId: string, @Query('tenantId') queryId: string, @Request() req: any) {
-        const tenantId = bodyId || queryId || req.user?.tenantId;
 
-        if (!tenantId) {
-            throw new Error('Tenant identification failed. Please provide a tenantId in the URL, e.g., ?tenantId=YOUR_ID');
-        }
-
-        console.log(`[DiagnosticController] Activating demo for tenant: ${tenantId}`);
-        await this.publicService.seedDemoDataForTenant(tenantId);
-
-        return {
-            success: true,
-            message: "Demo data successfully seeded.",
-            tenantId,
-            action: "Please refresh your dashboard."
-        };
-    }
-
-    // Legacy backup with HTML response for direct browser hits
-    @Public()
-    @Get('portal/force-activate')
-    async forceActivate(@Query('tenantId') tenantId: string) {
-        if (!tenantId) return "<h1>Error</h1><p>Missing tenantId in URL. Please use ?tenantId=xyz</p>";
-        try {
-            await this.publicService.seedDemoDataForTenant(tenantId);
-            return `<h1>Success!</h1><p>Demo data seeded for ${tenantId}. <a href='https://propcare.vercel.app/dashboard'>Return to Dashboard</a></p>`;
-        } catch (e: any) {
-            return `<h1>Error</h1><p>${e.message}</p>`;
-        }
-    }
 }

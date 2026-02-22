@@ -42,10 +42,5 @@ export class PropertiesController {
         return this.propertiesService.importFromCsv(req.user.tenantId, csv);
     }
 
-    @Public()
-    @Get('activate-demo-get')
-    async activateDemoGet(@Request() req: any, @Query('tenantId') qId: string) {
-        const tenantId = qId || req.user?.tenantId;
-        return this.publicService.seedDemoDataForTenant(tenantId);
-    }
+
 }

@@ -10,15 +10,6 @@ export class ContractorsService {
     ) { }
 
     async findAll(tenantId: string) {
-        const count = await this.prisma.contractor.count({ where: { tenantId } });
-        if (count === 0) {
-            console.log(`[ContractorsService] Auto-seeding for tenant: ${tenantId}`);
-            try {
-                await this.publicService.seedDemoDataForTenant(tenantId);
-            } catch (e) {
-                console.error('[ContractorsService] Auto-seed failed', e);
-            }
-        }
         return this.prisma.contractor.findMany({
             where: { tenantId },
             include: {

@@ -16,17 +16,6 @@ export class TicketsService {
     ) { }
 
     async findAll(tenantId: string, filters: { status?: TicketStatus, search?: string, propertyId?: string }) {
-        const count = await this.prisma.ticket.count({ where: { tenantId } });
-        if (count === 0) {
-            console.log(`[TicketsService] NO DATA detected for tenant: ${tenantId}. Triggering robust seeding...`);
-            try {
-                const result = await this.publicService.seedDemoDataForTenant(tenantId);
-                console.log(`[TicketsService] Seeding result: ${result.success ? 'SUCCESS' : 'FAILED - ' + result.error}`);
-            } catch (e: any) {
-                console.error('[TicketsService] Seeding crashed:', e.message);
-            }
-        }
-
         const where: any = { tenantId };
         if (filters.status) where.status = filters.status;
         if (filters.propertyId) where.propertyId = filters.propertyId;
@@ -35,6 +24,8 @@ export class TicketsService {
                 { referenceCode: { contains: filters.search, mode: 'insensitive' } },
                 { description: { contains: filters.search, mode: 'insensitive' } },
                 { tenantName: { contains: filters.search, mode: 'insensitive' } },
+                { property: { name: { contains: filters.search, mode: 'insensitive' } } },
+                { unitLabel: { contains: filters.search, mode: 'insensitive' } },
             ];
         }
 
