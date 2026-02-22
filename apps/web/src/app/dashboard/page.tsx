@@ -55,7 +55,15 @@ export default function DashboardPage() {
 
             const { data, error } = await query;
             if (error) throw error;
-            setTickets(data || []);
+
+            // Map snake_case from DB to camelCase for UI
+            const mappedData = (data || []).map(t => ({
+                ...t,
+                referenceCode: t.reference_code,
+                unitLabel: t.unit_label,
+            }));
+
+            setTickets(mappedData);
         } catch (err) {
             console.error('Failed to fetch tickets', err);
             setTickets([]);

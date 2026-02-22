@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import AuthenticatedLayout from '@/components/AuthenticatedLayout';
-import { Building2, Plus, Download, ChevronRight, MapPin, X, FileText, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
+import { Building2, Plus, Download, ChevronRight, MapPin, X, FileText, CheckCircle2, AlertCircle, Loader2, Trash2 } from 'lucide-react';
 
 export default function PropertiesPage() {
     const [properties, setProperties] = useState<any[]>([]);
@@ -64,6 +64,28 @@ export default function PropertiesPage() {
             setProperties([]);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleDelete = async (id: string, name: string) => {
+        if (!confirm(`Are you sure you want to delete "${name}"? All associated units and tickets will be lost.`)) return;
+        const tenantId = getTenantId();
+        if (!tenantId) return;
+
+        setActionLoading(true);
+        try {
+            const { error } = await supabase
+                .from('properties')
+                .delete()
+                .eq('id', id)
+                .eq('tenant_id', tenantId);
+            if (error) throw error;
+            await fetchProperties();
+        } catch (err: any) {
+            console.error('Delete failed', err);
+            alert(`Failed: ${err.message}`);
+        } finally {
+            setActionLoading(false);
         }
     };
 
@@ -203,13 +225,22 @@ export default function PropertiesPage() {
                                     <div className="w-16 h-16 bg-indigo-50 rounded-[1.5rem] flex items-center justify-center group-hover:bg-indigo-600 transition-all duration-500 shadow-sm border border-indigo-100/50">
                                         <Building2 className="w-8 h-8 text-indigo-600 group-hover:text-white transition-colors duration-500" />
                                     </div>
-                                    <button onClick={() => {
-                                        setEditingProperty(p);
-                                        setFormData({ name: p.name || '', addressLine1: p.addressLine1 || '', zip: p.zip || '', city: p.city || '' });
-                                        setShowModal(true);
-                                    }} className="text-slate-400 hover:text-indigo-600 font-black text-[10px] transition-all uppercase tracking-[0.2em] bg-slate-50 px-4 py-2 rounded-xl border border-slate-100 opacity-60 hover:opacity-100 relative z-10">
-                                        Modify
-                                    </button>
+                                    <div className="flex items-center gap-2 relative z-10">
+                                        <button
+                                            onClick={() => handleDelete(p.id, p.name)}
+                                            disabled={actionLoading}
+                                            className="text-slate-400 hover:text-red-600 font-black text-[10px] transition-all uppercase tracking-[0.2em] bg-slate-50 px-4 py-2 rounded-xl border border-slate-100 opacity-60 hover:opacity-100 disabled:opacity-30"
+                                        >
+                                            <Trash2 className="w-3 h-3" />
+                                        </button>
+                                        <button onClick={() => {
+                                            setEditingProperty(p);
+                                            setFormData({ name: p.name || '', addressLine1: p.addressLine1 || '', zip: p.zip || '', city: p.city || '' });
+                                            setShowModal(true);
+                                        }} className="text-slate-400 hover:text-indigo-600 font-black text-[10px] transition-all uppercase tracking-[0.2em] bg-slate-50 px-4 py-2 rounded-xl border border-slate-100 opacity-60 hover:opacity-100">
+                                            Modify
+                                        </button>
+                                    </div>
                                 </div>
                                 <h3 className="text-3xl font-black text-slate-900 mb-4 truncate leading-tight group-hover:text-indigo-700 transition-colors uppercase tracking-tighter">{p.name || 'Undefined'}</h3>
                                 <div className="text-sm text-slate-500 font-black space-y-2 mb-12 uppercase tracking-tight">

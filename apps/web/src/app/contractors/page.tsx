@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import AuthenticatedLayout from '@/components/AuthenticatedLayout';
-import { Users, Plus, Star, Phone, Mail, Wrench, ChevronRight, ShieldCheck } from 'lucide-react';
+import { Users, Plus, Star, Phone, Mail, Wrench, ChevronRight, ShieldCheck, Trash2 } from 'lucide-react';
 
 export default function ContractorsPage() {
     const [contractors, setContractors] = useState<any[]>([]);
@@ -57,6 +57,25 @@ export default function ContractorsPage() {
             setContractors([]);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleDelete = async (id: string, name: string) => {
+        if (!confirm(`Are you sure you want to remove "${name}" from your network?`)) return;
+        const tenantId = getTenantId();
+        if (!tenantId) return;
+
+        try {
+            const { error } = await supabase
+                .from('contractors')
+                .delete()
+                .eq('id', id)
+                .eq('tenant_id', tenantId);
+            if (error) throw error;
+            fetchContractors();
+        } catch (err: any) {
+            console.error('Failed to delete contractor', err);
+            alert(`Failed: ${err.message}`);
         }
     };
 
@@ -141,9 +160,17 @@ export default function ContractorsPage() {
                                     <div className="w-16 h-16 bg-emerald-50 rounded-[1.5rem] flex items-center justify-center group-hover:bg-emerald-600 transition-all duration-500 shadow-sm border border-emerald-100/50">
                                         <Wrench className="w-8 h-8 text-emerald-600 group-hover:text-white transition-colors duration-500" />
                                     </div>
-                                    <div className="flex items-center space-x-2 bg-amber-50 text-amber-700 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] border border-amber-100 shadow-sm shadow-amber-600/5">
-                                        <ShieldCheck className="w-4 h-4" />
-                                        <span>Verified</span>
+                                    <div className="flex items-center space-x-2 relative z-10">
+                                        <button
+                                            onClick={() => handleDelete(c.id, c.name)}
+                                            className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
+                                        <div className="flex items-center space-x-2 bg-amber-50 text-amber-700 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] border border-amber-100 shadow-sm shadow-amber-600/5">
+                                            <ShieldCheck className="w-4 h-4" />
+                                            <span>Verified</span>
+                                        </div>
                                     </div>
                                 </div>
 
