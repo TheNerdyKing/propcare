@@ -148,7 +148,7 @@ export class PublicService {
             // 5. Create Tickets
             const ticketsData = [
                 {
-                    referenceCode: `DEMO-${tenantId.slice(0, 3)}-001`,
+                    referenceCode: `DEMO-${tenantId.slice(0, 4)}-001`,
                     type: TicketType.DAMAGE_REPORT,
                     status: TicketStatus.NEW,
                     propertyId: createdProperties[0].id,
@@ -159,7 +159,7 @@ export class PublicService {
                     urgency: Urgency.NORMAL,
                 },
                 {
-                    referenceCode: `DEMO-${tenantId.slice(0, 3)}-002`,
+                    referenceCode: `DEMO-${tenantId.slice(0, 4)}-002`,
                     type: TicketType.DAMAGE_REPORT,
                     status: TicketStatus.IN_PROGRESS,
                     propertyId: createdProperties[1].id,
@@ -170,7 +170,7 @@ export class PublicService {
                     urgency: Urgency.URGENT,
                 },
                 {
-                    referenceCode: `DEMO-${tenantId.slice(0, 3)}-003`,
+                    referenceCode: `DEMO-${tenantId.slice(0, 4)}-003`,
                     type: TicketType.DAMAGE_REPORT,
                     status: TicketStatus.COMPLETED,
                     propertyId: createdProperties[2].id,
@@ -181,7 +181,7 @@ export class PublicService {
                     urgency: Urgency.NORMAL,
                 },
                 {
-                    referenceCode: `DEMO-${tenantId.slice(0, 3)}-004`,
+                    referenceCode: `DEMO-${tenantId.slice(0, 4)}-004`,
                     type: TicketType.GENERAL_INQUIRY,
                     status: TicketStatus.NEW,
                     propertyId: createdProperties[0].id,
@@ -192,7 +192,7 @@ export class PublicService {
                     urgency: Urgency.NORMAL,
                 },
                 {
-                    referenceCode: `DEMO-${tenantId.slice(0, 3)}-005`,
+                    referenceCode: `DEMO-${tenantId.slice(0, 4)}-005`,
                     type: TicketType.DAMAGE_REPORT,
                     status: TicketStatus.NEW,
                     propertyId: createdProperties[1].id,

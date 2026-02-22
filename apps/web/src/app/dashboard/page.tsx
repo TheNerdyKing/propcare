@@ -84,12 +84,6 @@ export default function DashboardPage() {
                                     <div className="bg-white/10 backdrop-blur-sm border border-white/20 px-8 py-5 rounded-2xl font-black uppercase tracking-widest text-[10px] flex items-center">
                                         System Sync: Active <Sparkles className="ml-3 w-4 h-4 animate-pulse text-yellow-300" />
                                     </div>
-                                    <button
-                                        onClick={() => fetchTickets()}
-                                        className="bg-white text-indigo-600 px-10 py-5 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-indigo-50 transition-all shadow-xl shadow-black/10"
-                                    >
-                                        Refresh Workspace
-                                    </button>
                                 </div>
                             </div>
                         </div>
