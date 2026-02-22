@@ -42,7 +42,6 @@ export class PropertiesController {
 
     @Post('seed-sandbox')
     async seedSandbox(@Request() req: any) {
-        console.log(`[Properties] Seeding sandbox for tenant: ${req.user.tenantId}`);
         return this.publicService.seedDemoDataForTenant(req.user.tenantId);
     }
 }

@@ -94,14 +94,14 @@ export default function DashboardPage() {
                                     <Rocket className="w-8 h-8" />
                                 </div>
                                 <h2 className="text-4xl font-black tracking-tighter mb-6 leading-tight">Welcome to your new workspace. Let's get things moving.</h2>
-                                <p className="text-indigo-100 text-lg font-medium mb-10 leading-relaxed">Your dashboard is currently waiting for data. You can either import your existing portfolio or initialize a sandbox environment with demo records to explore the system capabilities.</p>
+                                <p className="text-indigo-100 text-lg font-medium mb-10 leading-relaxed">Your dashboard is currently waiting for data. You can either import your existing portfolio or activate a demo portal with pre-populated records to explore the system capabilities.</p>
                                 <div className="flex flex-wrap gap-4">
                                     <button
                                         onClick={seedDemoData}
                                         disabled={seeding}
                                         className="bg-white text-indigo-600 px-10 py-5 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-indigo-50 transition-all flex items-center shadow-xl shadow-black/10 disabled:opacity-50"
                                     >
-                                        {seeding ? 'Initializing...' : 'Setup Sandbox Environment'}
+                                        {seeding ? 'Synchronizing Resources...' : 'Activate Demo Portal'}
                                         <Sparkles className="ml-3 w-4 h-4" />
                                     </button>
                                 </div>
