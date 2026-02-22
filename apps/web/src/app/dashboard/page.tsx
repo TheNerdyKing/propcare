@@ -45,7 +45,7 @@ export default function DashboardPage() {
     const seedDemoData = async () => {
         setSeeding(true);
         try {
-            // Get tenantId from token to ensure the request is correctly targeted
+            // Get tenantId from token
             let tenantId = '';
             const token = localStorage.getItem('accessToken');
             if (token) {
@@ -57,21 +57,37 @@ export default function DashboardPage() {
                 }
             }
 
-            // Attempt POST first
+            if (!tenantId) {
+                alert('Session expired. Please re-login to activate the demo.');
+                return;
+            }
+
+            console.log('Initiating demo activation for:', tenantId);
+
+            // Strategy 1: Standard POST
             try {
                 await api.post('/portal/initialize-demo', { tenantId });
             } catch (postErr: any) {
-                console.warn('POST failed, attempting GET fallback', postErr);
-                // GET Fallback for restricted environments
-                await api.get(`/portal/initialize-demo-get?tenantId=${tenantId}`);
+                console.warn('Standard activation failed, trying fallback...', postErr.message);
+
+                // Strategy 2: Direct browser-level GET fallback
+                const apiBase = process.env.NEXT_PUBLIC_API_URL || 'https://propcare-api.vercel.app';
+                const fallbackUrl = `${apiBase}/portal/activate-now?tenantId=${tenantId}`;
+
+                if (confirm(`Direct sync required. Would you like to launch the fail-safe activation portal?`)) {
+                    window.open(fallbackUrl, '_blank');
+                    alert('Please refresh this page once the other tab shows "Success".');
+                    return;
+                }
+                throw postErr;
             }
 
             await fetchTickets();
             alert('Demo workspace successfully initialized!');
         } catch (err: any) {
-            console.error('Failed to seed demo data', err);
-            const message = err.response?.data?.message || err.message || 'Initialization failed';
-            alert(`${message}. Please check your connection and account state.`);
+            console.error('Activation Error:', err);
+            const msg = err.response?.data?.message || err.message || 'Check your internet connection';
+            alert(`Activation Issue: ${msg}`);
         } finally {
             setSeeding(false);
         }

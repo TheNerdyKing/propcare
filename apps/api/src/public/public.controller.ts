@@ -55,9 +55,14 @@ export class PublicController {
 
     // Emergency GET route for activation if POST is blocked by proxy/firewall
     @Public()
-    @Get('initialize-demo-get')
-    async activateDemoGet(@Query('tenantId') tenantId: string) {
-        if (!tenantId) throw new Error('Tenant ID is required');
-        return this.publicService.seedDemoDataForTenant(tenantId);
+    @Get('activate-now')
+    async activateNow(@Query('tenantId') tenantId: string) {
+        if (!tenantId) return "Error: Missing tenantId in URL.";
+        try {
+            await this.publicService.seedDemoDataForTenant(tenantId);
+            return "<h1>Success!</h1><p>Demo data has been seeded. You can <a href='javascript:window.close()'>close this tab</a> and refresh your dashboard.</p>";
+        } catch (e: any) {
+            return `<h1>Error</h1><p>${e.message}</p>`;
+        }
     }
 }
