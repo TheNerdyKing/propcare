@@ -1,30 +1,30 @@
 import axios from 'axios';
 
 const getBaseURL = () => {
-    // 1. Check for environment variable (most reliable)
+    // 1. Explicit env var is always highest priority
     if (process.env.NEXT_PUBLIC_API_URL) return process.env.NEXT_PUBLIC_API_URL;
 
-    // 2. Handle browser environment logic
+    // 2. Browser detection
     if (typeof window !== 'undefined') {
         const hostname = window.location.hostname;
 
-        // Local development
+        // Localhost
         if (hostname === 'localhost' || hostname === '127.0.0.1') {
             return 'http://localhost:3001';
         }
 
-        // Vercel Production - Force the known backend endpoint
-        if (hostname.includes('vercel.app')) {
-            // If we're on the frontend domain, point to the dedicated api domain
-            if (hostname === 'propcare.vercel.app') {
-                return 'https://propcare-api.vercel.app';
+        // Vercel Strategy: If frontend is "xxx.vercel.app", 
+        // backend is usually "xxx-api.vercel.app".
+        if (hostname.endsWith('.vercel.app')) {
+            const base = hostname.replace('.vercel.app', '');
+            // Prevent double -api if they are already on an -api domain somehow
+            if (!base.endsWith('-api')) {
+                return `https://${base}-api.vercel.app`;
             }
-            // Fallback for previews or custom domains: try to append -api
-            return `https://${hostname.replace('.vercel.app', '-api.vercel.app')}`;
         }
     }
 
-    // Default for server-side or unknown
+    // Static Fallback as last resort
     return 'https://propcare-api.vercel.app';
 };
 
