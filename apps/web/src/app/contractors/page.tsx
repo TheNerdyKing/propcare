@@ -89,12 +89,11 @@ export default function ContractorsPage() {
                 .from('contractors')
                 .insert([{
                     name: formData.name,
+                    contact_name: formData.contactName,
                     email: formData.email,
                     phone: formData.phone,
                     trade_types: formData.tradeTypes,
                     tenant_id: tenantId
-                    // Note: contactName is not in the prisma schema I saw earlier, 
-                    // checking schema.prisma again if needed but for now sticking to DB fields.
                 }]);
 
             if (error) throw error;
