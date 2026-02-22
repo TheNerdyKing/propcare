@@ -57,12 +57,7 @@ export default function DashboardPage() {
                 }
             }
 
-            if (!tenantId) {
-                alert('Session expired. Please re-login to activate the demo.');
-                return;
-            }
-
-            console.log('Initiating demo activation for:', tenantId);
+            console.log('Initiating demo activation...');
 
             // Strategy 1: Standard POST
             try {
