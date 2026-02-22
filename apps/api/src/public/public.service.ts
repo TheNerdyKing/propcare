@@ -82,58 +82,66 @@ export class PublicService {
             // 1. Verify Tenant Exists
             const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
             if (!tenant) {
-                console.error(`[PublicService] Tenant ${tenantId} not found in database.`);
-                return { success: false, error: 'Tenant not found' };
+                console.error(`[PublicService] FATAL: Tenant ${tenantId} not found`);
+                return { success: false, error: 'Tenant record missing' };
             }
 
-            // 2. Check if already seeded to avoid redundant work
-            const existingCount = await this.prisma.property.count({ where: { tenantId } });
-            if (existingCount > 0) {
-                console.log(`[PublicService] Tenant ${tenantId} already has ${existingCount} properties. Skipping base seed.`);
-            } else {
-                // 3. Create Properties & Units
-                const propsData = [
-                    { name: 'Riverside Towers', addressLine1: 'Main Street 42', zip: '1001', city: 'Zurich' },
-                    { name: 'Mountain View Residences', addressLine1: 'Alpine Strasse 15', zip: '6000', city: 'Lucerne' },
-                    { name: 'Lakeside Lofts', addressLine1: 'Quai du Lac 8', zip: '1201', city: 'Geneva' }
-                ];
+            // 2. Properties Seeding (Idempotent)
+            const propsData = [
+                { name: 'Riverside Towers', addressLine1: 'Main Street 42', zip: '1001', city: 'Zurich' },
+                { name: 'Mountain View Residences', addressLine1: 'Alpine Strasse 15', zip: '6000', city: 'Lucerne' },
+                { name: 'Lakeside Lofts', addressLine1: 'Quai du Lac 8', zip: '1201', city: 'Geneva' }
+            ];
 
-                for (const prop of propsData) {
-                    const p = await this.prisma.property.create({
-                        data: { ...prop, tenantId },
+            const createdProperties = [];
+            for (const prop of propsData) {
+                // We use findFirst + create to replicate upsert for non-unique-field models if needed, 
+                // but here we can just create if count is 0, or use upsert on a unique name+tenantId if we had one.
+                // For now, let's just ensure we have these 3.
+                const existing = await this.prisma.property.findFirst({
+                    where: { tenantId, name: prop.name }
+                });
+
+                const p = existing || await this.prisma.property.create({
+                    data: { ...prop, tenantId },
+                });
+                createdProperties.push(p);
+
+                // Units for this property
+                const unitLabels = ['Unit 101', 'Unit 102', 'Penthouse A', 'Commercial Suite B'];
+                for (const label of unitLabels) {
+                    const unitExists = await this.prisma.unit.findFirst({
+                        where: { propertyId: p.id, unitLabel: label }
                     });
-
-                    // Create Units
-                    const unitLabels = ['Unit 101', 'Unit 102', 'Penthouse A', 'Commercial Suite B'];
-                    for (const label of unitLabels) {
+                    if (!unitExists) {
                         await this.prisma.unit.create({
-                            data: {
-                                tenantId,
-                                propertyId: p.id,
-                                unitLabel: label,
-                            },
+                            data: { tenantId, propertyId: p.id, unitLabel: label },
                         });
                     }
                 }
             }
 
-            // 4. Create Contractors if missing
-            const contractorCount = await this.prisma.contractor.count({ where: { tenantId } });
-            if (contractorCount === 0) {
-                const contractors = [
-                    { name: 'Elite Plumbing Services', email: 'contact@eliteplumbing.demo', tradeTypes: ['Plumbing', 'Heating'] },
-                    { name: 'Volt Master Electrical', email: 'info@voltmaster.demo', tradeTypes: ['Electrical'] },
-                    { name: 'Swiss Clean & Maintain', email: 'service@swissclean.demo', tradeTypes: ['Cleaning', 'General Maintenance'] }
-                ];
+            // 3. Contractors Seeding
+            const contractors = [
+                { name: 'Elite Plumbing Services', email: 'contact@eliteplumbing.demo', tradeTypes: ['Plumbing', 'Heating'] },
+                { name: 'Volt Master Electrical', email: 'info@voltmaster.demo', tradeTypes: ['Electrical'] },
+                { name: 'Swiss Clean & Maintain', email: 'service@swissclean.demo', tradeTypes: ['Cleaning', 'General Maintenance'] }
+            ];
 
-                for (const cont of contractors) {
-                    const c = await this.prisma.contractor.create({
-                        data: { ...cont, tenantId },
+            for (const cont of contractors) {
+                const existing = await this.prisma.contractor.findFirst({
+                    where: { tenantId, name: cont.name }
+                });
+                const c = existing || await this.prisma.contractor.create({
+                    data: { ...cont, tenantId },
+                });
+
+                // Link to properties
+                for (const p of createdProperties) {
+                    const linkExists = await this.prisma.contractorProperty.findFirst({
+                        where: { contractorId: c.id, propertyId: p.id }
                     });
-
-                    // Link to all properties for this tenant
-                    const tenantProps = await this.prisma.property.findMany({ where: { tenantId } });
-                    for (const p of tenantProps) {
+                    if (!linkExists) {
                         await this.prisma.contractorProperty.create({
                             data: { tenantId, contractorId: c.id, propertyId: p.id }
                         }).catch(() => null);
@@ -141,52 +149,58 @@ export class PublicService {
                 }
             }
 
-            // 5. Create Tickets if missing
-            const ticketCount = await this.prisma.ticket.count({ where: { tenantId } });
-            if (ticketCount === 0) {
-                const tenantProps = await this.prisma.property.findMany({ where: { tenantId } });
-                if (tenantProps.length > 0) {
-                    const ticketsData = [
-                        {
-                            referenceCode: `DEMO-${tenantId.slice(0, 4)}-001`,
-                            type: TicketType.DAMAGE_REPORT,
-                            status: TicketStatus.NEW,
-                            propertyId: tenantProps[0].id,
-                            unitLabel: 'Penthouse A',
-                            description: 'The AC unit is making a loud buzzing sound and not cooling properly.',
-                            tenantName: 'Sarah Jenkins',
-                            tenantEmail: 'sarah.j@example.com',
-                            urgency: Urgency.NORMAL,
-                        },
-                        {
-                            referenceCode: `DEMO-${tenantId.slice(0, 4)}-002`,
-                            type: TicketType.DAMAGE_REPORT,
-                            status: TicketStatus.IN_PROGRESS,
-                            propertyId: tenantProps[1 % tenantProps.length].id,
-                            unitLabel: 'Unit 101',
-                            description: 'Minor water leakage observed under the kitchen cabinet. Possibly the drain pipe.',
-                            tenantName: 'Mark Weber',
-                            tenantEmail: 'm.weber@example.com',
-                            urgency: Urgency.URGENT,
-                        }
-                    ];
+            // 4. Tickets Seeding
+            const ticketsData = [
+                {
+                    referenceCode: `DEMO-${tenantId.slice(0, 4)}-001`,
+                    type: TicketType.DAMAGE_REPORT,
+                    status: TicketStatus.NEW,
+                    propertyId: createdProperties[0].id,
+                    unitLabel: 'Penthouse A',
+                    description: 'The AC unit is making a loud buzzing sound and not cooling properly.',
+                    tenantName: 'Sarah Jenkins',
+                    tenantEmail: 'sarah.j@example.com',
+                    urgency: Urgency.NORMAL,
+                },
+                {
+                    referenceCode: `DEMO-${tenantId.slice(0, 4)}-002`,
+                    type: TicketType.DAMAGE_REPORT,
+                    status: TicketStatus.IN_PROGRESS,
+                    propertyId: createdProperties[1].id,
+                    unitLabel: 'Unit 101',
+                    description: 'Minor water leakage observed under the kitchen cabinet. Possibly the drain pipe.',
+                    tenantName: 'Mark Weber',
+                    tenantEmail: 'm.weber@example.com',
+                    urgency: Urgency.URGENT,
+                },
+                {
+                    referenceCode: `DEMO-${tenantId.slice(0, 4)}-003`,
+                    type: TicketType.DAMAGE_REPORT,
+                    status: TicketStatus.COMPLETED,
+                    propertyId: createdProperties[2].id,
+                    unitLabel: 'Commercial Suite B',
+                    description: 'Light flicker in the main hallway. Needs bulb replacement or ballast check.',
+                    tenantName: 'Office Manager',
+                    tenantEmail: 'manager@techhub.demo',
+                    urgency: Urgency.NORMAL,
+                }
+            ];
 
-                    for (const ticketData of ticketsData) {
-                        try {
-                            await this.prisma.ticket.create({
-                                data: { ...ticketData, tenantId },
-                            });
-                        } catch (e) {
-                            console.warn(`[PublicService] Ticket creation failed (possibly duplicate): ${ticketData.referenceCode}`);
-                        }
-                    }
+            for (const ticketData of ticketsData) {
+                const existing = await this.prisma.ticket.findUnique({
+                    where: { referenceCode: ticketData.referenceCode }
+                });
+                if (!existing) {
+                    await this.prisma.ticket.create({
+                        data: { ...ticketData, tenantId },
+                    });
                 }
             }
 
-            console.log(`[PublicService] Seed operations completed for tenant: ${tenantId}`);
+            console.log(`[PublicService] SUCCESS: Seed completed for tenant ${tenantId}`);
             return { success: true };
         } catch (error: any) {
-            console.error(`[PublicService] Seed failed critically:`, error);
+            console.error(`[PublicService] CRITICAL SEED ERROR for tenant ${tenantId}:`, error);
             throw error;
         }
     }

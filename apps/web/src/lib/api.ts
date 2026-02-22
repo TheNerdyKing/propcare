@@ -1,19 +1,31 @@
 import axios from 'axios';
 
 const getBaseURL = () => {
-    // If set in environment (e.g. Vercel Dashboard), use it
+    // 1. Check for environment variable (most reliable)
     if (process.env.NEXT_PUBLIC_API_URL) return process.env.NEXT_PUBLIC_API_URL;
 
-    // In production (browser), if no URL is set, we try to use the current origin
+    // 2. Handle browser environment logic
     if (typeof window !== 'undefined') {
         const hostname = window.location.hostname;
-        if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
-            return ''; // Relative path
+
+        // Local development
+        if (hostname === 'localhost' || hostname === '127.0.0.1') {
+            return 'http://localhost:3001';
+        }
+
+        // Vercel Production - Force the known backend endpoint
+        if (hostname.includes('vercel.app')) {
+            // If we're on the frontend domain, point to the dedicated api domain
+            if (hostname === 'propcare.vercel.app') {
+                return 'https://propcare-api.vercel.app';
+            }
+            // Fallback for previews or custom domains: try to append -api
+            return `https://${hostname.replace('.vercel.app', '-api.vercel.app')}`;
         }
     }
 
-    // Default for local development
-    return 'http://localhost:3001';
+    // Default for server-side or unknown
+    return 'https://propcare-api.vercel.app';
 };
 
 const api = axios.create({
