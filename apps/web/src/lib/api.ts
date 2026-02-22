@@ -3,8 +3,7 @@ import axios from 'axios';
 const getBaseURL = () => {
     // 1. Explicit env var (Best for Vercel Dashboard)
     if (process.env.NEXT_PUBLIC_API_URL) {
-        const url = process.env.NEXT_PUBLIC_API_URL;
-        return url.endsWith('/api') ? url : `${url.replace(/\/$/, '')}/api`;
+        return process.env.NEXT_PUBLIC_API_URL.replace(/\/$/, '');
     }
 
     // 2. Browser detection
@@ -13,26 +12,25 @@ const getBaseURL = () => {
 
         // Localhost
         if (hostname === 'localhost' || hostname === '127.0.0.1') {
-            return 'http://localhost:3001/api';
+            return 'http://localhost:3001';
         }
 
         // Vercel Strategy
         if (hostname.endsWith('.vercel.app')) {
             // If we are on the frontend (e.g., propcare.vercel.app), 
-            // the backend is likely at propcare-api.vercel.app/api
+            // the backend is likely at propcare-api.vercel.app
             if (!hostname.includes('-api.')) {
                 const base = hostname.replace('.vercel.app', '');
-                return `https://${base}-api.vercel.app/api`;
+                return `https://${base}-api.vercel.app`;
             }
 
-            // If we are ALREADY on the -api domain but see the UI, 
-            // then the API must be at the same domain/api
-            return `https://${hostname}/api`;
+            // If we are ALREADY on the -api domain but see the UI
+            return `https://${hostname}`;
         }
     }
 
     // Static Fallback
-    return 'https://propcare-api.vercel.app/api';
+    return 'https://propcare-api.vercel.app';
 };
 
 const api = axios.create({
