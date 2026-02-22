@@ -78,29 +78,22 @@ export class PublicService {
     async seedDemoDataForTenant(tenantId: string) {
         try {
             console.log(`[PublicService] Starting seed for tenant: ${tenantId}`);
-            // Create Properties
+
+            // 1. Verify Tenant Exists
+            const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
+            if (!tenant) {
+                console.error(`[PublicService] Tenant ${tenantId} not found`);
+                throw new Error(`Workspace partition for ${tenantId} does not exist. Please re-login.`);
+            }
+
+            // 2. Clear Existing Demo Data (Optional but safer for idempotency if IDs collide)
+            // We use upsert so it should be fine.
+
+            // 3. Create Properties & Units
             const properties = [
-                {
-                    id: `demo-prop-1-${tenantId.slice(0, 8)}`,
-                    name: 'Riverside Towers',
-                    addressLine1: 'Main Street 42',
-                    zip: '1001',
-                    city: 'Zurich',
-                },
-                {
-                    id: `demo-prop-2-${tenantId.slice(0, 8)}`,
-                    name: 'Mountain View Residences',
-                    addressLine1: 'Alpine Strasse 15',
-                    zip: '6000',
-                    city: 'Lucerne',
-                },
-                {
-                    id: `demo-prop-3-${tenantId.slice(0, 8)}`,
-                    name: 'Lakeside Lofts',
-                    addressLine1: 'Quai du Lac 8',
-                    zip: '1201',
-                    city: 'Geneva',
-                }
+                { id: `dprop1-${tenantId.slice(0, 4)}`, name: 'Riverside Towers', addressLine1: 'Main Street 42', zip: '1001', city: 'Zurich' },
+                { id: `dprop2-${tenantId.slice(0, 4)}`, name: 'Mountain View Residences', addressLine1: 'Alpine Strasse 15', zip: '6000', city: 'Lucerne' },
+                { id: `dprop3-${tenantId.slice(0, 4)}`, name: 'Lakeside Lofts', addressLine1: 'Quai du Lac 8', zip: '1201', city: 'Geneva' }
             ];
 
             const createdProperties = [];
@@ -108,77 +101,54 @@ export class PublicService {
                 const p = await this.prisma.property.upsert({
                     where: { id: prop.id },
                     update: {},
-                    create: {
-                        ...prop,
-                        tenantId,
-                    },
+                    create: { ...prop, tenantId },
                 });
                 createdProperties.push(p);
 
-                // Create Units for each property
-                const units = ['Unit 101', 'Unit 102', 'Penthouse A', 'Commercial Suite B'];
-                for (const unitLabel of units) {
-                    await this.prisma.unit.upsert({
-                        where: { id: `${p.id}-${unitLabel.replace(' ', '-')}` },
+                // Create Units
+                const unitLabels = ['Unit 101', 'Unit 102', 'Penthouse A', 'Commercial Suite B'];
+                await Promise.all(unitLabels.map(label =>
+                    this.prisma.unit.upsert({
+                        where: { id: `unit-${p.id}-${label.replace(/\s+/g, '-')}` },
                         update: {},
                         create: {
-                            id: `${p.id}-${unitLabel.replace(' ', '-')}`,
+                            id: `unit-${p.id}-${label.replace(/\s+/g, '-')}`,
                             tenantId,
                             propertyId: p.id,
-                            unitLabel,
+                            unitLabel: label,
                         },
-                    });
-                }
+                    })
+                ));
             }
 
-            // Create Contractors
+            // 4. Create Contractors
             const contractors = [
-                {
-                    id: `demo-cont-1-${tenantId.slice(0, 8)}`,
-                    name: 'Elite Plumbing Services',
-                    email: 'contact@eliteplumbing.demo',
-                    tradeTypes: ['Plumbing', 'Heating'],
-                },
-                {
-                    id: `demo-cont-2-${tenantId.slice(0, 8)}`,
-                    name: 'Volt Master Electrical',
-                    email: 'info@voltmaster.demo',
-                    tradeTypes: ['Electrical'],
-                },
-                {
-                    id: `demo-cont-3-${tenantId.slice(0, 8)}`,
-                    name: 'Swiss Clean & Maintain',
-                    email: 'service@swissclean.demo',
-                    tradeTypes: ['Cleaning', 'General Maintenance'],
-                }
+                { id: `dcont1-${tenantId.slice(0, 4)}`, name: 'Elite Plumbing Services', email: 'contact@eliteplumbing.demo', tradeTypes: ['Plumbing', 'Heating'] },
+                { id: `dcont2-${tenantId.slice(0, 4)}`, name: 'Volt Master Electrical', email: 'info@voltmaster.demo', tradeTypes: ['Electrical'] },
+                { id: `dcont3-${tenantId.slice(0, 4)}`, name: 'Swiss Clean & Maintain', email: 'service@swissclean.demo', tradeTypes: ['Cleaning', 'General Maintenance'] }
             ];
 
-            for (const cont of contractors) {
-                const contractor = await this.prisma.contractor.upsert({
+            const createdContractors = await Promise.all(contractors.map(cont =>
+                this.prisma.contractor.upsert({
                     where: { id: cont.id },
                     update: {},
-                    create: {
-                        ...cont,
-                        tenantId,
-                    },
-                });
+                    create: { ...cont, tenantId },
+                })
+            ));
 
-                // Link contractors to all demo properties
-                for (const prop of createdProperties) {
-                    await this.prisma.contractorProperty.create({
-                        data: {
-                            tenantId,
-                            contractorId: contractor.id,
-                            propertyId: prop.id,
-                        }
-                    }).catch(() => { /* skip if already linked */ });
-                }
-            }
+            // Link Contractors to Properties
+            await Promise.all(createdContractors.flatMap(c =>
+                createdProperties.map(p =>
+                    this.prisma.contractorProperty.create({
+                        data: { tenantId, contractorId: c.id, propertyId: p.id }
+                    }).catch(() => null)
+                )
+            ));
 
-            // Create a Variety of Tickets
+            // 5. Create Tickets
             const ticketsData = [
                 {
-                    referenceCode: `DEMO-${tenantId.slice(0, 4)}-001`,
+                    referenceCode: `DEMO-${tenantId.slice(0, 3)}-001`,
                     type: TicketType.DAMAGE_REPORT,
                     status: TicketStatus.NEW,
                     propertyId: createdProperties[0].id,
@@ -189,7 +159,7 @@ export class PublicService {
                     urgency: Urgency.NORMAL,
                 },
                 {
-                    referenceCode: `DEMO-${tenantId.slice(0, 4)}-002`,
+                    referenceCode: `DEMO-${tenantId.slice(0, 3)}-002`,
                     type: TicketType.DAMAGE_REPORT,
                     status: TicketStatus.IN_PROGRESS,
                     propertyId: createdProperties[1].id,
@@ -200,7 +170,7 @@ export class PublicService {
                     urgency: Urgency.URGENT,
                 },
                 {
-                    referenceCode: `DEMO-${tenantId.slice(0, 4)}-003`,
+                    referenceCode: `DEMO-${tenantId.slice(0, 3)}-003`,
                     type: TicketType.DAMAGE_REPORT,
                     status: TicketStatus.COMPLETED,
                     propertyId: createdProperties[2].id,
@@ -211,7 +181,7 @@ export class PublicService {
                     urgency: Urgency.NORMAL,
                 },
                 {
-                    referenceCode: `DEMO-${tenantId.slice(0, 4)}-004`,
+                    referenceCode: `DEMO-${tenantId.slice(0, 3)}-004`,
                     type: TicketType.GENERAL_INQUIRY,
                     status: TicketStatus.NEW,
                     propertyId: createdProperties[0].id,
@@ -222,7 +192,7 @@ export class PublicService {
                     urgency: Urgency.NORMAL,
                 },
                 {
-                    referenceCode: `DEMO-${tenantId.slice(0, 4)}-005`,
+                    referenceCode: `DEMO-${tenantId.slice(0, 3)}-005`,
                     type: TicketType.DAMAGE_REPORT,
                     status: TicketStatus.NEW,
                     propertyId: createdProperties[1].id,
@@ -238,13 +208,9 @@ export class PublicService {
                 const ticket = await this.prisma.ticket.upsert({
                     where: { referenceCode: ticketData.referenceCode },
                     update: {},
-                    create: {
-                        ...ticketData,
-                        tenantId,
-                    },
+                    create: { ...ticketData, tenantId },
                 });
 
-                // Add an initial message to the first ticket
                 if (ticketData.referenceCode.endsWith('001')) {
                     await this.prisma.ticketMessage.create({
                         data: {
@@ -253,15 +219,16 @@ export class PublicService {
                             content: 'Hello, we have registered your request. A technician will contact you shortly.',
                             senderType: SenderType.STAFF,
                         }
-                    });
+                    }).catch(() => null);
                 }
             }
 
-            console.log(`[PublicService] Seed completed successfully for tenant: ${tenantId}`);
+            console.log(`[PublicService] Seed completed for tenant: ${tenantId}`);
             return { success: true };
-        } catch (error) {
-            console.error(`[PublicService] Seed failed for tenant: ${tenantId}`, error);
-            throw error;
+        } catch (error: any) {
+            console.error(`[PublicService] Seed failed:`, error);
+            // Re-throw with a clean message for the frontend
+            throw new Error(error.message || 'Data initialization failed');
         }
     }
 }

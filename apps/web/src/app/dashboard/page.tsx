@@ -48,9 +48,10 @@ export default function DashboardPage() {
             await api.post('/properties/seed-sandbox');
             await fetchTickets();
             alert('Demo workspace successfully initialized!');
-        } catch (err) {
+        } catch (err: any) {
             console.error('Failed to seed demo data', err);
-            alert('Initialization failed. Please check your connection.');
+            const message = err.response?.data?.message || err.message || 'Initialization failed';
+            alert(`${message}. Please check your connection and account state.`);
         } finally {
             setSeeding(false);
         }
