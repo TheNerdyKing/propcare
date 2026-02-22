@@ -10,7 +10,7 @@ export class DiagnosticController {
     @Public()
     @Get()
     root() {
-        return { message: 'PropCare API is active', version: '1.0.16' };
+        return { message: 'PropCare API is active', version: '1.0.17' };
     }
 
     @Public()
@@ -46,7 +46,7 @@ export class DiagnosticController {
         return {
             status: 'ok',
             timestamp: new Date().toISOString(),
-            version: '1.0.16',
+            version: '1.0.17',
             routes: ['portal/initialize-demo', 'portal/activate-now', 'portal/diagnostics']
         };
     }

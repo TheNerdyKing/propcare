@@ -82,153 +82,112 @@ export class PublicService {
             // 1. Verify Tenant Exists
             const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
             if (!tenant) {
-                console.error(`[PublicService] Tenant ${tenantId} not found`);
-                throw new Error(`Workspace partition for ${tenantId} does not exist. Please re-login.`);
+                console.error(`[PublicService] Tenant ${tenantId} not found in database.`);
+                return { success: false, error: 'Tenant not found' };
             }
 
-            // 2. Clear Existing Demo Data (Optional but safer for idempotency if IDs collide)
-            // We use upsert so it should be fine.
+            // 2. Check if already seeded to avoid redundant work
+            const existingCount = await this.prisma.property.count({ where: { tenantId } });
+            if (existingCount > 0) {
+                console.log(`[PublicService] Tenant ${tenantId} already has ${existingCount} properties. Skipping base seed.`);
+            } else {
+                // 3. Create Properties & Units
+                const propsData = [
+                    { name: 'Riverside Towers', addressLine1: 'Main Street 42', zip: '1001', city: 'Zurich' },
+                    { name: 'Mountain View Residences', addressLine1: 'Alpine Strasse 15', zip: '6000', city: 'Lucerne' },
+                    { name: 'Lakeside Lofts', addressLine1: 'Quai du Lac 8', zip: '1201', city: 'Geneva' }
+                ];
 
-            // 3. Create Properties & Units
-            const properties = [
-                { id: `dprop1-${tenantId.slice(0, 4)}`, name: 'Riverside Towers', addressLine1: 'Main Street 42', zip: '1001', city: 'Zurich' },
-                { id: `dprop2-${tenantId.slice(0, 4)}`, name: 'Mountain View Residences', addressLine1: 'Alpine Strasse 15', zip: '6000', city: 'Lucerne' },
-                { id: `dprop3-${tenantId.slice(0, 4)}`, name: 'Lakeside Lofts', addressLine1: 'Quai du Lac 8', zip: '1201', city: 'Geneva' }
-            ];
+                for (const prop of propsData) {
+                    const p = await this.prisma.property.create({
+                        data: { ...prop, tenantId },
+                    });
 
-            const createdProperties = [];
-            for (const prop of properties) {
-                const p = await this.prisma.property.upsert({
-                    where: { id: prop.id },
-                    update: {},
-                    create: { ...prop, tenantId },
-                });
-                createdProperties.push(p);
+                    // Create Units
+                    const unitLabels = ['Unit 101', 'Unit 102', 'Penthouse A', 'Commercial Suite B'];
+                    for (const label of unitLabels) {
+                        await this.prisma.unit.create({
+                            data: {
+                                tenantId,
+                                propertyId: p.id,
+                                unitLabel: label,
+                            },
+                        });
+                    }
+                }
+            }
 
-                // Create Units
-                const unitLabels = ['Unit 101', 'Unit 102', 'Penthouse A', 'Commercial Suite B'];
-                await Promise.all(unitLabels.map(label =>
-                    this.prisma.unit.upsert({
-                        where: { id: `unit-${p.id}-${label.replace(/\s+/g, '-')}` },
-                        update: {},
-                        create: {
-                            id: `unit-${p.id}-${label.replace(/\s+/g, '-')}`,
-                            tenantId,
-                            propertyId: p.id,
-                            unitLabel: label,
+            // 4. Create Contractors if missing
+            const contractorCount = await this.prisma.contractor.count({ where: { tenantId } });
+            if (contractorCount === 0) {
+                const contractors = [
+                    { name: 'Elite Plumbing Services', email: 'contact@eliteplumbing.demo', tradeTypes: ['Plumbing', 'Heating'] },
+                    { name: 'Volt Master Electrical', email: 'info@voltmaster.demo', tradeTypes: ['Electrical'] },
+                    { name: 'Swiss Clean & Maintain', email: 'service@swissclean.demo', tradeTypes: ['Cleaning', 'General Maintenance'] }
+                ];
+
+                for (const cont of contractors) {
+                    const c = await this.prisma.contractor.create({
+                        data: { ...cont, tenantId },
+                    });
+
+                    // Link to all properties for this tenant
+                    const tenantProps = await this.prisma.property.findMany({ where: { tenantId } });
+                    for (const p of tenantProps) {
+                        await this.prisma.contractorProperty.create({
+                            data: { tenantId, contractorId: c.id, propertyId: p.id }
+                        }).catch(() => null);
+                    }
+                }
+            }
+
+            // 5. Create Tickets if missing
+            const ticketCount = await this.prisma.ticket.count({ where: { tenantId } });
+            if (ticketCount === 0) {
+                const tenantProps = await this.prisma.property.findMany({ where: { tenantId } });
+                if (tenantProps.length > 0) {
+                    const ticketsData = [
+                        {
+                            referenceCode: `DEMO-${tenantId.slice(0, 4)}-001`,
+                            type: TicketType.DAMAGE_REPORT,
+                            status: TicketStatus.NEW,
+                            propertyId: tenantProps[0].id,
+                            unitLabel: 'Penthouse A',
+                            description: 'The AC unit is making a loud buzzing sound and not cooling properly.',
+                            tenantName: 'Sarah Jenkins',
+                            tenantEmail: 'sarah.j@example.com',
+                            urgency: Urgency.NORMAL,
                         },
-                    })
-                ));
-            }
-
-            // 4. Create Contractors
-            const contractors = [
-                { id: `dcont1-${tenantId.slice(0, 4)}`, name: 'Elite Plumbing Services', email: 'contact@eliteplumbing.demo', tradeTypes: ['Plumbing', 'Heating'] },
-                { id: `dcont2-${tenantId.slice(0, 4)}`, name: 'Volt Master Electrical', email: 'info@voltmaster.demo', tradeTypes: ['Electrical'] },
-                { id: `dcont3-${tenantId.slice(0, 4)}`, name: 'Swiss Clean & Maintain', email: 'service@swissclean.demo', tradeTypes: ['Cleaning', 'General Maintenance'] }
-            ];
-
-            const createdContractors = await Promise.all(contractors.map(cont =>
-                this.prisma.contractor.upsert({
-                    where: { id: cont.id },
-                    update: {},
-                    create: { ...cont, tenantId },
-                })
-            ));
-
-            // Link Contractors to Properties
-            await Promise.all(createdContractors.flatMap(c =>
-                createdProperties.map(p =>
-                    this.prisma.contractorProperty.create({
-                        data: { tenantId, contractorId: c.id, propertyId: p.id }
-                    }).catch(() => null)
-                )
-            ));
-
-            // 5. Create Tickets
-            const ticketsData = [
-                {
-                    referenceCode: `DEMO-${tenantId.slice(0, 4)}-001`,
-                    type: TicketType.DAMAGE_REPORT,
-                    status: TicketStatus.NEW,
-                    propertyId: createdProperties[0].id,
-                    unitLabel: 'Penthouse A',
-                    description: 'The AC unit is making a loud buzzing sound and not cooling properly.',
-                    tenantName: 'Sarah Jenkins',
-                    tenantEmail: 'sarah.j@example.com',
-                    urgency: Urgency.NORMAL,
-                },
-                {
-                    referenceCode: `DEMO-${tenantId.slice(0, 4)}-002`,
-                    type: TicketType.DAMAGE_REPORT,
-                    status: TicketStatus.IN_PROGRESS,
-                    propertyId: createdProperties[1].id,
-                    unitLabel: 'Unit 101',
-                    description: 'Minor water leakage observed under the kitchen cabinet. Possibly the drain pipe.',
-                    tenantName: 'Mark Weber',
-                    tenantEmail: 'm.weber@example.com',
-                    urgency: Urgency.URGENT,
-                },
-                {
-                    referenceCode: `DEMO-${tenantId.slice(0, 4)}-003`,
-                    type: TicketType.DAMAGE_REPORT,
-                    status: TicketStatus.COMPLETED,
-                    propertyId: createdProperties[2].id,
-                    unitLabel: 'Commercial Suite B',
-                    description: 'Light flicker in the main hallway. Needs bulb replacement or ballast check.',
-                    tenantName: 'Office Manager',
-                    tenantEmail: 'manager@techhub.demo',
-                    urgency: Urgency.NORMAL,
-                },
-                {
-                    referenceCode: `DEMO-${tenantId.slice(0, 4)}-004`,
-                    type: TicketType.GENERAL_INQUIRY,
-                    status: TicketStatus.NEW,
-                    propertyId: createdProperties[0].id,
-                    unitLabel: 'Unit 102',
-                    description: 'Inquiry regarding the upcoming garage maintenance schedule.',
-                    tenantName: 'David Miller',
-                    tenantEmail: 'd.miller@example.com',
-                    urgency: Urgency.NORMAL,
-                },
-                {
-                    referenceCode: `DEMO-${tenantId.slice(0, 4)}-005`,
-                    type: TicketType.DAMAGE_REPORT,
-                    status: TicketStatus.NEW,
-                    propertyId: createdProperties[1].id,
-                    unitLabel: 'Penthouse A',
-                    description: 'EMERGENCY: Main water pipe burst in the basement. Shifting to emergency protocol.',
-                    tenantName: 'Facility Guard',
-                    tenantEmail: 'security@mountainview.demo',
-                    urgency: Urgency.EMERGENCY,
-                }
-            ];
-
-            for (const ticketData of ticketsData) {
-                const ticket = await this.prisma.ticket.upsert({
-                    where: { referenceCode: ticketData.referenceCode },
-                    update: {},
-                    create: { ...ticketData, tenantId },
-                });
-
-                if (ticketData.referenceCode.endsWith('001')) {
-                    await this.prisma.ticketMessage.create({
-                        data: {
-                            tenantId,
-                            ticketId: ticket.id,
-                            content: 'Hello, we have registered your request. A technician will contact you shortly.',
-                            senderType: SenderType.STAFF,
+                        {
+                            referenceCode: `DEMO-${tenantId.slice(0, 4)}-002`,
+                            type: TicketType.DAMAGE_REPORT,
+                            status: TicketStatus.IN_PROGRESS,
+                            propertyId: tenantProps[1 % tenantProps.length].id,
+                            unitLabel: 'Unit 101',
+                            description: 'Minor water leakage observed under the kitchen cabinet. Possibly the drain pipe.',
+                            tenantName: 'Mark Weber',
+                            tenantEmail: 'm.weber@example.com',
+                            urgency: Urgency.URGENT,
                         }
-                    }).catch(() => null);
+                    ];
+
+                    for (const ticketData of ticketsData) {
+                        try {
+                            await this.prisma.ticket.create({
+                                data: { ...ticketData, tenantId },
+                            });
+                        } catch (e) {
+                            console.warn(`[PublicService] Ticket creation failed (possibly duplicate): ${ticketData.referenceCode}`);
+                        }
+                    }
                 }
             }
 
-            console.log(`[PublicService] Seed completed for tenant: ${tenantId}`);
+            console.log(`[PublicService] Seed operations completed for tenant: ${tenantId}`);
             return { success: true };
         } catch (error: any) {
-            console.error(`[PublicService] Seed failed:`, error);
-            // Re-throw with a clean message for the frontend
-            throw new Error(error.message || 'Data initialization failed');
+            console.error(`[PublicService] Seed failed critically:`, error);
+            throw error;
         }
     }
 }
