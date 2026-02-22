@@ -3,7 +3,7 @@ import { PublicService } from './public.service';
 import { CreateTicketDto } from './dto/create-ticket.dto';
 import { Public } from '../auth/decorators/public.decorator';
 
-@Controller('public')
+@Controller('portal')
 export class PublicController {
     constructor(private publicService: PublicService) { }
 
@@ -34,7 +34,13 @@ export class PublicController {
         return this.publicService.addPublicMessage(referenceCode, content);
     }
 
-    @Post('activate-demo')
+    @Public()
+    @Get('health')
+    async health() {
+        return { status: 'ok', timestamp: new Date().toISOString(), version: '1.0.13' };
+    }
+
+    @Post('initialize-demo')
     async activateDemo(@Request() req: any) {
         return this.publicService.seedDemoDataForTenant(req.user.tenantId);
     }

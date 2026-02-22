@@ -45,7 +45,7 @@ export default function DashboardPage() {
     const seedDemoData = async () => {
         setSeeding(true);
         try {
-            await api.post('/public/activate-demo');
+            await api.post('/portal/initialize-demo');
             await fetchTickets();
             alert('Demo workspace successfully initialized!');
         } catch (err: any) {
