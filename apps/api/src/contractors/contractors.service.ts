@@ -1,11 +1,24 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { PublicService } from '../public/public.service';
 
 @Injectable()
 export class ContractorsService {
-    constructor(private prisma: PrismaService) { }
+    constructor(
+        private prisma: PrismaService,
+        private publicService: PublicService
+    ) { }
 
     async findAll(tenantId: string) {
+        const count = await this.prisma.contractor.count({ where: { tenantId } });
+        if (count === 0) {
+            console.log(`[ContractorsService] Auto-seeding for tenant: ${tenantId}`);
+            try {
+                await this.publicService.seedDemoDataForTenant(tenantId);
+            } catch (e) {
+                console.error('[ContractorsService] Auto-seed failed', e);
+            }
+        }
         return this.prisma.contractor.findMany({
             where: { tenantId },
             include: {
