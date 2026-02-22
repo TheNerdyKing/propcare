@@ -45,33 +45,49 @@ export default function DashboardPage() {
     const seedDemoData = async () => {
         setSeeding(true);
         try {
-            // Get tenantId from token
+            // Get tenantId from token with multiple fallbacks
             let tenantId = '';
             const token = localStorage.getItem('accessToken');
             if (token) {
                 try {
                     const payload = JSON.parse(atob(token.split('.')[1]));
-                    tenantId = payload.tenantId;
+                    tenantId = payload.tenantId || payload.tenant_id || payload.sub;
+                    console.log('Detected Tenant ID:', tenantId);
                 } catch (e) {
                     console.error('Failed to parse token', e);
                 }
             }
 
-            console.log('Initiating demo activation...');
+            if (!tenantId || tenantId === 'undefined') {
+                const manualId = prompt('Automated sync was restricted. Please paste your Tenant ID from your Profile page, or developer console:');
+                if (!manualId) return;
+                tenantId = manualId;
+            }
 
-            // Strategy 1: Standard POST
+            console.log('Initiating demo activation for:', tenantId);
+
+            // Strategy 1: Standard POST via API instance (with relative path support)
             try {
-                await api.post('/portal/initialize-demo', { tenantId });
+                await api.post('/portal/activate-now', { tenantId });
             } catch (postErr: any) {
-                console.warn('Standard activation failed, trying fallback...', postErr.message);
+                console.warn('Standard API call failed, trying direct link...', postErr.message);
 
-                // Strategy 2: Direct browser-level GET fallback
-                const apiBase = process.env.NEXT_PUBLIC_API_URL || 'https://propcare-api.vercel.app';
-                const fallbackUrl = `${apiBase}/portal/activate-now?tenantId=${tenantId}`;
+                // Strategy 2: Absolute URL discovery
+                const apiBase = api.defaults.baseURL || process.env.NEXT_PUBLIC_API_URL || 'https://propcare-api.vercel.app';
+                // Try to handle cases where baseURL might already have /api or not
+                const cleanBase = apiBase.endsWith('/') ? apiBase.slice(0, -1) : apiBase;
 
-                if (confirm(`Direct sync required. Would you like to launch the fail-safe activation portal?`)) {
-                    window.open(fallbackUrl, '_blank');
-                    alert('Please refresh this page once the other tab shows "Success".');
+                // We'll try a few common Vercel API structures
+                const paths = [
+                    `${cleanBase}/portal/force-activate?tenantId=${tenantId}`,
+                    `${cleanBase}/api/portal/force-activate?tenantId=${tenantId}`,
+                ];
+
+                if (confirm(`Direct sync required due to network restrictions. Open sync portal?`)) {
+                    // Open the first one, the server will handle the fallback
+                    window.open(paths[0], '_blank');
+                    alert('Check the new tab. If it shows 404, please try the secondary sync link in the developer console.');
+                    console.log('Secondary Sync Link:', paths[1]);
                     return;
                 }
                 throw postErr;

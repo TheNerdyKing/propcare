@@ -37,30 +37,56 @@ export class PublicController {
     @Public()
     @Get('health')
     async health() {
-        return { status: 'ok', timestamp: new Date().toISOString(), version: '1.0.13' };
+        return {
+            status: 'ok',
+            timestamp: new Date().toISOString(),
+            version: '1.0.14',
+            routes: ['portal/initialize-demo', 'portal/activate-now', 'portal/diagnostics']
+        };
+    }
+
+    @Public()
+    @Get('diagnostics')
+    async diagnostics(@Request() req: any) {
+        return {
+            headers: req.headers,
+            user: req.user,
+            query: req.query,
+            env: process.env.NODE_ENV
+        };
     }
 
     @Public()
     @Post('initialize-demo')
-    async activateDemo(@Body('tenantId') tenantId: string, @Request() req: any) {
-        // Fallback to token-based tenantId if not provided in body
-        const effectiveTenantId = tenantId || req.user?.tenantId;
-        if (!effectiveTenantId) {
-            // In a completely permissive mode, we might want to log this but keep going if possible.
-            // For now, we still need a tenantId to know where to put the data.
-            throw new Error('Tenant identification failed. Please provide a tenantId or valid session.');
+    @Get('initialize-demo')
+    @Post('activate-now')
+    @Get('activate-now')
+    async activateDemo(@Body('tenantId') bodyId: string, @Query('tenantId') queryId: string, @Request() req: any) {
+        const tenantId = bodyId || queryId || req.user?.tenantId;
+
+        if (!tenantId) {
+            throw new Error('Tenant identification failed. Please provide a tenantId in the URL, e.g., ?tenantId=YOUR_ID');
         }
-        return this.publicService.seedDemoDataForTenant(effectiveTenantId);
+
+        console.log(`[PublicController] Activating demo for tenant: ${tenantId}`);
+        await this.publicService.seedDemoDataForTenant(tenantId);
+
+        return {
+            success: true,
+            message: "Demo data successfully seeded.",
+            tenantId,
+            action: "Please refresh your dashboard."
+        };
     }
 
-    // Emergency GET route for activation if POST is blocked by proxy/firewall
+    // Legacy backup with HTML response for direct browser hits
     @Public()
-    @Get('activate-now')
-    async activateNow(@Query('tenantId') tenantId: string) {
-        if (!tenantId) return "Error: Missing tenantId in URL.";
+    @Get('force-activate')
+    async forceActivate(@Query('tenantId') tenantId: string) {
+        if (!tenantId) return "<h1>Error</h1><p>Missing tenantId in URL. Please use ?tenantId=xyz</p>";
         try {
             await this.publicService.seedDemoDataForTenant(tenantId);
-            return "<h1>Success!</h1><p>Demo data has been seeded. You can <a href='javascript:window.close()'>close this tab</a> and refresh your dashboard.</p>";
+            return `<h1>Success!</h1><p>Demo data seeded for ${tenantId}. <a href='https://propcare.vercel.app/dashboard'>Return to Dashboard</a></p>`;
         } catch (e: any) {
             return `<h1>Error</h1><p>${e.message}</p>`;
         }
