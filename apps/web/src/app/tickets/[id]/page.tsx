@@ -218,10 +218,20 @@ export default function TicketDetailPage() {
         }
 
         try {
-            // 1. Call the backend directly to trigger analysis
-            // This bypasses unreliable webhooks and ensures the request is tracked
-            await api.post(`/ai/${id}/analyze`);
+            // 1. Update internal_status directly in Supabase to trigger the Webhook
+            // This is the guaranteed-to-fire path for the user's environment
+            const { error } = await supabase
+                .from('tickets')
+                .update({
+                    internal_status: 'AI_PROCESSING',
+                    updatedAt: new Date().toISOString()
+                })
+                .eq('id', id)
+                .eq('tenant_id', tenantId);
 
+            if (error) throw error;
+
+            alert('AI Analysis requested. Supabase will now signal the backend.');
             await fetchTicket();
         } catch (err: any) {
             console.error('Reprocess failed', err);
@@ -279,7 +289,7 @@ export default function TicketDetailPage() {
                         Back to Dashboard
                     </button>
                     <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest bg-slate-50 px-3 py-1 rounded-full border border-slate-100">
-                        Deployment v1.10-direct-api
+                        Deployment v1.11-supabase-hybrid
                     </span>
                 </div>
 
