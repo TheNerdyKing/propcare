@@ -204,13 +204,30 @@ export default function TicketDetailPage() {
 
     const reprocessAi = async () => {
         setReprocessing(true);
+        const tenantId = getTenantId();
+        if (!tenantId) {
+            setReprocessing(false);
+            return;
+        }
+
         try {
-            await api.post('/tickets/reprocess', { ticketId: id });
-            alert('AI Analysis triggered successfully. Results will appear shortly.');
+            // 1. Update internal_status directly in Supabase to trigger the Webhook
+            const { error } = await supabase
+                .from('tickets')
+                .update({
+                    internal_status: 'AI_PROCESSING',
+                    updatedAt: new Date().toISOString()
+                })
+                .eq('id', id)
+                .eq('tenant_id', tenantId);
+
+            if (error) throw error;
+
+            alert('AI Analysis requested. Supabase is triggering the backend now.');
             await fetchTicket();
         } catch (err: any) {
             console.error('Reprocess failed', err);
-            alert(`Failed to start AI analysis: ${err.response?.data?.message || err.message || 'Unknown error'}`);
+            alert(`Failed to request AI analysis: ${err.message || 'Unknown error'}`);
         } finally {
             setReprocessing(false);
         }
@@ -264,7 +281,7 @@ export default function TicketDetailPage() {
                         Back to Dashboard
                     </button>
                     <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest bg-slate-50 px-3 py-1 rounded-full border border-slate-100">
-                        Deployment v1.2-static
+                        Deployment v1.4-supabase-native
                     </span>
                 </div>
 

@@ -28,16 +28,26 @@ export class AiController {
             throw new ForbiddenException('Invalid webhook secret');
         }
 
-        if (table === 'tickets' && type === 'INSERT') {
-            const ticketId = record.id;
-            this.logger.log(`Triggering AI processing for ticket: ${ticketId}`);
+        if (table === 'tickets') {
+            const ticketId = record?.id || body.old_record?.id;
 
-            // We start processing asynchronously
-            this.aiService.processTicket(ticketId).catch(err => {
-                this.logger.error(`Async AI processing failed for ${ticketId}: ${err.message}`);
-            });
+            // Case 1: New ticket inserted (Auto-analysis)
+            if (type === 'INSERT') {
+                this.logger.log(`New ticket INSERT detected: ${ticketId}. Triggering AI...`);
+                this.aiService.processTicket(ticketId).catch(err => {
+                    this.logger.error(`Async AI processing failed for ${ticketId}: ${err.message}`);
+                });
+                return { handled: true, ticketId, action: 'INSERT_TRIGGER' };
+            }
 
-            return { handled: true, ticketId };
+            // Case 2: Manual trigger via status update to AI_PROCESSING
+            if (type === 'UPDATE' && record.internal_status === 'AI_PROCESSING') {
+                this.logger.log(`Manual AI trigger via UPDATE detected for ticket: ${ticketId}`);
+                this.aiService.processTicket(ticketId).catch(err => {
+                    this.logger.error(`Async AI processing failed for ${ticketId}: ${err.message}`);
+                });
+                return { handled: true, ticketId, action: 'UPDATE_TRIGGER' };
+            }
         }
 
         return { handled: false, reason: 'Ignored event type or table' };
