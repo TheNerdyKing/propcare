@@ -15,6 +15,7 @@ seed-db.ps1
 approve-builds.ps1
 <ctrl42>*
 .pnpm-store
+.env
 .env.local
 .env.development.local
 .env.test.local

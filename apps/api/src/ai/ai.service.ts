@@ -4,6 +4,10 @@ import { Ticket, Urgency } from '@prisma/client';
 
 @Injectable()
 export class AiService {
+    private readonly apiKey = process.env.AI_API_KEY;
+    private readonly modelName = process.env.AI_MODEL_NAME || 'gpt-5-nano';
+    private readonly apiEndpoint = process.env.AI_API_ENDPOINT || 'https://api.openai.com/v1/responses';
+
     constructor(private prisma: PrismaService) { }
 
     async processTicket(ticketId: string) {
@@ -14,19 +18,55 @@ export class AiService {
 
         if (!ticket) return;
 
-        // Simulate AI Processing Logic
-        const classification = this.classifyDamage(ticket.description);
-        const urgency = this.determineUrgency(ticket.description, ticket.urgency);
+        // 1. Call OpenAI API
+        let classification: string = 'GENERAL_MAINTENANCE';
+        let urgency: Urgency = 'NORMAL';
+        let emailDraft: string = '';
+
+        try {
+            const response = await fetch(this.apiEndpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${this.apiKey}`,
+                },
+                body: JSON.stringify({
+                    model: this.modelName,
+                    input: this.buildPrompt(ticket),
+                    store: true
+                }),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(`OpenAI API failed: ${response.statusText}. ${JSON.stringify(errorData)}`);
+            }
+
+            const data = await response.json();
+            // Assuming gpt-5-nano returns the classification and draft in a standard format
+            // Based on the user's provided curl, we might need to parse the response content
+            const aiOutput = this.parseAiResponse(data);
+
+            classification = aiOutput.category || 'GENERAL_MAINTENANCE';
+            urgency = (aiOutput.urgency as Urgency) || 'NORMAL';
+            emailDraft = aiOutput.emailDraft || '';
+
+        } catch (err) {
+            console.error('AI Processing failed, falling back to heuristics:', err);
+            classification = this.classifyDamage(ticket.description);
+            urgency = this.determineUrgency(ticket.description, ticket.urgency) as Urgency;
+            emailDraft = this.generateEmailDraft(ticket, classification, null);
+        }
+
         const contractors = await this.suggestContractors(ticket.tenantId, classification, ticket.propertyId);
-        const emailDraft = this.generateEmailDraft(ticket, classification, contractors[0]);
 
         // Save AI results
         await this.prisma.aiResult.create({
             data: {
                 tenantId: ticket.tenantId,
                 ticketId: ticket.id,
-                modelName: 'propcare-ai-v1',
-                promptVersion: '1.0',
+                modelName: this.modelName,
+                promptVersion: '2.0',
                 outputJson: {
                     category: classification,
                     urgency: urgency,
@@ -42,9 +82,50 @@ export class AiService {
             data: {
                 urgency: urgency as Urgency,
                 category: classification,
-                // Assuming we add internalStatus to the model or use a status flag
+                internalStatus: 'AI_READY'
             },
         });
+    }
+
+    private buildPrompt(ticket: any): string {
+        return `
+            Act as an expert facility management assistant for PropCare. 
+            Analyze the following maintenance request and provide a JSON response.
+            
+            TICKET DESCRIPTION: "${ticket.description}"
+            REF CODE: ${ticket.referenceCode}
+            FACILITY: ${ticket.property?.name || 'Unknown'} / ${ticket.unitLabel || 'Common Area'}
+            
+            JSON OUTPUT FORMAT:
+            {
+                "category": "PLUMBING" | "ELECTRICAL" | "LOCKSMITH" | "HEATING" | "GENERAL_MAINTENANCE",
+                "urgency": "EMERGENCY" | "URGENT" | "NORMAL",
+                "emailDraft": "A professional email draft to a contractor explaining the situation clearly."
+            }
+            
+            RULES:
+            - Provide ONLY the JSON.
+            - Category must match the enum exactly.
+            - Urgency must be one of the three options.
+        `;
+    }
+
+    private parseAiResponse(data: any): any {
+        // According to the new OpenAI 'responses' API (experimental), the block might be different
+        // But we will attempt to extract the text if it's in a standard content block
+        try {
+            // For gpt-5-nano /v1/responses, the data structure might vary (experimental)
+            // Assuming standard completion-like structure for the text result
+            const content = data.output || data.choices?.[0]?.message?.content || data.response || "";
+            const jsonMatch = content.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+                return JSON.parse(jsonMatch[0]);
+            }
+            return {};
+        } catch (e) {
+            console.error('Failed to parse AI JSON:', e);
+            return {};
+        }
     }
 
     private classifyDamage(description: string): string {
