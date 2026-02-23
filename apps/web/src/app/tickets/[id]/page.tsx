@@ -120,6 +120,7 @@ export default function TicketDetailPage() {
                 tenantName: data.tenant_name,
                 urgency: data.urgency,
                 status: data.status,
+                internalStatus: data.internal_status,
                 aiClassification: result.category || 'General',
                 aiUrgency: result.urgency || 'Normal',
                 aiEmailDraft: result.emailDraft || '',
@@ -203,7 +204,8 @@ export default function TicketDetailPage() {
     const reprocessAi = async () => {
         setReprocessing(true);
         try {
-            await api.post(`/tickets/${id}/reprocess`);
+            await api.post(`/tickets/${id}/reprocess-ai`);
+            alert('AI Analysis started in the background. Results will appear automatically in a few moments.');
             await fetchTicket();
         } catch (err) {
             console.error('Reprocess failed', err);
@@ -369,7 +371,17 @@ export default function TicketDetailPage() {
                                         </button>
                                     </div>
 
-                                    {!ticket.aiClassification || ticket.aiClassification === 'General' ? (
+                                    {ticket.internalStatus === 'AI_PROCESSING' ? (
+                                        <div className="flex flex-col items-center justify-center py-16 px-8 text-center bg-indigo-50/30 rounded-[2rem] border border-dashed border-indigo-200">
+                                            <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-100 mb-6">
+                                                <RefreshCw className="w-8 h-8 text-indigo-500 animate-spin" />
+                                            </div>
+                                            <h3 className="text-lg font-black text-slate-900 mb-2">AI is Analyzing...</h3>
+                                            <p className="text-sm font-medium text-slate-500 max-w-sm">
+                                                We're processing the ticket details to categorize the issue and draft an email. This usually takes 5-10 seconds.
+                                            </p>
+                                        </div>
+                                    ) : !ticket.aiClassification || ticket.aiClassification === 'General' ? (
                                         <div className="flex flex-col items-center justify-center py-16 px-8 text-center bg-slate-50/50 rounded-[2rem] border border-dashed border-slate-200">
                                             <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-sm mb-6">
                                                 <Sparkles className="w-8 h-8 text-indigo-400" />
