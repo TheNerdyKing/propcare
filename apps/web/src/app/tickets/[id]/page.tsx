@@ -50,7 +50,14 @@ export default function TicketDetailPage() {
                 table: 'tickets',
                 filter: `id=eq.${id}`
             }, (payload) => {
-                setTicket(prev => prev ? ({ ...prev, ...payload.new, status: payload.new.status }) : null);
+                const newStatus = payload.new.internal_status || payload.new.status;
+                setTicket(prev => prev ? ({ ...prev, ...payload.new, internalStatus: payload.new.internal_status }) : null);
+
+                // If AI finished, re-fetch the full joined data (results, audit logs)
+                if (newStatus === 'AI_READY' || newStatus === 'FAILED') {
+                    console.log('AI finished detected via Realtime, re-fetching full record...');
+                    fetchTicket();
+                }
             })
             .subscribe();
 
@@ -281,7 +288,7 @@ export default function TicketDetailPage() {
                         Back to Dashboard
                     </button>
                     <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest bg-slate-50 px-3 py-1 rounded-full border border-slate-100">
-                        Deployment v1.6-robust
+                        Deployment v1.7-realtime-fixed
                     </span>
                 </div>
 
