@@ -21,6 +21,11 @@ export class TicketsController {
         return this.ticketsService.findOne(req.user.tenantId, id);
     }
 
+    @Post(':id/trigger-ai')
+    async reprocessAi(@Request() req: any, @Param('id') id: string) {
+        return this.ticketsService.reprocessAi(req.user.tenantId, id);
+    }
+
     @Patch(':id')
     async update(@Request() req: any, @Param('id') id: string, @Body() data: any) {
         return this.ticketsService.update(req.user.tenantId, id, data, req.user.id);
@@ -40,10 +45,5 @@ export class TicketsController {
     @Post(':id/messages')
     async addMessage(@Request() req: any, @Param('id') id: string, @Body('content') content: string) {
         return this.ticketsService.addMessage(req.user.tenantId, id, content, 'STAFF');
-    }
-
-    @Post(':id/reprocess-ai')
-    async reprocessAi(@Request() req: any, @Param('id') id: string) {
-        return this.ticketsService.reprocessAi(req.user.tenantId, id);
     }
 }

@@ -205,11 +205,20 @@ export default function TicketDetailPage() {
     const reprocessAi = async () => {
         setReprocessing(true);
         try {
-            await api.post(`/tickets/${id}/reprocess-ai`);
-            alert('AI Analysis triggered successfully. Please wait a few seconds for results.');
+            // Try newest endpoint first
+            await api.post(`/tickets/${id}/trigger-ai`);
+            alert('AI Analysis triggered successfully. Results will appear shortly.');
             await fetchTicket();
         } catch (err: any) {
             console.error('Reprocess failed', err);
+            // Fallback for transition period if needed
+            if (err.response?.status === 405 || err.response?.status === 404) {
+                try {
+                    await api.post(`/tickets/${id}/reprocess-ai`);
+                    await fetchTicket();
+                    return;
+                } catch (innerErr) { }
+            }
             alert(`Failed to start AI analysis: ${err.response?.data?.message || err.message || 'Unknown error'}`);
         } finally {
             setReprocessing(false);
@@ -666,19 +675,6 @@ export default function TicketDetailPage() {
                                 <span className="text-xs font-bold text-indigo-200">System standing by...</span>
                             </div>
                         </div>
-                    </div>
-
-                    {/* DEBUG FOOTER - REMOVE LATER */}
-                    <div className="mt-20 p-8 bg-slate-100 rounded-3xl border border-slate-200 text-[10px] font-mono whitespace-pre overflow-auto max-h-60">
-                        <p className="font-black mb-4">🔧 SYSTEM DEBUG MODE</p>
-                        {JSON.stringify({
-                            id: ticket.id,
-                            status: ticket.status,
-                            internalStatus: ticket.internalStatus,
-                            aiClassification: ticket.aiClassification,
-                            hasEmailDraft: !!ticket.aiEmailDraft,
-                            hasAuditLogs: (ticket.auditLogs || []).length
-                        }, null, 2)}
                     </div>
                 </div>
             </div>
