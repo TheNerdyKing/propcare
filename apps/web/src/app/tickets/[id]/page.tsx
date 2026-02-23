@@ -19,6 +19,7 @@ import {
     History,
     RefreshCw,
     Wrench,
+    HelpCircle,
 } from 'lucide-react';
 
 export default function TicketDetailPage() {
@@ -368,10 +369,23 @@ export default function TicketDetailPage() {
                                         </button>
                                     </div>
 
-                                    {!ticket.aiClassification ? (
-                                        <div className="flex flex-col items-center justify-center py-12 text-slate-400">
-                                            <Sparkles className="w-12 h-12 mb-4 animate-pulse opacity-50" />
-                                            <p className="font-bold">Waiting for AI assessment...</p>
+                                    {!ticket.aiClassification || ticket.aiClassification === 'General' ? (
+                                        <div className="flex flex-col items-center justify-center py-16 px-8 text-center bg-slate-50/50 rounded-[2rem] border border-dashed border-slate-200">
+                                            <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-sm mb-6">
+                                                <Sparkles className="w-8 h-8 text-indigo-400" />
+                                            </div>
+                                            <h3 className="text-lg font-black text-slate-900 mb-2">No AI Assessment Yet</h3>
+                                            <p className="text-sm font-medium text-slate-500 mb-8 max-w-sm">
+                                                This ticket was submitted before the database was ready, or AI analysis is still pending.
+                                            </p>
+                                            <button
+                                                onClick={reprocessAi}
+                                                disabled={reprocessing}
+                                                className="px-8 py-4 bg-indigo-600 text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-xl shadow-indigo-100 hover:scale-105 transition-all disabled:opacity-50 flex items-center"
+                                            >
+                                                <RefreshCw className={`w-4 h-4 mr-3 ${reprocessing ? 'animate-spin' : ''}`} />
+                                                {reprocessing ? 'Analyzing Ticket...' : 'Start Manual AI Analysis'}
+                                            </button>
                                         </div>
                                     ) : (
                                         <>
@@ -413,7 +427,7 @@ export default function TicketDetailPage() {
                                             </div>
 
                                             {ticket.aiEmailDraft && (
-                                                <div className="space-y-6 pt-6 border-t border-slate-100 mt-6">
+                                                <div id="email-draft-area" className="space-y-6 pt-6 border-t border-slate-100 mt-6">
                                                     <div className="flex items-center justify-between">
                                                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Review & Send AI Draft</p>
                                                         <button
@@ -520,32 +534,92 @@ export default function TicketDetailPage() {
                     {/* Sidebar / Quick Actions */}
                     <div className="lg:w-80 space-y-6">
                         <div className="bg-white rounded-3xl shadow-sm border border-slate-200/60 p-8">
-                            <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-6">Quick Status Update</h3>
-                            <div className="grid grid-cols-1 gap-3">
-                                <button
-                                    onClick={() => updateStatus('NEW')}
-                                    className={`px-6 py-3 rounded-xl text-sm font-black transition-all ${ticket.status === 'NEW' ? 'bg-blue-600 text-white shadow-lg shadow-blue-100' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'}`}
-                                >
-                                    New
-                                </button>
-                                <button
-                                    onClick={() => updateStatus('AI_READY')}
-                                    className={`px-6 py-3 rounded-xl text-sm font-black transition-all ${ticket.status === 'AI_READY' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'}`}
-                                >
-                                    AI Ready
-                                </button>
-                                <button
-                                    onClick={() => updateStatus('SENT')}
-                                    className={`px-6 py-3 rounded-xl text-sm font-black transition-all ${ticket.status === 'SENT' ? 'bg-amber-500 text-white shadow-lg shadow-amber-100' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'}`}
-                                >
-                                    Sent to Contractor
-                                </button>
-                                <button
-                                    onClick={() => updateStatus('CLOSED')}
-                                    className={`px-6 py-3 rounded-xl text-sm font-black transition-all ${ticket.status === 'CLOSED' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-100' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'}`}
-                                >
-                                    Close / Resolved
-                                </button>
+                            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6">Workflow Actions</h3>
+
+                            {/* Primary Contextual Action */}
+                            <div className="mb-10">
+                                {ticket.status === 'NEW' && (
+                                    <button
+                                        onClick={reprocessAi}
+                                        disabled={reprocessing}
+                                        className="w-full px-6 py-4 bg-indigo-600 text-white rounded-2xl font-black uppercase tracking-widest text-[11px] shadow-2xl shadow-indigo-100 hover:scale-105 transition-all flex items-center justify-center"
+                                    >
+                                        {reprocessing ? <RefreshCw className="w-4 h-4 mr-3 animate-spin" /> : <Sparkles className="w-4 h-4 mr-3" />}
+                                        {reprocessing ? 'Processing...' : 'Start AI Analysis ➔'}
+                                    </button>
+                                )}
+
+                                {ticket.status === 'AI_READY' && (
+                                    <button
+                                        onClick={() => {
+                                            setActiveTab('details');
+                                            setTimeout(() => {
+                                                const el = document.getElementById('email-draft-area');
+                                                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                            }, 100);
+                                        }}
+                                        className="w-full px-6 py-4 bg-indigo-600 text-white rounded-2xl font-black uppercase tracking-widest text-[11px] shadow-2xl shadow-indigo-100 hover:scale-105 transition-all flex items-center justify-center"
+                                    >
+                                        <Mail className="w-4 h-4 mr-3" />
+                                        Review & Send Email ➔
+                                    </button>
+                                )}
+
+                                {ticket.status === 'SENT' && (
+                                    <button
+                                        onClick={() => setActiveTab('conversation')}
+                                        className="w-full px-6 py-4 bg-indigo-600 text-white rounded-2xl font-black uppercase tracking-widest text-[11px] shadow-2xl shadow-indigo-100 hover:scale-105 transition-all flex items-center justify-center"
+                                    >
+                                        <MessageSquare className="w-4 h-4 mr-3" />
+                                        Chat with Tenant ➔
+                                    </button>
+                                )}
+
+                                {ticket.status === 'CLOSED' && (
+                                    <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-2xl flex items-center justify-center">
+                                        <CheckCircle2 className="w-5 h-5 text-emerald-600 mr-2" />
+                                        <span className="text-xs font-black text-emerald-800 uppercase tracking-widest">Case Resolved</span>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Secondary Manual Overrides */}
+                            <div className="pt-8 border-t border-slate-100">
+                                <div className="flex items-center justify-between mb-6">
+                                    <h3 className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Manual Override</h3>
+                                    <div className="group relative">
+                                        <HelpCircle className="w-3.5 h-3.5 text-slate-200 cursor-help" />
+                                        <div className="absolute right-0 bottom-full mb-2 w-48 p-3 bg-slate-900 text-white text-[9px] rounded-xl opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity shadow-2xl z-50 leading-relaxed">
+                                            These buttons manually change the status label for your internal tracking.
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <button
+                                        onClick={() => updateStatus('NEW')}
+                                        className={`px-3 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${ticket.status === 'NEW' ? 'bg-slate-200 text-slate-700' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`}
+                                    >
+                                        New
+                                    </button>
+                                    <button
+                                        onClick={() => updateStatus('AI_READY')}
+                                        className={`px-3 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${ticket.status === 'AI_READY' ? 'bg-slate-200 text-slate-700' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`}
+                                    >
+                                        Ready
+                                    </button>
+                                    <button
+                                        onClick={() => updateStatus('SENT')}
+                                        className={`px-3 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${ticket.status === 'SENT' ? 'bg-slate-200 text-slate-700' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`}
+                                    >
+                                        Sent
+                                    </button>
+                                    <button
+                                        onClick={() => updateStatus('CLOSED')}
+                                        className={`px-3 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${ticket.status === 'CLOSED' ? 'bg-slate-200 text-slate-700' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`}
+                                    >
+                                        Resolve
+                                    </button>
+                                </div>
                             </div>
                         </div>
 
