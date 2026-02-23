@@ -52,10 +52,15 @@ export class AiService {
             emailDraft = aiOutput.emailDraft || '';
 
         } catch (err) {
-            console.error('AI Processing failed, falling back to heuristics:', err);
-            classification = this.classifyDamage(ticket.description);
-            urgency = this.determineUrgency(ticket.description, ticket.urgency) as Urgency;
-            emailDraft = this.generateEmailDraft(ticket, classification, null);
+            console.error('[AiService] AI Processing failed:', err.message);
+
+            // Mark as FAILED so UI can show it
+            await this.prisma.ticket.update({
+                where: { id: ticketId },
+                data: { internalStatus: 'FAILED' as any }
+            });
+
+            throw err; // Re-throw for BullMQ retry logic
         }
 
         const contractors = await this.suggestContractors(ticket.tenantId, classification, ticket.propertyId);
@@ -82,8 +87,8 @@ export class AiService {
             data: {
                 urgency: urgency as Urgency,
                 category: classification,
-                status: 'AI_READY',
-                internalStatus: 'AI_READY'
+                status: 'AI_READY' as any,
+                internalStatus: 'AI_READY' as any
             },
         });
     }

@@ -89,8 +89,8 @@ export class TicketsService {
             await this.prisma.ticket.update({
                 where: { id, tenantId },
                 data: {
-                    status: 'SENT',
-                    internalStatus: 'SENT',
+                    status: TicketStatus.SENT,
+                    internalStatus: InternalStatus.SENT,
                 },
             });
 
@@ -135,14 +135,27 @@ export class TicketsService {
     }
 
     async reprocessAi(tenantId: string, id: string) {
-        const ticket = await this.findOne(tenantId, id);
-        await this.aiQueue.add('process-ticket', { ticketId: id });
+        console.log(`[TicketsService] Reprocess AI requested for ticket ${id} (Tenant: ${tenantId})`);
+        try {
+            const ticket = await this.findOne(tenantId, id);
+            if (!ticket) {
+                console.error(`[TicketsService] Ticket ${id} not found for reprocess`);
+                throw new NotFoundException('Ticket not found');
+            }
 
-        await this.prisma.ticket.update({
-            where: { id, tenantId },
-            data: { internalStatus: InternalStatus.AI_PROCESSING }
-        });
+            console.log(`[TicketsService] Adding ticket ${id} to AI queue`);
+            await this.aiQueue.add('process-ticket', { ticketId: id });
 
-        return { success: true };
+            await this.prisma.ticket.update({
+                where: { id, tenantId },
+                data: { internalStatus: InternalStatus.AI_PROCESSING }
+            });
+
+            console.log(`[TicketsService] Ticket ${id} status moved to AI_PROCESSING`);
+            return { success: true };
+        } catch (err) {
+            console.error(`[TicketsService] Failed to reprocess AI for ${id}:`, err.message);
+            throw err;
+        }
     }
 }

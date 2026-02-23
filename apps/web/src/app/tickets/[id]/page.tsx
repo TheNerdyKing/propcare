@@ -124,6 +124,7 @@ export default function TicketDetailPage() {
                 aiClassification: result.category || null,
                 aiUrgency: result.urgency || null,
                 aiEmailDraft: result.emailDraft || '',
+                errorMessage: result.errorMessage || data.error_message || null,
                 messages: (data.messages || []).sort((a: any, b: any) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()),
                 auditLogs: (data.auditLogs || []).sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
             });
@@ -381,6 +382,24 @@ export default function TicketDetailPage() {
                                             <p className="text-sm font-medium text-slate-500 max-w-sm">
                                                 PropCare AI is categorizing the issue and preparing an email draft. This usually takes 5-8 seconds.
                                             </p>
+                                        </div>
+                                    ) : (ticket.internalStatus === 'FAILED' || ticket.errorMessage) ? (
+                                        <div className="flex flex-col items-center justify-center py-16 px-8 text-center bg-red-50 rounded-[2rem] border border-dashed border-red-200">
+                                            <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-lg shadow-red-100 mb-6">
+                                                <AlertTriangle className="w-8 h-8 text-red-500" />
+                                            </div>
+                                            <h3 className="text-lg font-black text-red-900 mb-2">AI Analysis Failed</h3>
+                                            <p className="text-sm font-medium text-red-600 mb-8 max-w-sm">
+                                                {ticket.errorMessage || "The AI system encountered an unexpected error while processing this ticket."}
+                                            </p>
+                                            <button
+                                                onClick={reprocessAi}
+                                                disabled={reprocessing}
+                                                className="px-8 py-4 bg-red-600 text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-xl shadow-red-100 hover:scale-105 transition-all disabled:opacity-50 flex items-center"
+                                            >
+                                                <RefreshCw className={`w-4 h-4 mr-3 ${reprocessing ? 'animate-spin' : ''}`} />
+                                                {reprocessing ? 'Trying again...' : 'Retry Analysis'}
+                                            </button>
                                         </div>
                                     ) : !ticket.aiClassification ? (
                                         <div className="flex flex-col items-center justify-center py-16 px-8 text-center bg-slate-50/50 rounded-[2rem] border border-dashed border-slate-200">
