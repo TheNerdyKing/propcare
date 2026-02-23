@@ -10,7 +10,8 @@ import {
     LogOut,
     Menu,
     X,
-    ClipboardList
+    ClipboardList,
+    HelpCircle
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -19,6 +20,7 @@ const navigation = [
     { name: 'Tickets', href: '/tickets', icon: ClipboardList },
     { name: 'Properties', href: '/properties', icon: Building2 },
     { name: 'Contractors', href: '/contractors', icon: Users },
+    { name: 'Public Portal', href: '/report', icon: HelpCircle },
 ];
 
 export default function Sidebar() {
