@@ -22,8 +22,11 @@ enum TicketType {
 
 enum TicketStatus {
   NEW
-  IN_PROGRESS
-  COMPLETED
+  AI_PROCESSING
+  AI_READY
+  NEEDS_ATTENTION
+  SENT
+  CLOSED
 }
 
 enum InternalStatus {

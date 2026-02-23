@@ -34,6 +34,35 @@ export class PublicService {
             },
         });
 
+        // 3. Mock External Integration (MVP Requirement B)
+        try {
+            // Simulate API call to existing processing software
+            const externalTicketId = `EXT-${Math.floor(1000 + Math.random() * 9000)}`;
+            const externalUrl = `https://external-system.demo/tickets/${externalTicketId}`;
+
+            // Store external reference (assuming we have fields or use metadataJson later)
+            // For now, we just log it in the audit log
+            await this.prisma.auditLog.create({
+                data: {
+                    tenantId: defaultTenantId,
+                    action: 'EXTERNAL_SYNC_SUCCESS',
+                    targetType: 'TICKET',
+                    targetId: ticket.id,
+                    metadataJson: { externalTicketId, externalUrl },
+                },
+            });
+        } catch (err) {
+            await this.prisma.auditLog.create({
+                data: {
+                    tenantId: defaultTenantId,
+                    action: 'EXTERNAL_SYNC_FAILED',
+                    targetType: 'TICKET',
+                    targetId: ticket.id,
+                    metadataJson: { error: err.message },
+                },
+            });
+        }
+
         // Enqueue AI job
         await this.aiQueue.add('process-ticket', { ticketId: ticket.id });
 

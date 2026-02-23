@@ -64,20 +64,20 @@ export class TicketsService {
         });
     }
 
-    async sendContractorEmail(tenantId: string, id: string, data: { to: string; subject: string; body: string }, userId: string) {
+    async sendEmail(tenantId: string, id: string, to: string, subject: string, body: string, userId: string) {
         const ticket = await this.findOne(tenantId, id);
 
         // Send Email
-        const result = await this.mailsService.sendEmail(data.to, data.subject, data.body);
+        const result = await this.mailsService.sendEmail(to, subject, body);
 
         // Log Outbound Email
         await this.prisma.outboundEmail.create({
             data: {
                 tenantId,
                 ticketId: id,
-                toEmail: data.to,
-                subject: data.subject,
-                body: data.body,
+                toEmail: to,
+                subject: subject,
+                body: body,
                 status: result.success ? 'SENT' : 'FAILED',
                 errorMessage: result.error,
                 sentByUserId: userId,
@@ -89,8 +89,8 @@ export class TicketsService {
             await this.prisma.ticket.update({
                 where: { id, tenantId },
                 data: {
-                    status: TicketStatus.IN_PROGRESS,
-                    internalStatus: InternalStatus.SENT,
+                    status: 'SENT',
+                    internalStatus: 'SENT',
                 },
             });
 
@@ -102,7 +102,7 @@ export class TicketsService {
                     action: 'EMAIL_SENT',
                     targetType: 'TICKET',
                     targetId: id,
-                    metadataJson: { to: data.to, subject: data.subject },
+                    metadataJson: { to, subject },
                 },
             });
         }

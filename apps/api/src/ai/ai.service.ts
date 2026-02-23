@@ -82,6 +82,7 @@ export class AiService {
             data: {
                 urgency: urgency as Urgency,
                 category: classification,
+                status: 'AI_READY',
                 internalStatus: 'AI_READY'
             },
         });

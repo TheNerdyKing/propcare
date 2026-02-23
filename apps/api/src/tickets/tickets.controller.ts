@@ -23,12 +23,18 @@ export class TicketsController {
 
     @Patch(':id')
     async update(@Request() req: any, @Param('id') id: string, @Body() data: any) {
-        return this.ticketsService.update(req.user.tenantId, id, data, req.user.sub);
+        return this.ticketsService.update(req.user.tenantId, id, data, req.user.id);
     }
 
-    @Post(':id/send-contractor-email')
-    async sendContractorEmail(@Request() req: any, @Param('id') id: string, @Body() data: any) {
-        return this.ticketsService.sendContractorEmail(req.user.tenantId, id, data, req.user.sub);
+    @Post(':id/send-email')
+    async sendEmail(
+        @Request() req: any,
+        @Param('id') id: string,
+        @Body('to') to: string,
+        @Body('subject') subject: string,
+        @Body('body') body: string
+    ) {
+        return this.ticketsService.sendEmail(req.user.tenantId, id, to, subject, body, req.user.id);
     }
 
     @Post(':id/messages')

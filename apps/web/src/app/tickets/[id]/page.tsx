@@ -31,6 +31,9 @@ export default function TicketDetailPage() {
     const [newMessage, setNewMessage] = useState('');
     const [activeTab, setActiveTab] = useState<'details' | 'conversation' | 'audit'>('details');
     const [sendingEmail, setSendingEmail] = useState(false);
+    const [draftEmail, setDraftEmail] = useState('');
+    const [draftRecipient, setDraftRecipient] = useState('');
+    const [draftSubject, setDraftSubject] = useState('');
     const [reprocessing, setReprocessing] = useState(false);
 
     useEffect(() => {
@@ -83,6 +86,15 @@ export default function TicketDetailPage() {
                 messages: (data.messages || []).sort((a: any, b: any) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()),
                 auditLogs: (data.auditLogs || []).sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
             });
+
+            if (result.emailDraft) {
+                setDraftEmail(result.emailDraft);
+                setDraftSubject(`Maintenance Request: ${data.referenceCode} - ${data.property?.name || 'Inquiry'}`);
+            }
+
+            // Try to find a suggested contractor email
+            const suggestedEmail = result.contractors?.[0]?.email || '';
+            setDraftRecipient(suggestedEmail);
         } catch (err) {
             console.error('Failed to fetch ticket', err);
         } finally {
@@ -161,9 +173,17 @@ export default function TicketDetailPage() {
     };
 
     const sendContractorEmail = async () => {
+        if (!draftRecipient) {
+            alert('Please provide a recipient email address.');
+            return;
+        }
         setSendingEmail(true);
         try {
-            await api.post(`/tickets/${id}/send-contractor-email`);
+            await api.post(`/tickets/${id}/send-email`, {
+                to: draftRecipient,
+                subject: draftSubject,
+                body: draftEmail
+            });
             alert('Email sent successfully!');
             fetchTicket();
         } catch (err) {
@@ -354,21 +374,47 @@ export default function TicketDetailPage() {
                                             </div>
 
                                             {ticket.aiEmailDraft && (
-                                                <div className="space-y-4">
+                                                <div className="space-y-6 pt-6 border-t border-slate-100 mt-6">
                                                     <div className="flex items-center justify-between">
-                                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">AI Communication Draft</p>
+                                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Review & Send AI Draft</p>
                                                         <button
                                                             onClick={sendContractorEmail}
-                                                            disabled={sendingEmail || !ticket.contractor}
-                                                            className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all disabled:opacity-50"
+                                                            disabled={sendingEmail || !draftRecipient}
+                                                            className="flex items-center px-6 py-3 bg-indigo-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all hover:scale-105 disabled:opacity-50"
                                                         >
-                                                            <Mail className="w-3.5 h-3.5 mr-2" />
-                                                            {sendingEmail ? 'Sending...' : 'Approve & Send Email'}
+                                                            <Mail className="w-4 h-4 mr-2" />
+                                                            {sendingEmail ? 'Sending...' : 'Send to Contractor'}
                                                         </button>
                                                     </div>
-                                                    <div className="bg-slate-900 text-slate-300 p-8 rounded-2xl font-mono text-sm leading-relaxed border border-slate-800 shadow-inner">
-                                                        <pre className="whitespace-pre-wrap">{ticket.aiEmailDraft}</pre>
+
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                        <div className="space-y-2">
+                                                            <label className="text-[10px] font-black text-slate-300 uppercase tracking-widest ml-1">Recipient</label>
+                                                            <input
+                                                                type="email"
+                                                                value={draftRecipient}
+                                                                onChange={(e) => setDraftRecipient(e.target.value)}
+                                                                placeholder="contractor@email.com"
+                                                                className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-2 text-sm font-bold text-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none"
+                                                            />
+                                                        </div>
+                                                        <div className="space-y-2">
+                                                            <label className="text-[10px] font-black text-slate-300 uppercase tracking-widest ml-1">Subject</label>
+                                                            <input
+                                                                type="text"
+                                                                value={draftSubject}
+                                                                onChange={(e) => setDraftSubject(e.target.value)}
+                                                                className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-2 text-sm font-bold text-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none"
+                                                            />
+                                                        </div>
                                                     </div>
+
+                                                    <textarea
+                                                        value={draftEmail}
+                                                        onChange={(e) => setDraftEmail(e.target.value)}
+                                                        rows={10}
+                                                        className="w-full bg-slate-900 text-slate-300 p-8 rounded-[2rem] font-mono text-sm leading-relaxed border border-slate-800 shadow-2xl focus:ring-2 focus:ring-indigo-500 outline-none resize-none"
+                                                    />
                                                 </div>
                                             )}
                                         </>
@@ -441,19 +487,25 @@ export default function TicketDetailPage() {
                                     onClick={() => updateStatus('NEW')}
                                     className={`px-6 py-3 rounded-xl text-sm font-black transition-all ${ticket.status === 'NEW' ? 'bg-blue-600 text-white shadow-lg shadow-blue-100' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'}`}
                                 >
-                                    Mark as New
+                                    New
                                 </button>
                                 <button
-                                    onClick={() => updateStatus('IN_PROGRESS')}
-                                    className={`px-6 py-3 rounded-xl text-sm font-black transition-all ${ticket.status === 'IN_PROGRESS' ? 'bg-amber-500 text-white shadow-lg shadow-amber-100' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'}`}
+                                    onClick={() => updateStatus('AI_READY')}
+                                    className={`px-6 py-3 rounded-xl text-sm font-black transition-all ${ticket.status === 'AI_READY' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'}`}
                                 >
-                                    In Progress
+                                    AI Ready
                                 </button>
                                 <button
-                                    onClick={() => updateStatus('COMPLETED')}
-                                    className={`px-6 py-3 rounded-xl text-sm font-black transition-all ${ticket.status === 'COMPLETED' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-100' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'}`}
+                                    onClick={() => updateStatus('SENT')}
+                                    className={`px-6 py-3 rounded-xl text-sm font-black transition-all ${ticket.status === 'SENT' ? 'bg-amber-500 text-white shadow-lg shadow-amber-100' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'}`}
                                 >
-                                    Resolve Ticket
+                                    Sent to Contractor
+                                </button>
+                                <button
+                                    onClick={() => updateStatus('CLOSED')}
+                                    className={`px-6 py-3 rounded-xl text-sm font-black transition-all ${ticket.status === 'CLOSED' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-100' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'}`}
+                                >
+                                    Close / Resolved
                                 </button>
                             </div>
                         </div>
