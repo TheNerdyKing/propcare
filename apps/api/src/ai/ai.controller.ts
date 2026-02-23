@@ -48,8 +48,12 @@ export class AiController {
                 });
                 return { handled: true, ticketId, action: 'UPDATE_TRIGGER' };
             }
+
+            this.logger.warn(`Ticket update ignored for ${ticketId}: type=${type}, status=${record?.internal_status}`);
+        } else {
+            this.logger.warn(`Webhook ignored: No matching logic for table=${table}, type=${type}`);
         }
 
-        return { handled: false, reason: 'Ignored event type or table' };
+        return { handled: false, reason: 'Ignored event type, table, or status' };
     }
 }

@@ -1,9 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Ticket, Urgency } from '@prisma/client';
 
 @Injectable()
 export class AiService {
+    private readonly logger = new Logger(AiService.name);
     private readonly apiKey = process.env.OPENAI_API_KEY || process.env.AI_API_KEY;
     private readonly modelName = process.env.AI_MODEL_NAME || 'gpt-4o-mini';
     private readonly apiEndpoint = process.env.AI_API_ENDPOINT || 'https://api.openai.com/v1/chat/completions';
@@ -11,91 +12,101 @@ export class AiService {
     constructor(private prisma: PrismaService) { }
 
     async processTicket(ticketId: string) {
+        this.logger.log(`Starting AI processing for ticket: ${ticketId}`);
         const ticket = await this.prisma.ticket.findUnique({
             where: { id: ticketId },
             include: { property: true },
         });
 
-        if (!ticket) return;
+        if (!ticket) {
+            this.logger.error(`AI processing aborted: Ticket ${ticketId} not found.`);
+            return;
+        }
 
-        // 1. Call OpenAI API
         let classification: string = 'GENERAL_MAINTENANCE';
         let urgency: Urgency = 'NORMAL';
         let emailDraft: string = '';
 
         try {
-            const response = await fetch(this.apiEndpoint, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${this.apiKey}`,
-                },
-                body: JSON.stringify({
-                    model: this.modelName,
-                    messages: [
-                        { role: 'system', content: 'You are a facility manager. Return ONLY JSON.' },
-                        { role: 'user', content: this.buildPrompt(ticket) }
-                    ],
-                    max_tokens: 500,
-                    temperature: 0,
-                    response_format: { type: "json_object" }
-                }),
-            });
+            // 1. Instant Validation - Handle empty/short descriptions immediately
+            if (!ticket.description || ticket.description.trim().length < 5) {
+                this.logger.log(`Ticket ${ticketId} has insufficient description. Skipping AI and using defaults.`);
+                emailDraft = "Please provide more details about the maintenance issue so we can assist you better.";
+            } else {
+                // 2. Call OpenAI API
+                const response = await fetch(this.apiEndpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${this.apiKey}`,
+                    },
+                    body: JSON.stringify({
+                        model: this.modelName,
+                        messages: [
+                            { role: 'system', content: 'You are a facility manager. Return ONLY JSON.' },
+                            { role: 'user', content: this.buildPrompt(ticket) }
+                        ],
+                        max_tokens: 500,
+                        temperature: 0,
+                        response_format: { type: "json_object" }
+                    }),
+                });
 
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(`OpenAI API failed: ${response.statusText}. ${JSON.stringify(errorData)}`);
+                if (!response.ok) {
+                    throw new Error(`OpenAI API failed: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                const aiOutput = this.parseAiResponse(data);
+
+                classification = aiOutput.category || this.classifyDamage(ticket.description);
+                urgency = (aiOutput.urgency as Urgency) || (this.determineUrgency(ticket.description, 'NORMAL') as Urgency);
+                emailDraft = aiOutput.emailDraft || this.generateEmailDraft(ticket, classification, null);
             }
 
-            const data = await response.json();
-            // Assuming gpt-5-nano returns the classification and draft in a standard format
-            // Based on the user's provided curl, we might need to parse the response content
-            const aiOutput = this.parseAiResponse(data);
-
-            classification = aiOutput.category || 'GENERAL_MAINTENANCE';
-            urgency = (aiOutput.urgency as Urgency) || 'NORMAL';
-            emailDraft = aiOutput.emailDraft || '';
-
-        } catch (err) {
-            console.error('[AiService] AI Processing failed:', err.message);
-
-            // Mark as FAILED so UI can show it
-            await this.prisma.ticket.update({
-                where: { id: ticketId },
-                data: { internalStatus: 'FAILED' as any }
+            // 3. Save AI results
+            await this.prisma.aiResult.create({
+                data: {
+                    tenantId: ticket.tenantId,
+                    ticketId: ticket.id,
+                    modelName: this.modelName,
+                    promptVersion: '3.0-robust',
+                    outputJson: {
+                        category: classification,
+                        urgency: urgency,
+                        emailDraft: emailDraft,
+                    },
+                },
             });
 
-            throw err; // Re-throw for BullMQ retry logic
-        }
-
-        const contractors = await this.suggestContractors(ticket.tenantId, classification, ticket.propertyId);
-
-        // Save AI results
-        await this.prisma.aiResult.create({
-            data: {
-                tenantId: ticket.tenantId,
-                ticketId: ticket.id,
-                modelName: this.modelName,
-                promptVersion: '2.0',
-                outputJson: {
+            // 4. Update ticket internal status to TERMINAL state (AI_READY)
+            await this.prisma.ticket.update({
+                where: { id: ticketId },
+                data: {
+                    urgency: urgency as Urgency,
                     category: classification,
-                    urgency: urgency,
-                    contractors: contractors,
-                    emailDraft: emailDraft,
+                    status: 'AI_READY' as any,
+                    internalStatus: 'AI_READY' as any
                 },
-            },
-        });
+            });
 
-        // Update ticket internal status
-        await this.prisma.ticket.update({
-            where: { id: ticketId },
-            data: {
-                urgency: urgency as Urgency,
-                category: classification,
-                status: 'AI_READY' as any,
-                internalStatus: 'AI_READY' as any
-            },
-        });
+            this.logger.log(`AI processing completed successfully for ticket: ${ticketId}`);
+
+        } catch (err) {
+            this.logger.error(`AI Processing failed for ${ticketId}: ${err.message}`);
+
+            // GUARANTEE TERMINAL STATE: Force update to FAILED if anything crashes
+            try {
+                await this.prisma.ticket.update({
+                    where: { id: ticketId },
+                    data: { internalStatus: 'FAILED' as any }
+                });
+            } catch (dbErr) {
+                this.logger.error(`FATAL: Could not even set terminal FAILED state for ${ticketId}: ${dbErr.message}`);
+            }
+
+            throw err; // Still throw for BullMQ retries if applicable
+        }
     }
 
     private buildPrompt(ticket: any): string {
