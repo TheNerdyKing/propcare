@@ -1,4 +1,4 @@
-import { Controller, Post, Body, HttpCode, HttpStatus, Logger, Request, ForbiddenException } from '@nestjs/common';
+import { Controller, Post, Body, HttpCode, HttpStatus, Logger, Request, ForbiddenException, Param } from '@nestjs/common';
 import { AiService } from './ai.service';
 import { Public } from '../auth/decorators/public.decorator';
 
@@ -48,5 +48,21 @@ export class AiController {
         }
 
         return { handled: false, reason: 'Ignored event type, table, or status' };
+    }
+
+    @Post(':id/analyze')
+    async manualAnalyze(@Param('id') id: string, @Request() req: any) {
+        this.logger.log(`Direct AI analysis requested via API for ticket: ${id}`);
+
+        // userId from JWT if available
+        const userId = req.user?.id;
+
+        try {
+            await this.aiService.processTicket(id, userId);
+            return { success: true, ticketId: id };
+        } catch (err) {
+            this.logger.error(`Manual AI analysis failed for ${id}: ${err.message}`);
+            throw err;
+        }
     }
 }

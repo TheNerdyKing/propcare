@@ -14,6 +14,12 @@ export class AiService {
     async processTicket(ticketId: string, actorUserId?: string) {
         this.logger.log(`Starting AI processing for ticket: ${ticketId}`);
 
+        // Set state to AI_PROCESSING immediately
+        await this.prisma.ticket.update({
+            where: { id: ticketId },
+            data: { internalStatus: 'AI_PROCESSING' as any }
+        });
+
         // 0. Audit Log: AI_START
         await this.prisma.auditLog.create({
             data: {
