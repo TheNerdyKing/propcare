@@ -205,20 +205,11 @@ export default function TicketDetailPage() {
     const reprocessAi = async () => {
         setReprocessing(true);
         try {
-            // Try newest endpoint first
-            await api.post(`/tickets/${id}/trigger-ai`);
+            await api.post('/tickets/reprocess', { ticketId: id });
             alert('AI Analysis triggered successfully. Results will appear shortly.');
             await fetchTicket();
         } catch (err: any) {
             console.error('Reprocess failed', err);
-            // Fallback for transition period if needed
-            if (err.response?.status === 405 || err.response?.status === 404) {
-                try {
-                    await api.post(`/tickets/${id}/reprocess-ai`);
-                    await fetchTicket();
-                    return;
-                } catch (innerErr) { }
-            }
             alert(`Failed to start AI analysis: ${err.response?.data?.message || err.message || 'Unknown error'}`);
         } finally {
             setReprocessing(false);
@@ -586,7 +577,7 @@ export default function TicketDetailPage() {
                                         className="w-full px-6 py-4 bg-indigo-600 text-white rounded-2xl font-black uppercase tracking-widest text-[11px] shadow-2xl shadow-indigo-100 hover:scale-105 transition-all flex items-center justify-center"
                                     >
                                         {reprocessing ? <RefreshCw className="w-4 h-4 mr-3 animate-spin" /> : <Sparkles className="w-4 h-4 mr-3" />}
-                                        {reprocessing ? 'Processing...' : 'Start AI Analysis ➔'}
+                                        {reprocessing ? 'Processing...' : 'Run AI Analysis ➔'}
                                     </button>
                                 )}
 

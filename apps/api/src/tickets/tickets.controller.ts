@@ -16,14 +16,14 @@ export class TicketsController {
         return this.ticketsService.findAll(req.user.tenantId, { status, search, propertyId });
     }
 
+    @Post('reprocess')
+    async reprocessTicket(@Request() req: any, @Body('ticketId') ticketId: string) {
+        return this.ticketsService.reprocessAi(req.user.tenantId, ticketId);
+    }
+
     @Get(':id')
     async findOne(@Request() req: any, @Param('id') id: string) {
         return this.ticketsService.findOne(req.user.tenantId, id);
-    }
-
-    @Post(':id/trigger-ai')
-    async reprocessAi(@Request() req: any, @Param('id') id: string) {
-        return this.ticketsService.reprocessAi(req.user.tenantId, id);
     }
 
     @Patch(':id')
