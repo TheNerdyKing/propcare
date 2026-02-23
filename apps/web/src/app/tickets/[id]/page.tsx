@@ -288,7 +288,7 @@ export default function TicketDetailPage() {
                         Back to Dashboard
                     </button>
                     <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest bg-slate-50 px-3 py-1 rounded-full border border-slate-100">
-                        Deployment v1.8-supabase-pure
+                        Deployment v1.9-audit-fixed
                     </span>
                 </div>
 
@@ -604,17 +604,34 @@ export default function TicketDetailPage() {
                                 <div className="p-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
                                     <h3 className="text-xl font-black text-slate-900 mb-8 tracking-tight">System Audit Log</h3>
                                     <div className="space-y-0 relative border-l-2 border-slate-100 ml-3">
-                                        {(ticket.auditLogs || []).map((log: any, idx: number) => (
-                                            <div key={log.id} className="mb-10 ml-8 relative group">
-                                                <div className="absolute -left-[41px] top-1 w-4 h-4 rounded-full border-4 border-white bg-slate-300 group-hover:bg-indigo-600 transition-colors" />
-                                                <div className="flex items-center justify-between mb-2">
-                                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{new Date(log.createdAt).toLocaleString()}</p>
-                                                    <span className="px-2 py-0.5 bg-slate-100 text-[10px] font-black text-slate-500 rounded-md tracking-widest">{log.action}</span>
+                                        {(ticket.auditLogs || []).map((log: any) => {
+                                            const getAuditMessage = () => {
+                                                const meta = log.metadataJson || {};
+                                                switch (log.action) {
+                                                    case 'AI_START': return `AI analysis started using ${meta.model || 'gpt-4o-mini'}.`;
+                                                    case 'AI_SUCCESS': return `AI analysis completed: Classified as ${meta.category} with ${meta.urgency} urgency.`;
+                                                    case 'AI_FAILED': return `AI analysis failed: ${meta.error || 'Unknown error'}.`;
+                                                    case 'AI_SKIPPED': return `AI analysis skipped: ${meta.reason === 'insufficient_description' ? 'Insufficient details to analyze.' : meta.reason}`;
+                                                    case 'EMAIL_SENT': return `Contractor email sent to ${meta.to || 'recipient'}. Subject: ${meta.subject || '(no subject)'}`;
+                                                    case 'STATUS_CHANGED': return `Internal status manually changed to ${meta.newStatus}.`;
+                                                    case 'EXTERNAL_SYNC_SUCCESS': return `Successfully synced with external system (ID: ${meta.externalTicketId}).`;
+                                                    case 'EXTERNAL_SYNC_FAILED': return `External synchronization failed: ${meta.error || 'Unknown error'}.`;
+                                                    default: return `Action recorded: ${log.action.replace(/_/g, ' ')}.`;
+                                                }
+                                            };
+
+                                            return (
+                                                <div key={log.id} className="mb-10 ml-8 relative group">
+                                                    <div className="absolute -left-[41px] top-1 w-4 h-4 rounded-full border-4 border-white bg-slate-300 group-hover:bg-indigo-600 transition-colors" />
+                                                    <div className="flex items-center justify-between mb-2">
+                                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{new Date(log.createdAt).toLocaleString()}</p>
+                                                        <span className="px-2 py-0.5 bg-slate-100 text-[10px] font-black text-slate-500 rounded-md tracking-widest">{log.action}</span>
+                                                    </div>
+                                                    <p className="text-slate-800 font-bold mb-1">{getAuditMessage()}</p>
+                                                    <p className="text-xs font-medium text-slate-500">System generated via automation.</p>
                                                 </div>
-                                                <p className="text-slate-800 font-bold mb-1">{log.details}</p>
-                                                <p className="text-xs font-medium text-slate-500">System generated via automation.</p>
-                                            </div>
-                                        ))}
+                                            );
+                                        })}
                                     </div>
                                 </div>
                             )}

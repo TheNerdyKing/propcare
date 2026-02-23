@@ -11,8 +11,21 @@ export class AiService {
 
     constructor(private prisma: PrismaService) { }
 
-    async processTicket(ticketId: string) {
+    async processTicket(ticketId: string, actorUserId?: string) {
         this.logger.log(`Starting AI processing for ticket: ${ticketId}`);
+
+        // 0. Audit Log: AI_START
+        await this.prisma.auditLog.create({
+            data: {
+                tenantId: (await this.prisma.ticket.findUnique({ where: { id: ticketId }, select: { tenantId: true } }))?.tenantId || 'default-tenant-uuid',
+                action: 'AI_START',
+                targetType: 'TICKET',
+                targetId: ticketId,
+                actorUserId: actorUserId || null,
+                metadataJson: { model: this.modelName }
+            }
+        });
+
         const ticket = await this.prisma.ticket.findUnique({
             where: { id: ticketId },
             include: { property: true },
@@ -31,6 +44,17 @@ export class AiService {
             // 1. Instant Validation - Handle empty/short descriptions immediately
             if (!ticket.description || ticket.description.trim().length < 10) {
                 this.logger.log(`Ticket ${ticketId} has insufficient description (< 10 chars). Marking as NEEDS_ATTENTION.`);
+
+                // Audit Log: AI_SKIPPED
+                await this.prisma.auditLog.create({
+                    data: {
+                        tenantId: ticket.tenantId,
+                        action: 'AI_SKIPPED',
+                        targetType: 'TICKET',
+                        targetId: ticketId,
+                        metadataJson: { reason: 'insufficient_description', length: ticket.description?.length || 0 }
+                    }
+                });
 
                 await this.prisma.ticket.update({
                     where: { id: ticketId },
@@ -98,6 +122,17 @@ export class AiService {
                 },
             });
 
+            // Audit Log: AI_SUCCESS
+            await this.prisma.auditLog.create({
+                data: {
+                    tenantId: ticket.tenantId,
+                    action: 'AI_SUCCESS',
+                    targetType: 'TICKET',
+                    targetId: ticketId,
+                    metadataJson: { category: classification, urgency: urgency }
+                }
+            });
+
             this.logger.log(`AI processing completed successfully for ticket: ${ticketId}`);
 
         } catch (err) {
@@ -108,6 +143,17 @@ export class AiService {
                 await this.prisma.ticket.update({
                     where: { id: ticketId },
                     data: { internalStatus: 'FAILED' as any }
+                });
+
+                // Audit Log: AI_FAILED
+                await this.prisma.auditLog.create({
+                    data: {
+                        tenantId: ticket?.tenantId || 'default-tenant-uuid',
+                        action: 'AI_FAILED',
+                        targetType: 'TICKET',
+                        targetId: ticketId,
+                        metadataJson: { error: err.message }
+                    }
                 });
             } catch (dbErr) {
                 this.logger.error(`FATAL: Could not even set terminal FAILED state for ${ticketId}: ${dbErr.message}`);
