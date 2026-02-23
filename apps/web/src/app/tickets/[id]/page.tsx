@@ -121,8 +121,8 @@ export default function TicketDetailPage() {
                 urgency: data.urgency,
                 status: data.status,
                 internalStatus: data.internal_status,
-                aiClassification: result.category || 'General',
-                aiUrgency: result.urgency || 'Normal',
+                aiClassification: result.category || null,
+                aiUrgency: result.urgency || null,
                 aiEmailDraft: result.emailDraft || '',
                 messages: (data.messages || []).sort((a: any, b: any) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()),
                 auditLogs: (data.auditLogs || []).sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
@@ -205,10 +205,11 @@ export default function TicketDetailPage() {
         setReprocessing(true);
         try {
             await api.post(`/tickets/${id}/reprocess-ai`);
-            alert('AI Analysis started in the background. Results will appear automatically in a few moments.');
+            alert('AI Analysis triggered successfully. Please wait a few seconds for results.');
             await fetchTicket();
-        } catch (err) {
+        } catch (err: any) {
             console.error('Reprocess failed', err);
+            alert(`Failed to start AI analysis: ${err.response?.data?.message || err.message || 'Unknown error'}`);
         } finally {
             setReprocessing(false);
         }
@@ -372,23 +373,23 @@ export default function TicketDetailPage() {
                                     </div>
 
                                     {ticket.internalStatus === 'AI_PROCESSING' ? (
-                                        <div className="flex flex-col items-center justify-center py-16 px-8 text-center bg-indigo-50/30 rounded-[2rem] border border-dashed border-indigo-200">
-                                            <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-100 mb-6">
+                                        <div className="flex flex-col items-center justify-center py-16 px-8 text-center bg-indigo-50/20 rounded-[2rem] border border-dashed border-indigo-100">
+                                            <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-100/50 mb-6">
                                                 <RefreshCw className="w-8 h-8 text-indigo-500 animate-spin" />
                                             </div>
-                                            <h3 className="text-lg font-black text-slate-900 mb-2">AI is Analyzing...</h3>
+                                            <h3 className="text-lg font-black text-slate-900 mb-2">Analyzing Request...</h3>
                                             <p className="text-sm font-medium text-slate-500 max-w-sm">
-                                                We're processing the ticket details to categorize the issue and draft an email. This usually takes 5-10 seconds.
+                                                PropCare AI is categorizing the issue and preparing an email draft. This usually takes 5-8 seconds.
                                             </p>
                                         </div>
-                                    ) : !ticket.aiClassification || ticket.aiClassification === 'General' ? (
+                                    ) : !ticket.aiClassification ? (
                                         <div className="flex flex-col items-center justify-center py-16 px-8 text-center bg-slate-50/50 rounded-[2rem] border border-dashed border-slate-200">
                                             <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-sm mb-6">
                                                 <Sparkles className="w-8 h-8 text-indigo-400" />
                                             </div>
-                                            <h3 className="text-lg font-black text-slate-900 mb-2">No AI Assessment Yet</h3>
+                                            <h3 className="text-lg font-black text-slate-900 mb-2">No AI Assessment Available</h3>
                                             <p className="text-sm font-medium text-slate-500 mb-8 max-w-sm">
-                                                This ticket was submitted before the database was ready, or AI analysis is still pending.
+                                                This ticket is currently awaiting AI analysis or the previous attempt was manually reset.
                                             </p>
                                             <button
                                                 onClick={reprocessAi}
@@ -396,7 +397,7 @@ export default function TicketDetailPage() {
                                                 className="px-8 py-4 bg-indigo-600 text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-xl shadow-indigo-100 hover:scale-105 transition-all disabled:opacity-50 flex items-center"
                                             >
                                                 <RefreshCw className={`w-4 h-4 mr-3 ${reprocessing ? 'animate-spin' : ''}`} />
-                                                {reprocessing ? 'Analyzing Ticket...' : 'Start Manual AI Analysis'}
+                                                {reprocessing ? 'Processing...' : 'Run Analysis Now'}
                                             </button>
                                         </div>
                                     ) : (
@@ -646,6 +647,19 @@ export default function TicketDetailPage() {
                                 <span className="text-xs font-bold text-indigo-200">System standing by...</span>
                             </div>
                         </div>
+                    </div>
+
+                    {/* DEBUG FOOTER - REMOVE LATER */}
+                    <div className="mt-20 p-8 bg-slate-100 rounded-3xl border border-slate-200 text-[10px] font-mono whitespace-pre overflow-auto max-h-60">
+                        <p className="font-black mb-4">🔧 SYSTEM DEBUG MODE</p>
+                        {JSON.stringify({
+                            id: ticket.id,
+                            status: ticket.status,
+                            internalStatus: ticket.internalStatus,
+                            aiClassification: ticket.aiClassification,
+                            hasEmailDraft: !!ticket.aiEmailDraft,
+                            hasAuditLogs: (ticket.auditLogs || []).length
+                        }, null, 2)}
                     </div>
                 </div>
             </div>
