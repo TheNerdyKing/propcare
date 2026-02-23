@@ -288,7 +288,7 @@ export default function TicketDetailPage() {
                         Back to Dashboard
                     </button>
                     <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest bg-slate-50 px-3 py-1 rounded-full border border-slate-100">
-                        Deployment v1.7-realtime-fixed
+                        Deployment v1.8-supabase-pure
                     </span>
                 </div>
 
@@ -404,13 +404,42 @@ export default function TicketDetailPage() {
 
                                     {ticket.internalStatus === 'AI_PROCESSING' ? (
                                         <div className="flex flex-col items-center justify-center py-16 px-8 text-center bg-indigo-50/20 rounded-[2rem] border border-dashed border-indigo-100">
-                                            <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-100/50 mb-6">
-                                                <RefreshCw className="w-8 h-8 text-indigo-500 animate-spin" />
+                                            <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-100/50 mb-6 font-bold text-indigo-500">
+                                                <RefreshCw className="w-8 h-8 animate-spin" />
                                             </div>
                                             <h3 className="text-lg font-black text-slate-900 mb-2">Analyzing Request...</h3>
-                                            <p className="text-sm font-medium text-slate-500 max-w-sm">
+                                            <p className="text-sm font-medium text-slate-500 max-w-sm mb-6">
                                                 PropCare AI is lightning fast. Your results will appear in a second or two.
                                             </p>
+
+                                            {/* Watchdog/Reset after 5 seconds to prevent hanging */}
+                                            <button
+                                                onClick={() => {
+                                                    supabase.from('tickets').update({ internal_status: 'NEW' }).eq('id', id);
+                                                    setTicket(prev => prev ? ({ ...prev, internalStatus: 'NEW' }) : null);
+                                                }}
+                                                className="text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-indigo-600 transition-colors"
+                                            >
+                                                Take too long? Reset & Try Again
+                                            </button>
+                                        </div>
+                                    ) : ticket.internalStatus === 'NEEDS_ATTENTION' ? (
+                                        <div className="flex flex-col items-center justify-center py-16 px-8 text-center bg-amber-50 rounded-[2rem] border border-dashed border-amber-200">
+                                            <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-lg shadow-amber-100 mb-6">
+                                                <AlertTriangle className="w-8 h-8 text-amber-500" />
+                                            </div>
+                                            <h3 className="text-lg font-black text-amber-900 mb-2">Insufficient Details</h3>
+                                            <p className="text-sm font-medium text-amber-600 mb-8 max-w-sm">
+                                                The description is too short for a reliable AI assessment. Please add more details and click reprocess.
+                                            </p>
+                                            <button
+                                                onClick={reprocessAi}
+                                                disabled={reprocessing}
+                                                className="px-8 py-4 bg-amber-600 text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-xl shadow-amber-100 hover:scale-105 transition-all disabled:opacity-50 flex items-center"
+                                            >
+                                                <RefreshCw className={`w-4 h-4 mr-3 ${reprocessing ? 'animate-spin' : ''}`} />
+                                                {reprocessing ? 'Processing...' : 'Try Again'}
+                                            </button>
                                         </div>
                                     ) : (ticket.internalStatus === 'FAILED' || ticket.errorMessage) ? (
                                         <div className="flex flex-col items-center justify-center py-16 px-8 text-center bg-red-50 rounded-[2rem] border border-dashed border-red-200">

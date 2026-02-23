@@ -29,9 +29,17 @@ export class AiService {
 
         try {
             // 1. Instant Validation - Handle empty/short descriptions immediately
-            if (!ticket.description || ticket.description.trim().length < 5) {
-                this.logger.log(`Ticket ${ticketId} has insufficient description. Skipping AI and using defaults.`);
-                emailDraft = "Please provide more details about the maintenance issue so we can assist you better.";
+            if (!ticket.description || ticket.description.trim().length < 10) {
+                this.logger.log(`Ticket ${ticketId} has insufficient description (< 10 chars). Marking as NEEDS_ATTENTION.`);
+
+                await this.prisma.ticket.update({
+                    where: { id: ticketId },
+                    data: {
+                        internalStatus: 'NEEDS_ATTENTION' as any,
+                        status: 'NEEDS_ATTENTION' as any
+                    }
+                });
+                return;
             } else {
                 // 2. Call OpenAI API
                 const response = await fetch(this.apiEndpoint, {
@@ -70,7 +78,7 @@ export class AiService {
                     tenantId: ticket.tenantId,
                     ticketId: ticket.id,
                     modelName: this.modelName,
-                    promptVersion: '3.0-robust',
+                    promptVersion: '4.0-supabase-pure',
                     outputJson: {
                         category: classification,
                         urgency: urgency,
