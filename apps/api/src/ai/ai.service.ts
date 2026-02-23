@@ -4,9 +4,9 @@ import { Ticket, Urgency } from '@prisma/client';
 
 @Injectable()
 export class AiService {
-    private readonly apiKey = process.env.AI_API_KEY;
-    private readonly modelName = process.env.AI_MODEL_NAME || 'gpt-5-nano';
-    private readonly apiEndpoint = process.env.AI_API_ENDPOINT || 'https://api.openai.com/v1/responses';
+    private readonly apiKey = process.env.OPENAI_API_KEY || process.env.AI_API_KEY;
+    private readonly modelName = process.env.AI_MODEL_NAME || 'gpt-4o-mini';
+    private readonly apiEndpoint = process.env.AI_API_ENDPOINT || 'https://api.openai.com/v1/chat/completions';
 
     constructor(private prisma: PrismaService) { }
 
@@ -32,8 +32,13 @@ export class AiService {
                 },
                 body: JSON.stringify({
                     model: this.modelName,
-                    input: this.buildPrompt(ticket),
-                    store: true
+                    messages: [
+                        { role: 'system', content: 'You are a facility manager. Return ONLY JSON.' },
+                        { role: 'user', content: this.buildPrompt(ticket) }
+                    ],
+                    max_tokens: 500,
+                    temperature: 0,
+                    response_format: { type: "json_object" }
                 }),
             });
 
@@ -94,26 +99,16 @@ export class AiService {
     }
 
     private buildPrompt(ticket: any): string {
-        return `
-            Act as an expert facility management assistant for PropCare. 
-            Analyze the following maintenance request and provide a JSON response.
-            
-            TICKET DESCRIPTION: "${ticket.description}"
-            REF CODE: ${ticket.referenceCode}
-            FACILITY: ${ticket.property?.name || 'Unknown'} / ${ticket.unitLabel || 'Common Area'}
-            
-            JSON OUTPUT FORMAT:
-            {
-                "category": "PLUMBING" | "ELECTRICAL" | "LOCKSMITH" | "HEATING" | "GENERAL_MAINTENANCE",
-                "urgency": "EMERGENCY" | "URGENT" | "NORMAL",
-                "emailDraft": "A professional email draft to a contractor explaining the situation clearly."
-            }
-            
-            RULES:
-            - Provide ONLY the JSON.
-            - Category must match the enum exactly.
-            - Urgency must be one of the three options.
-        `;
+        return `Analyze maintenance request and return JSON:
+        DESCRIPTION: "${ticket.description}"
+        FACILITY: ${ticket.property?.name || 'Unknown'} - ${ticket.unitLabel || 'Common Area'}
+        
+        FORMAT:
+        {
+            "category": "PLUMBING" | "ELECTRICAL" | "LOCKSMITH" | "HEATING" | "GENERAL_MAINTENANCE",
+            "urgency": "EMERGENCY" | "URGENT" | "NORMAL",
+            "emailDraft": "Concise contractor email draft."
+        }`;
     }
 
     private parseAiResponse(data: any): any {

@@ -281,7 +281,7 @@ export default function TicketDetailPage() {
                         Back to Dashboard
                     </button>
                     <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest bg-slate-50 px-3 py-1 rounded-full border border-slate-100">
-                        Deployment v1.4-supabase-native
+                        Deployment v1.5-lightning
                     </span>
                 </div>
 
@@ -402,7 +402,7 @@ export default function TicketDetailPage() {
                                             </div>
                                             <h3 className="text-lg font-black text-slate-900 mb-2">Analyzing Request...</h3>
                                             <p className="text-sm font-medium text-slate-500 max-w-sm">
-                                                PropCare AI is categorizing the issue and preparing an email draft. This usually takes 5-8 seconds.
+                                                PropCare AI is lightning fast. Your results will appear in a second or two.
                                             </p>
                                         </div>
                                     ) : (ticket.internalStatus === 'FAILED' || ticket.errorMessage) ? (
