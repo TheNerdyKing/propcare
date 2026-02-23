@@ -4,9 +4,9 @@ import { Ticket, Urgency } from '@prisma/client';
 
 @Injectable()
 export class AiService {
-    private readonly apiKey = process.env.AI_API_KEY;
-    private readonly modelName = process.env.AI_MODEL_NAME || 'gpt-5-nano';
-    private readonly apiEndpoint = process.env.AI_API_ENDPOINT || 'https://api.openai.com/v1/responses';
+    private readonly apiKey = process.env.OPENAI_API_KEY || process.env.AI_API_KEY;
+    private readonly modelName = process.env.AI_MODEL_NAME || 'gpt-4o-mini';
+    private readonly apiEndpoint = process.env.AI_API_ENDPOINT || 'https://api.openai.com/v1/chat/completions';
 
     constructor(private prisma: PrismaService) { }
 

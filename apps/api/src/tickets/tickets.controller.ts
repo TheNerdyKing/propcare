@@ -1,10 +1,17 @@
 import { Controller, Get, Post, Patch, Param, Body, Query, Request } from '@nestjs/common';
 import { TicketsService } from './tickets.service';
 import { TicketStatus } from '@prisma/client';
+import { Public } from '../auth/decorators/public.decorator';
 
 @Controller('tickets')
 export class TicketsController {
     constructor(private ticketsService: TicketsService) { }
+
+    @Get('diagnostics')
+    @Public()
+    async diagnostics() {
+        return { version: 'v1.2-static-route', timestamp: new Date().toISOString() };
+    }
 
     @Get()
     async findAll(

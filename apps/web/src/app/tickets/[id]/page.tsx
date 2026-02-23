@@ -255,13 +255,18 @@ export default function TicketDetailPage() {
     return (
         <AuthenticatedLayout>
             <div className="p-8 max-w-6xl mx-auto text-slate-900">
-                <button
-                    onClick={() => router.back()}
-                    className="flex items-center text-slate-500 hover:text-indigo-600 font-bold text-sm mb-6 transition-colors uppercase tracking-widest"
-                >
-                    <ChevronLeft className="w-4 h-4 mr-1" />
-                    Back to Dashboard
-                </button>
+                <div className="flex items-center justify-between mb-6">
+                    <button
+                        onClick={() => router.back()}
+                        className="flex items-center text-slate-500 hover:text-indigo-600 font-bold text-sm transition-colors uppercase tracking-widest"
+                    >
+                        <ChevronLeft className="w-4 h-4 mr-1" />
+                        Back to Dashboard
+                    </button>
+                    <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest bg-slate-50 px-3 py-1 rounded-full border border-slate-100">
+                        Deployment v1.2-static
+                    </span>
+                </div>
 
                 <div className="flex flex-col lg:flex-row gap-8">
                     {/* Main Content */}
