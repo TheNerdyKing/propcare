@@ -6,6 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { supabase } from '@/lib/supabaseClient';
 import { Loader2, CheckCircle2, AlertCircle, Upload, ShieldCheck, HelpCircle } from 'lucide-react';
+import Link from 'next/link';
 
 const reportSchema = z.object({
     propertyId: z.string().uuid('Please select a property'),
@@ -23,6 +24,7 @@ type ReportFormValues = z.infer<typeof reportSchema>;
 export default function PublicReportPage() {
     const [properties, setProperties] = useState<{ id: string; name: string }[]>([]);
     const [submitted, setSubmitted] = useState(false);
+    const [ticket, setTicket] = useState<any>(null);
     const [referenceCode, setReferenceCode] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -122,6 +124,7 @@ export default function PublicReportPage() {
                 }
             }
 
+            setTicket(ticketData);
             setReferenceCode(refCode);
             setSubmitted(true);
         } catch (err: any) {
@@ -149,12 +152,20 @@ export default function PublicReportPage() {
                         <p className="text-4xl font-mono font-black text-indigo-600 tracking-widest">{referenceCode}</p>
                     </div>
 
-                    <button
-                        onClick={() => window.location.reload()}
-                        className="text-indigo-600 font-black text-xs uppercase tracking-[0.2em] hover:scale-105 transition-transform"
-                    >
-                        Submit another report ➔
-                    </button>
+                    <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
+                        <Link
+                            href={`/status/${ticket?.id || ''}`}
+                            className="w-full sm:w-auto px-8 h-16 bg-indigo-600 text-white rounded-2xl flex items-center justify-center font-black uppercase tracking-widest text-[10px] shadow-xl shadow-indigo-100 hover:scale-105 transition-transform"
+                        >
+                            Track Status & Chat ➔
+                        </Link>
+                        <button
+                            onClick={() => window.location.reload()}
+                            className="text-slate-400 font-bold text-xs uppercase tracking-[0.2em] hover:text-indigo-600 transition-colors"
+                        >
+                            Submit another report
+                        </button>
+                    </div>
                 </div>
             </div>
         );

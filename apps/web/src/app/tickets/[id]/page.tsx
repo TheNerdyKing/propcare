@@ -37,7 +37,46 @@ export default function TicketDetailPage() {
     const [reprocessing, setReprocessing] = useState(false);
 
     useEffect(() => {
-        if (id) fetchTicket();
+        if (!id) return;
+        fetchTicket();
+
+        // Subscribe to ticket changes
+        const ticketSubscription = supabase
+            .channel(`staff-ticket-${id}`)
+            .on('postgres_changes', {
+                event: 'UPDATE',
+                schema: 'public',
+                table: 'tickets',
+                filter: `id=eq.${id}`
+            }, (payload) => {
+                setTicket(prev => prev ? ({ ...prev, ...payload.new, status: payload.new.status }) : null);
+            })
+            .subscribe();
+
+        // Subscribe to messages
+        const messageSubscription = supabase
+            .channel(`staff-messages-${id}`)
+            .on('postgres_changes', {
+                event: 'INSERT',
+                schema: 'public',
+                table: 'ticket_messages',
+                filter: `ticket_id=eq.${id}`
+            }, (payload) => {
+                const newMsg = payload.new;
+                setTicket(prev => {
+                    if (!prev) return null;
+                    const updatedMessages = [...(prev.messages || []), newMsg].sort(
+                        (a: any, b: any) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+                    );
+                    return { ...prev, messages: updatedMessages };
+                });
+            })
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(ticketSubscription);
+            supabase.removeChannel(messageSubscription);
+        };
     }, [id]);
 
     const getTenantId = () => {
@@ -119,7 +158,7 @@ export default function TicketDetailPage() {
             if (error) throw error;
 
             setNewMessage('');
-            fetchTicket();
+            // No need to call fetchTicket() here as Realtime will pick up the insert
         } catch (err) {
             console.error('Failed to send message', err);
         }
@@ -426,13 +465,13 @@ export default function TicketDetailPage() {
                                 <div className="flex flex-col h-[500px] animate-in fade-in slide-in-from-bottom-2 duration-300">
                                     <div className="flex-1 p-8 space-y-6 overflow-y-auto bg-slate-50/30">
                                         {(ticket.messages || []).map((msg: any) => (
-                                            <div key={msg.id} className={`flex ${msg.senderType === 'STAFF' ? 'justify-end' : 'justify-start'}`}>
-                                                <div className={`max-w-[80%] p-4 rounded-2xl shadow-sm text-sm leading-relaxed ${msg.senderType === 'STAFF'
+                                            <div key={msg.id} className={`flex ${msg.sender_type === 'STAFF' || msg.senderType === 'STAFF' ? 'justify-end' : 'justify-start'}`}>
+                                                <div className={`max-w-[80%] p-4 rounded-2xl shadow-sm text-sm leading-relaxed ${msg.sender_type === 'STAFF' || msg.senderType === 'STAFF'
                                                     ? 'bg-indigo-600 text-white rounded-tr-none'
                                                     : 'bg-white text-slate-800 rounded-tl-none border border-slate-100'
                                                     }`}>
                                                     <div className="flex items-center justify-between mb-2 opacity-70">
-                                                        <span className="text-[10px] font-black uppercase tracking-widest">{msg.senderType}</span>
+                                                        <span className="text-[10px] font-black uppercase tracking-widest">{msg.sender_type || msg.senderType}</span>
                                                         <span className="text-[10px] font-medium ml-4">{new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                                                     </div>
                                                     <p className="font-medium">{msg.content}</p>
