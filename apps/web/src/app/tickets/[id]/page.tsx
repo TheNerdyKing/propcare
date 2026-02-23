@@ -73,6 +73,11 @@ export default function TicketDetailPage() {
             const result = data.results?.[0]?.output_json || {};
             setTicket({
                 ...data,
+                referenceCode: data.reference_code,
+                unitLabel: data.unit_label,
+                tenantName: data.tenant_name,
+                urgency: data.urgency,
+                status: data.status,
                 aiClassification: result.category || 'General',
                 aiUrgency: result.urgency || 'Normal',
                 aiEmailDraft: result.responseDraft || '',
@@ -114,15 +119,33 @@ export default function TicketDetailPage() {
         if (!tenantId) return;
 
         try {
-            const { error } = await supabase
+            // 1. Update status
+            const { error: updateError } = await supabase
                 .from('tickets')
-                .update({ status })
+                .update({
+                    status,
+                    updatedAt: new Date().toISOString()
+                })
                 .eq('id', id)
                 .eq('tenant_id', tenantId);
-            if (error) throw error;
+            if (updateError) throw updateError;
+
+            // 2. Create Audit Log
+            await supabase
+                .from('audit_logs')
+                .insert([{
+                    tenant_id: tenantId,
+                    action: 'STATUS_CHANGED',
+                    target_type: 'TICKET',
+                    target_id: id,
+                    details: `Status updated to ${status} via Staff Portal`,
+                    metadata_json: { newStatus: status }
+                }]);
+
             fetchTicket();
-        } catch (err) {
+        } catch (err: any) {
             console.error('Failed to update status', err);
+            alert(`Failed to update status: ${err.message}`);
         }
     };
 
