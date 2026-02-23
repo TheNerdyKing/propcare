@@ -58,7 +58,6 @@ export default function TicketDetailPage() {
                 .select(`
                     *,
                     property:properties(*),
-                    contractor:contractors(*),
                     messages:ticket_messages(*),
                     results:ai_results(*),
                     auditLogs:audit_logs(*)
