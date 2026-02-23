@@ -79,7 +79,7 @@ export default function TicketDetailPage() {
                 status: data.status,
                 aiClassification: result.category || 'General',
                 aiUrgency: result.urgency || 'Normal',
-                aiEmailDraft: result.responseDraft || '',
+                aiEmailDraft: result.emailDraft || '',
                 messages: (data.messages || []).sort((a: any, b: any) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()),
                 auditLogs: (data.auditLogs || []).sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
             });
