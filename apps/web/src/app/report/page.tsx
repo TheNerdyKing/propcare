@@ -144,7 +144,7 @@ export default function PublicReportPage() {
                     </div>
                     <h2 className="text-4xl font-black text-slate-900 mb-4 tracking-tighter">REPORT SUBMITTED</h2>
                     <p className="text-slate-500 font-medium text-lg leading-relaxed mb-10">
-                        Thank you for your report. Our AI-assisted processing system has received your request and assigned it to a maintenance manager.
+                        Thank you for your report. Your request has been received and assigned to building management for review.
                     </p>
 
                     <div className="bg-slate-50 rounded-3xl p-8 border border-slate-100 mb-8">
