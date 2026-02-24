@@ -25,6 +25,7 @@
         "react": "latest",
         "react-dom": "latest",
         "react-hook-form": "^7.45.4",
+        "resend": "^4.0.0",
         "tailwindcss": "latest",
         "typescript": "latest",
         "zod": "^3.22.0"
