@@ -48,7 +48,7 @@ export default function PublicReportPage() {
     useEffect(() => {
         async function fetchProperties() {
             try {
-                const response = await api.get('/public/properties');
+                const response = await api.get('public/properties');
                 setProperties(response.data || []);
             } catch (err) {
                 console.error('Failed to fetch properties', err);
@@ -68,7 +68,7 @@ export default function PublicReportPage() {
         setLoading(true);
         setError(null);
         try {
-            const response = await api.post('/public/tickets', values);
+            const response = await api.post('public/tickets', values);
             const ticketData = response.data;
 
             // 3. Upload Attachments if any

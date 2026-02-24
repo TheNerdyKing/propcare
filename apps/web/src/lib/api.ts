@@ -13,7 +13,7 @@ const getBaseURL = () => {
 
         // Localhost
         if (hostname === 'localhost' || hostname === '127.0.0.1') {
-            return 'http://localhost:3001/api';
+            return 'http://localhost:3001/api/';
         }
 
         // Vercel Strategy
@@ -22,17 +22,17 @@ const getBaseURL = () => {
             // the backend is likely at propcare-api.vercel.app/api
             if (!hostname.includes('-api.')) {
                 const base = hostname.replace('.vercel.app', '');
-                return `https://${base}-api.vercel.app/api`;
+                return `https://${base}-api.vercel.app/api/`;
             }
 
             // If we are ALREADY on the -api domain but see the UI, 
             // then the API must be at the same domain/api
-            return `https://${hostname}/api`;
+            return `https://${hostname}/api/`;
         }
     }
 
     // Static Fallback
-    return 'https://propcare-api.vercel.app/api';
+    return 'https://propcare-api.vercel.app/api/';
 };
 
 const api = axios.create({

@@ -17,7 +17,7 @@ export default function PublicStatusPage() {
 
     const fetchTicket = async () => {
         try {
-            const response = await api.get(`/public/tickets/${referenceCode}`);
+            const response = await api.get(`public/tickets/${referenceCode}`);
             setTicket(response.data);
         } catch (err) {
             console.error('Failed to fetch ticket status', err);
@@ -30,7 +30,7 @@ export default function PublicStatusPage() {
         if (!messageContent.trim() || isSending) return;
         setIsSending(true);
         try {
-            await api.post(`/public/tickets/${referenceCode}/messages`, { content: messageContent });
+            await api.post(`public/tickets/${referenceCode}/messages`, { content: messageContent });
             setMessageContent('');
             fetchTicket();
         } catch (err) {

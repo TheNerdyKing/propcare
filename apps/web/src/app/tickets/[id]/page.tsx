@@ -249,7 +249,7 @@ export default function TicketDetailPage() {
     const reprocessAi = async () => {
         setReprocessing(true);
         try {
-            await api.post(`/tickets/${id}/analyze`);
+            await api.post(`tickets/${id}/analyze`);
             alert('AI Analysis requested. Results will appear in seconds.');
             fetchTicket();
         } catch (err: any) {
@@ -267,7 +267,7 @@ export default function TicketDetailPage() {
         }
         setSendingEmail(true);
         try {
-            await api.post(`/tickets/${id}/send-draft`, {
+            await api.post(`tickets/${id}/send-draft`, {
                 toEmail: draftRecipient,
                 subject: draftSubject,
                 message: draftEmail,

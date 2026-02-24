@@ -46,7 +46,7 @@ export default function TenantReportingPage() {
     useEffect(() => {
         async function fetchProperties() {
             try {
-                const response = await api.get('/public/properties');
+                const response = await api.get('public/properties');
                 setProperties(response.data);
             } catch (err) {
                 console.error('Failed to fetch properties', err);
@@ -59,7 +59,7 @@ export default function TenantReportingPage() {
         setLoading(true);
         setError(null);
         try {
-            const response = await api.post('/public/tickets', data);
+            const response = await api.post('public/tickets', data);
             setReferenceCode(response.data.referenceCode);
             setSubmitted(true);
         } catch (err: any) {
