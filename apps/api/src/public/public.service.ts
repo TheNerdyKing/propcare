@@ -30,7 +30,7 @@ export class PublicService {
                 tenantPhone: dto.tenantPhone,
                 permissionToEnter: dto.permissionToEnter,
                 urgency: dto.urgency,
-                internalStatus: InternalStatus.AI_PROCESSING,
+                // internalStatus set to null by default (Manual Trigger Only)
             },
         });
 
@@ -63,8 +63,8 @@ export class PublicService {
             });
         }
 
-        // Enqueue AI job
-        await this.aiQueue.add('process-ticket', { ticketId: ticket.id });
+        // AI analysis is now strictly MANUAL via the Staff Dashboard.
+        // No more automatic enqueuing here.
 
         return ticket;
     }

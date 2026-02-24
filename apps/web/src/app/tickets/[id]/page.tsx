@@ -338,7 +338,7 @@ export default function TicketDetailPage() {
                         Back to Dashboard
                     </button>
                     <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest bg-slate-50 px-3 py-1 rounded-full border border-slate-100">
-                        Deployment v2.2-ai-enhanced
+                        Deployment v2.3-manual-only
                     </span>
                 </div>
 
