@@ -48,10 +48,16 @@ export default function PublicReportPage() {
     useEffect(() => {
         async function fetchProperties() {
             try {
-                console.log('Fetching properties from public API...');
-                const response = await api.get('public/properties');
-                console.log('Public properties response:', response.data);
-                setProperties(response.data || []);
+                console.log('Fetching properties directly from Supabase...');
+                const { data, error: fetchError } = await supabase
+                    .from('properties')
+                    .select('id, name')
+                    .order('name');
+
+                if (fetchError) throw fetchError;
+
+                console.log('Direct properties response:', data);
+                setProperties(data || []);
             } catch (err: any) {
                 console.error('Failed to fetch properties', err);
                 setError(`Could not load building list: ${err.message}`);

@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import api from '@/lib/api';
+import { supabase } from '@/lib/supabaseClient';
 
 const ticketSchema = z.object({
     type: z.enum(['DAMAGE_REPORT', 'GENERAL_INQUIRY']).default('DAMAGE_REPORT'),
@@ -46,10 +47,16 @@ export default function TenantReportingPage() {
     useEffect(() => {
         async function fetchProperties() {
             try {
-                console.log('Fetching properties from public API (DE)...');
-                const response = await api.get('public/properties');
-                console.log('Public properties response (DE):', response.data);
-                setProperties(response.data || []);
+                console.log('Fetching properties directly from Supabase (DE)...');
+                const { data, error: fetchError } = await supabase
+                    .from('properties')
+                    .select('id, name')
+                    .order('name');
+
+                if (fetchError) throw fetchError;
+
+                console.log('Direct properties response (DE):', data);
+                setProperties(data || []);
             } catch (err: any) {
                 console.error('Failed to fetch properties', err);
                 setError('Laden der Gebäudeliste fehlgeschlagen: ' + (err.message || 'Unbekannter Fehler'));
