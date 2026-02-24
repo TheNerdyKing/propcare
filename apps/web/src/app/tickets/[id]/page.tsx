@@ -338,7 +338,7 @@ export default function TicketDetailPage() {
                         Back to Dashboard
                     </button>
                     <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest bg-slate-50 px-3 py-1 rounded-full border border-slate-100">
-                        Deployment v2.4-manual-sync
+                        Deployment v2.5-refresh-reset
                     </span>
                 </div>
 
@@ -452,7 +452,7 @@ export default function TicketDetailPage() {
                                         </button>
                                     </div>
 
-                                    {ticket.internalStatus === 'AI_PROCESSING' ? (
+                                    {reprocessing ? (
                                         <div className="flex flex-col items-center justify-center py-16 px-8 text-center bg-indigo-50/20 rounded-[2rem] border border-dashed border-indigo-100">
                                             <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-100/50 mb-6 font-bold text-indigo-500">
                                                 <RefreshCw className="w-8 h-8 animate-spin" />
