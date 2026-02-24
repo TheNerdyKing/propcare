@@ -65,4 +65,19 @@ export class AiController {
             throw err;
         }
     }
+
+    @Public()
+    @Post('test')
+    @HttpCode(HttpStatus.OK)
+    async testAnalysis(@Body() body: any) {
+        this.logger.log('AI Isolation Test Requested');
+        try {
+            // This expects a ticket-like object in the body
+            const result = await this.aiService.analyzeRawData(body);
+            return result;
+        } catch (err) {
+            this.logger.error(`AI Isolation Test Failed: ${err.message}`);
+            return { error: err.message };
+        }
+    }
 }

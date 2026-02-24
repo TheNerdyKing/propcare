@@ -2,8 +2,9 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { TicketStatus, Role, InternalStatus } from '@prisma/client';
 import { MailsService } from '../mails/mails.service';
-import { InjectQueue } from '@nestjs/bullmq';
-import { Queue } from 'bullmq';
+// import { InjectQueue } from '@nestjs/bullmq';
+// import { Queue } from 'bullmq';
+import { AiService } from '../ai/ai.service';
 import { PublicService } from '../public/public.service';
 
 @Injectable()
@@ -12,7 +13,7 @@ export class TicketsService {
         private prisma: PrismaService,
         private mailsService: MailsService,
         private publicService: PublicService,
-        @InjectQueue('ai-processing') private aiQueue: Queue,
+        private aiService: AiService,
     ) { }
 
     async findAll(tenantId: string, filters: { status?: TicketStatus, search?: string, propertyId?: string }) {
@@ -143,15 +144,10 @@ export class TicketsService {
                 throw new NotFoundException('Ticket not found');
             }
 
-            console.log(`[TicketsService] Adding ticket ${id} to AI queue`);
-            await this.aiQueue.add('process-ticket', { ticketId: id });
+            console.log(`[TicketsService] Triggering direct AI analysis for ticket ${id}`);
+            // Direct call, bypasses queue
+            await this.aiService.processTicket(id);
 
-            await this.prisma.ticket.update({
-                where: { id, tenantId },
-                data: { internalStatus: InternalStatus.AI_PROCESSING }
-            });
-
-            console.log(`[TicketsService] Ticket ${id} status moved to AI_PROCESSING`);
             return { success: true };
         } catch (err) {
             console.error(`[TicketsService] Failed to reprocess AI for ${id}:`, err.message);

@@ -7,7 +7,7 @@ import { TicketsModule } from './tickets/tickets.module';
 import { ContractorsModule } from './contractors/contractors.module';
 import { PropertiesModule } from './properties/properties.module';
 import { AiModule } from './ai/ai.module';
-import { BullModule } from '@nestjs/bullmq';
+// import { BullModule } from '@nestjs/bullmq';
 import { APP_GUARD } from '@nestjs/core';
 import { AuthGuard } from './auth/guards/auth.guard';
 import { RolesGuard } from './auth/guards/roles.guard';
@@ -16,6 +16,7 @@ import { RolesGuard } from './auth/guards/roles.guard';
     imports: [
         ConfigModule.forRoot({
             isGlobal: true,
+            envFilePath: 'apps/api/.env',
         }),
         PrismaModule,
         AuthModule,
@@ -24,12 +25,14 @@ import { RolesGuard } from './auth/guards/roles.guard';
         ContractorsModule,
         PropertiesModule,
         AiModule,
+        /*
         BullModule.forRoot({
             connection: {
                 host: process.env.REDIS_HOST || 'localhost',
                 port: parseInt(process.env.REDIS_PORT || '6379'),
             },
         }),
+        */
     ],
     controllers: [],
     providers: [

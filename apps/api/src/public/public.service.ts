@@ -2,18 +2,16 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateTicketDto } from './dto/create-ticket.dto';
 import { TicketType, InternalStatus, TicketStatus, Urgency, SenderType } from '@prisma/client';
-import { InjectQueue } from '@nestjs/bullmq';
-import { Queue } from 'bullmq';
+import { AiService } from '../ai/ai.service';
 
 @Injectable()
 export class PublicService {
     constructor(
         private prisma: PrismaService,
-        @InjectQueue('ai-processing') private aiQueue: Queue
+        private aiService: AiService
     ) { }
 
     async createTicket(dto: CreateTicketDto) {
-        // ... (reference code logic)
         const referenceCode = `PC-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
         const defaultTenantId = 'default-tenant-uuid';
 
@@ -29,42 +27,28 @@ export class PublicService {
                 tenantEmail: dto.tenantEmail,
                 tenantPhone: dto.tenantPhone,
                 permissionToEnter: dto.permissionToEnter,
-                urgency: dto.urgency,
-                // internalStatus is null (Ready for Analysis)
+                urgency: dto.urgency || Urgency.UNKNOWN,
+                internalStatus: InternalStatus.AI_PROCESSING,
             },
         });
 
         // 3. Mock External Integration (MVP Requirement B)
-        try {
-            // Simulate API call to existing processing software
-            const externalTicketId = `EXT-${Math.floor(1000 + Math.random() * 9000)}`;
-            const externalUrl = `https://external-system.demo/tickets/${externalTicketId}`;
+        // Fire and forget so we don't block the user
+        this.prisma.auditLog.create({
+            data: {
+                tenantId: defaultTenantId,
+                action: 'EXTERNAL_SYNC_LOGGED',
+                targetType: 'TICKET',
+                targetId: ticket.id,
+                metadataJson: { message: 'External sync simulated' },
+            },
+        }).catch(() => null);
 
-            // Store external reference (assuming we have fields or use metadataJson later)
-            // For now, we just log it in the audit log
-            await this.prisma.auditLog.create({
-                data: {
-                    tenantId: defaultTenantId,
-                    action: 'EXTERNAL_SYNC_SUCCESS',
-                    targetType: 'TICKET',
-                    targetId: ticket.id,
-                    metadataJson: { externalTicketId, externalUrl },
-                },
-            });
-        } catch (err) {
-            await this.prisma.auditLog.create({
-                data: {
-                    tenantId: defaultTenantId,
-                    action: 'EXTERNAL_SYNC_FAILED',
-                    targetType: 'TICKET',
-                    targetId: ticket.id,
-                    metadataJson: { error: err.message },
-                },
-            });
-        }
-
-        // AI analysis is strictly MANUAL via the Staff Dashboard.
-        // No more automatic enqueuing here.
+        // 4. Integrated AI Processing (Non-Blocking)
+        // We trigger it but DON'T await it so the response is fast.
+        this.aiService.processTicket(ticket.id).catch(aiErr => {
+            console.error(`In-process AI trigger failed for ${ticket.id}:`, aiErr.message);
+        });
 
         return ticket;
     }
@@ -147,8 +131,8 @@ export class PublicService {
 
             // 2. Contractors
             const contractors = [
-                { name: 'Elite Plumbing Services', email: 'contact@eliteplumbing.demo', tradeTypes: ['Plumbing'] },
-                { name: 'Volt Master Electrical', email: 'info@voltmaster.demo', tradeTypes: ['Electrical'] }
+                { name: 'Elite Plumbing Services', email: 'contact@eliteplumbing.demo', tradeTypes: ['PLUMBING'], serviceZipCodes: ['1001'], serviceCities: ['Zurich'] },
+                { name: 'Volt Master Electrical', email: 'info@voltmaster.demo', tradeTypes: ['ELECTRICAL'], serviceZipCodes: ['6000'], serviceCities: ['Lucerne'] }
             ];
 
             for (const cont of contractors) {
@@ -208,7 +192,7 @@ export class PublicService {
                 });
                 if (!exists) {
                     await this.prisma.ticket.create({
-                        data: { ...ticket, tenantId }
+                        data: { ...ticket as any, tenantId }
                     });
                 }
             }
