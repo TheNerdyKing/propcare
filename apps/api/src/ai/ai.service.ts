@@ -167,15 +167,31 @@ export class AiService {
     }
 
     private buildPrompt(ticket: any): string {
-        return `Analyze maintenance request and return JSON:
-        DESCRIPTION: "${ticket.description}"
-        FACILITY: ${ticket.property?.name || 'Unknown'} - ${ticket.unitLabel || 'Common Area'}
-        
+        return `You are a professional Facility Manager assistant for PropCare. 
+        Analyze the following maintenance request and return a structured JSON response.
+
+        REQUEST CONTEXT:
+        - DESCRIPTION: "${ticket.description}"
+        - FACILITY: ${ticket.property?.name || 'Unknown Property'}
+        - UNIT: ${ticket.unitLabel || 'Common Area'}
+
+        CATEGories (Choose the best fit):
+        - PLUMBING: Leaks, toilet issues, water pressure, pipes.
+        - ELECTRICAL: Outlets, lighting, circuit breakers, power loss.
+        - LOCKSMITH: Door issues, keys, security, locks.
+        - HEATING: Radiators, HVAC, no heat, climate control.
+        - GENERAL_MAINTENANCE: Painting, cleaning, furniture, minor repairs.
+
+        URGENCY (Choose based on risk):
+        - EMERGENCY: Immediate threat to safety, property damage in progress (e.g., flooding).
+        - URGENT: Functional loss that needs repair within 24h (e.g., no hot water).
+        - NORMAL: Non-urgent repairs (e.g., dripping tap, paint chip).
+
         FORMAT:
         {
-            "category": "PLUMBING" | "ELECTRICAL" | "LOCKSMITH" | "HEATING" | "GENERAL_MAINTENANCE",
-            "urgency": "EMERGENCY" | "URGENT" | "NORMAL",
-            "emailDraft": "Concise contractor email draft."
+            "category": "CATEGORY_NAME",
+            "urgency": "URGENCY_LEVEL",
+            "emailDraft": "A professional, concise email to a contractor explaining the situation, the address, and requesting a repair appointment."
         }`;
     }
 

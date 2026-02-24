@@ -134,7 +134,13 @@ export default function TicketDetailPage() {
             if (error) throw error;
 
             // Map common properties for easy access
-            const result = data.results?.[0]?.output_json || {};
+            const aiResults = data.results || data.ai_results || [];
+            const latestResultRaw = [...aiResults].sort((a: any, b: any) =>
+                new Date(b.createdAt || b.created_at).getTime() - new Date(a.createdAt || a.created_at).getTime()
+            )[0];
+
+            const result = latestResultRaw?.output_json || {};
+
             setTicket({
                 ...data,
                 referenceCode: data.reference_code,
@@ -146,9 +152,13 @@ export default function TicketDetailPage() {
                 aiClassification: result.category || null,
                 aiUrgency: result.urgency || null,
                 aiEmailDraft: result.emailDraft || '',
-                errorMessage: result.errorMessage || data.error_message || null, // results, auditLogs, outboundEmails, messages
-                messages: (data.messages || []).sort((a: any, b: any) => new Date(a.createdAt || a.created_at).getTime() - new Date(b.createdAt || b.created_at).getTime()),
-                auditLogs: (data.auditLogs || []).sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                errorMessage: result.errorMessage || data.error_message || null,
+                messages: (data.messages || []).sort((a: any, b: any) =>
+                    new Date(a.createdAt || a.created_at).getTime() - new Date(b.createdAt || b.created_at).getTime()
+                ),
+                auditLogs: (data.auditLogs || data.audit_logs || []).sort((a: any, b: any) =>
+                    new Date(b.createdAt || b.created_at).getTime() - new Date(a.createdAt || a.created_at).getTime()
+                )
             });
 
             if (result.emailDraft) {
@@ -328,7 +338,7 @@ export default function TicketDetailPage() {
                         Back to Dashboard
                     </button>
                     <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest bg-slate-50 px-3 py-1 rounded-full border border-slate-100">
-                        Deployment v2.1-master-audit
+                        Deployment v2.2-ai-enhanced
                     </span>
                 </div>
 
