@@ -106,7 +106,7 @@ export default function TenantStatusPage() {
                 .from('ticket_messages')
                 .select('*')
                 .eq('ticket_id', ticketData.id)
-                .order('created_at', { ascending: true }); // Supabase query needs snake_case
+                .order('createdAt', { ascending: true }); // Supabase query needs snake_case
 
             if (messageError) throw messageError;
             setMessages(messageData || []);
@@ -126,8 +126,8 @@ export default function TenantStatusPage() {
             const { error } = await supabase
                 .from('ticket_messages')
                 .insert({
-                    tenant_id: ticket.tenant_id,
-                    ticket_id: id,
+                    tenant_id: ticket.tenant_id || ticket.tenantId,
+                    ticket_id: ticket.id,
                     sender_type: 'TENANT',
                     content: newMessage.trim()
                 });
@@ -219,7 +219,7 @@ export default function TenantStatusPage() {
                                     </div>
                                     <div>
                                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Reported</p>
-                                        <p className="font-bold text-slate-700 mt-1">{new Date(ticket.createdAt).toLocaleDateString()}</p>
+                                        <p className="font-bold text-slate-700 mt-1">{new Date(ticket.createdAt || ticket.created_at).toLocaleDateString()}</p>
                                     </div>
                                 </div>
 

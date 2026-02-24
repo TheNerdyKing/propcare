@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { DiagnosticController } from './public.controller';
+import { PublicController } from './public.controller';
 import { PublicService } from './public.service';
 import { PrismaModule } from '../prisma/prisma.module';
 
@@ -16,7 +16,7 @@ import { AiModule } from '../ai/ai.module';
         }),
         */
     ],
-    controllers: [DiagnosticController],
+    controllers: [PublicController],
     providers: [PublicService],
     exports: [PublicService],
 })

@@ -12,12 +12,17 @@ export class PublicService {
     ) { }
 
     async createTicket(dto: CreateTicketDto) {
-        const referenceCode = `PC-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
-        const defaultTenantId = 'default-tenant-uuid';
+        const referenceCode = `PC-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
+
+        // Find the first tenant as fallback if no specific tenant is identified
+        const defaultTenant = await this.prisma.tenant.findFirst({
+            select: { id: true }
+        });
+        const tenantId = defaultTenant?.id || 'default-tenant-uuid';
 
         const ticket = await this.prisma.ticket.create({
             data: {
-                tenantId: defaultTenantId,
+                tenantId: tenantId,
                 referenceCode,
                 type: dto.type || TicketType.DAMAGE_REPORT,
                 propertyId: dto.propertyId,
@@ -36,7 +41,7 @@ export class PublicService {
         // Fire and forget so we don't block the user
         this.prisma.auditLog.create({
             data: {
-                tenantId: defaultTenantId,
+                tenantId: tenantId,
                 action: 'EXTERNAL_SYNC_LOGGED',
                 targetType: 'TICKET',
                 targetId: ticket.id,
@@ -54,8 +59,15 @@ export class PublicService {
     }
 
     async getProperties() {
+        // Find first tenant to show properties for the demo/public portal
+        const tenant = await this.prisma.tenant.findFirst({
+            select: { id: true }
+        });
+
+        if (!tenant) return [];
+
         return this.prisma.property.findMany({
-            where: { tenantId: 'default-tenant-uuid' },
+            where: { tenantId: tenant.id },
             select: { id: true, name: true },
         });
     }

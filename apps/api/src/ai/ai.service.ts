@@ -13,8 +13,8 @@ export class AiService {
 
     constructor(private prisma: PrismaService) {
         this.apiKey = process.env.AI_API_KEY || process.env.OPENAI_API_KEY || ['sk-proj-', 'kzKqJ6iMoJTyvtLDY3iY8Phm3rd1xNxlos-M-LeLZn8S_tq3WdD5MOSyPuxS-MCPbzfpA4WPgkT3BlbkFJb_t', '90zsLVjB5_Usyc3MvtKZn2SsMtDDC7Sk-Isc7sgIpCy1xY3-chukh_k1pYuNiIhUbzBrhMA'].join('');
-        this.modelName = process.env.AI_MODEL_NAME || process.env.OPENAI_MODEL || 'gpt-5-nano';
-        this.apiEndpoint = process.env.AI_API_ENDPOINT || 'https://api.openai.com/v1/responses';
+        this.modelName = process.env.AI_MODEL_NAME || process.env.OPENAI_MODEL || 'gpt-4o-mini';
+        this.apiEndpoint = process.env.AI_API_ENDPOINT || 'https://api.openai.com/v1/chat/completions';
         this.openaiStore = (process.env.OPENAI_STORE || 'false') === 'true';
 
         this.logger.log(`AiService initialized with model: ${this.modelName}`);
@@ -271,8 +271,14 @@ export class AiService {
             const resultData = await response.json();
             const rawContent = this.parseAiRawContent(resultData);
 
+            // CLEANING: Strip markdown and whitespace
+            let cleanedJson = rawContent.trim();
+            if (cleanedJson.startsWith('```')) {
+                cleanedJson = cleanedJson.replace(/^```json\n?/, '').replace(/\n?```$/, '');
+            }
+
             // Validate with Zod
-            const validated = AIAnalysisSchema.parse(JSON.parse(rawContent));
+            const validated = AIAnalysisSchema.parse(JSON.parse(cleanedJson));
             return validated;
 
         } catch (err) {

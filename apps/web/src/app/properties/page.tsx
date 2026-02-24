@@ -45,19 +45,22 @@ export default function PropertiesPage() {
         try {
             const { data, error } = await supabase
                 .from('properties')
-                .select('*, _count:units(count), _count_tickets:tickets(count)')
+                .select(`
+                    *,
+                    units(count),
+                    tickets(count)
+                `)
                 .eq('tenant_id', tenantId)
                 .order('name', { ascending: true });
 
             if (error) throw error;
 
-            // Map table names to match previous frontend expectations if necessary
-            const mappedData = data.map(p => ({
+            const mappedData = (data || []).map(p => ({
                 ...p,
-                addressLine1: p.address_line1, // Match prisma camelCase mapping
+                addressLine1: p.address_line1,
                 _count: {
-                    units: p._count?.[0]?.count || 0,
-                    tickets: p._count_tickets?.[0]?.count || 0
+                    units: p.units?.[0]?.count || 0,
+                    tickets: p.tickets?.[0]?.count || 0
                 }
             }));
 

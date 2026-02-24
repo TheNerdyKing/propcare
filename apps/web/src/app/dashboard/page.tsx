@@ -212,7 +212,7 @@ export default function DashboardPage() {
                                                     </div>
                                                 </div>
                                                 <span className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em]">
-                                                    {new Date(ticket.createdAt).toLocaleDateString(undefined, { month: 'long', day: 'numeric' })}
+                                                    {new Date(ticket.created_at || ticket.createdAt).toLocaleDateString(undefined, { month: 'long', day: 'numeric' })}
                                                 </span>
                                             </div>
                                             <div className="flex items-end justify-between">

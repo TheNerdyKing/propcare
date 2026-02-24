@@ -10,10 +10,12 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "pnpm recursive run dev",
-    "build": "pnpm recursive run build",
-    "lint": "pnpm recursive run lint",
-    "postinstall": "pnpm --filter @propcare/api exec prisma generate --schema=./prisma/schema.prisma"
+    "dev": "npm run dev:api & npm run dev:web",
+    "dev:api": "npm --prefix apps/api run start:dev",
+    "dev:web": "npm --prefix apps/web run dev",
+    "build": "npm run build --workspaces",
+    "lint": "npm run lint --workspaces",
+    "postinstall": "npm --prefix apps/api exec prisma generate --schema=./prisma/schema.prisma"
   },
   "prisma": {
     "seed": "ts-node apps/api/prisma/seed.ts"

@@ -7,6 +7,7 @@ import * as z from 'zod';
 import { supabase } from '@/lib/supabaseClient';
 import { Loader2, CheckCircle2, AlertCircle, Upload, ShieldCheck, HelpCircle } from 'lucide-react';
 import Link from 'next/link';
+import api from '@/lib/api';
 
 const reportSchema = z.object({
     propertyId: z.string().uuid('Please select a property'),
@@ -46,14 +47,11 @@ export default function PublicReportPage() {
 
     useEffect(() => {
         async function fetchProperties() {
-            // Find the first tenant (MVP assumes one primary tenant for public form)
-            const { data: tenantData } = await supabase.from('tenants').select('id').limit(1).single();
-            if (tenantData) {
-                const { data } = await supabase
-                    .from('properties')
-                    .select('id, name')
-                    .eq('tenant_id', tenantData.id);
-                setProperties(data || []);
+            try {
+                const response = await api.get('/public/properties');
+                setProperties(response.data || []);
+            } catch (err) {
+                console.error('Failed to fetch properties', err);
             }
         }
         fetchProperties();
@@ -70,41 +68,12 @@ export default function PublicReportPage() {
         setLoading(true);
         setError(null);
         try {
-            // 1. Get Tenant ID from the selected property
-            const { data: propData } = await supabase
-                .from('properties')
-                .select('tenant_id')
-                .eq('id', values.propertyId)
-                .single();
-
-            if (!propData) throw new Error('Could not identify property owner');
-
-            const tenantId = propData.tenant_id;
-            const refCode = `PC-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
-
-            // 2. Insert Ticket
-            const { data: ticketData, error: ticketError } = await supabase
-                .from('tickets')
-                .insert([{
-                    tenant_id: tenantId,
-                    reference_code: refCode,
-                    property_id: values.propertyId,
-                    unit_label: values.unitLabel,
-                    description: values.description,
-                    tenant_name: values.tenantName,
-                    tenant_email: values.tenantEmail,
-                    tenant_phone: values.tenantPhone,
-                    permission_to_enter: values.permissionToEnter,
-                    urgency: values.urgency,
-                    status: 'NEW', // Trigger AI Processing via DB Webhook
-                }])
-                .select()
-                .single();
-
-            if (ticketError) throw ticketError;
+            const response = await api.post('/public/tickets', values);
+            const ticketData = response.data;
 
             // 3. Upload Attachments if any
             if (files.length > 0) {
+                const tenantId = ticketData.tenantId || ticketData.tenant_id;
                 for (const file of files) {
                     const filePath = `${tenantId}/${ticketData.id}/${file.name}`;
                     const { error: uploadError } = await supabase.storage
@@ -125,7 +94,7 @@ export default function PublicReportPage() {
             }
 
             setTicket(ticketData);
-            setReferenceCode(refCode);
+            setReferenceCode(ticketData.referenceCode || ticketData.reference_code);
             setSubmitted(true);
         } catch (err: any) {
             console.error('Submission failed:', err);

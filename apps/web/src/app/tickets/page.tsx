@@ -262,7 +262,7 @@ export default function TicketsPage() {
                                                 </span>
                                             </td>
                                             <td className="px-10 py-8 text-sm font-black text-slate-400 uppercase tracking-tighter">
-                                                {new Date(ticket.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                                                {new Date(ticket.created_at || ticket.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
                                             </td>
                                             <td className="px-10 py-8 text-right">
                                                 <Link
