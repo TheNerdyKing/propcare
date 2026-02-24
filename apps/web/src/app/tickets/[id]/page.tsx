@@ -51,11 +51,25 @@ export default function TicketDetailPage() {
                 filter: `id=eq.${id}`
             }, (payload) => {
                 const newStatus = payload.new.internal_status || payload.new.status;
-                setTicket(prev => prev ? ({ ...prev, ...payload.new, internalStatus: payload.new.internal_status }) : null);
 
-                // If AI finished, re-fetch the full joined data (results, audit logs)
-                if (newStatus === 'AI_READY' || newStatus === 'FAILED') {
-                    console.log('AI finished detected via Realtime, re-fetching full record...');
+                // CRITICAL: Preserve derived AI fields from previous state if they exist
+                setTicket(prev => {
+                    if (!prev) return null;
+                    return {
+                        ...prev,
+                        ...payload.new,
+                        internalStatus: payload.new.internal_status,
+                        // Preserve these fields which are joined from other tables
+                        aiClassification: prev.aiClassification,
+                        aiUrgency: prev.aiUrgency,
+                        aiEmailDraft: prev.aiEmailDraft,
+                        contractor: prev.contractor
+                    };
+                });
+
+                // If AI finished or Email sent, re-fetch the full joined data
+                if (newStatus === 'AI_READY' || newStatus === 'FAILED' || newStatus === 'SENT') {
+                    console.log(`State transition to ${newStatus} detected via Realtime, re-fetching full record...`);
                     fetchTicket();
                 }
             })
@@ -73,8 +87,9 @@ export default function TicketDetailPage() {
                 const newMsg = payload.new;
                 setTicket(prev => {
                     if (!prev) return null;
+                    // Standardize sort with fallback for Supabase created_at vs Prisma createdAt
                     const updatedMessages = [...(prev.messages || []), newMsg].sort(
-                        (a: any, b: any) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+                        (a: any, b: any) => new Date(a.createdAt || a.created_at).getTime() - new Date(b.createdAt || b.created_at).getTime()
                     );
                     return { ...prev, messages: updatedMessages };
                 });
@@ -131,8 +146,8 @@ export default function TicketDetailPage() {
                 aiClassification: result.category || null,
                 aiUrgency: result.urgency || null,
                 aiEmailDraft: result.emailDraft || '',
-                errorMessage: result.errorMessage || data.error_message || null,
-                messages: (data.messages || []).sort((a: any, b: any) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()),
+                errorMessage: result.errorMessage || data.error_message || null, // results, auditLogs, outboundEmails, messages
+                messages: (data.messages || []).sort((a: any, b: any) => new Date(a.createdAt || a.created_at).getTime() - new Date(b.createdAt || b.created_at).getTime()),
                 auditLogs: (data.auditLogs || []).sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
             });
 
@@ -313,7 +328,7 @@ export default function TicketDetailPage() {
                         Back to Dashboard
                     </button>
                     <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest bg-slate-50 px-3 py-1 rounded-full border border-slate-100">
-                        Deployment v2.0-master-fix
+                        Deployment v2.1-master-audit
                     </span>
                 </div>
 

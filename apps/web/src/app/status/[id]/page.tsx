@@ -51,7 +51,10 @@ export default function TenantStatusPage() {
                 table: 'ticket_messages',
                 filter: `ticket_id=eq.${id}`
             }, (payload) => {
-                setMessages(prev => [...prev, payload.new]);
+                const newMsg = payload.new;
+                setMessages(prev => [...prev || [], newMsg].sort(
+                    (a: any, b: any) => new Date(a.createdAt || a.created_at).getTime() - new Date(b.createdAt || b.created_at).getTime()
+                ));
             })
             .subscribe();
 
@@ -79,12 +82,12 @@ export default function TenantStatusPage() {
             if (ticketError) throw ticketError;
             setTicket(ticketData);
 
-            // Fetch Messages
+            // Fetch Messages - Use snake_case for DB query ordering
             const { data: messageData, error: messageError } = await supabase
                 .from('ticket_messages')
                 .select('*')
                 .eq('ticket_id', id)
-                .order('createdAt', { ascending: true });
+                .order('created_at', { ascending: true }); // Supabase query needs snake_case
 
             if (messageError) throw messageError;
             setMessages(messageData || []);
@@ -250,7 +253,7 @@ export default function TenantStatusPage() {
                                                     {(msg.sender_type === 'TENANT' || msg.senderType === 'TENANT') ? 'You (Tenant)' : 'Management (Staff)'}
                                                 </span>
                                                 <span className="text-[9px] font-medium ml-4">
-                                                    {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                    {new Date(msg.createdAt || msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                                 </span>
                                             </div>
                                             <p className="font-bold">{msg.content}</p>
