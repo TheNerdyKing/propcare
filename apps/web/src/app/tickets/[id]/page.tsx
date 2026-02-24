@@ -139,7 +139,15 @@ export default function TicketDetailPage() {
                 new Date(b.createdAt || b.created_at).getTime() - new Date(a.createdAt || a.created_at).getTime()
             )[0];
 
-            const result = latestResultRaw?.output_json || {};
+            // ROBUST EXTRACTION: Handle both snake_case (DB/PostgREST) and camelCase (Prisma)
+            const result = latestResultRaw?.output_json || latestResultRaw?.outputJson || {};
+
+            console.log(`Latest AI Result for ${id}:`, {
+                rawKeys: latestResultRaw ? Object.keys(latestResultRaw) : 'none',
+                resultKeys: result ? Object.keys(result) : 'none',
+                category: result.category,
+                internalStatus: data.internal_status
+            });
 
             setTicket({
                 ...data,
@@ -148,7 +156,7 @@ export default function TicketDetailPage() {
                 tenantName: data.tenant_name,
                 urgency: data.urgency,
                 status: data.status,
-                internalStatus: data.internal_status,
+                internalStatus: data.internal_status || data.internalStatus,
                 aiClassification: result.category || null,
                 aiUrgency: result.urgency || null,
                 aiEmailDraft: result.emailDraft || '',
@@ -338,7 +346,7 @@ export default function TicketDetailPage() {
                         Back to Dashboard
                     </button>
                     <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest bg-slate-50 px-3 py-1 rounded-full border border-slate-100">
-                        Deployment v2.7-strict-manual
+                        Deployment v2.8-mapping-fix
                     </span>
                 </div>
 
@@ -515,11 +523,11 @@ export default function TicketDetailPage() {
                                                 <Sparkles className="w-8 h-8 text-indigo-400" />
                                             </div>
                                             <h3 className="text-lg font-black text-slate-900 mb-2">
-                                                {ticket.internalStatus === 'AI_PROCESSING' ? 'AI Analysis In Progress' : 'Ready for Analysis'}
+                                                {reprocessing || ticket.internalStatus === 'AI_PROCESSING' ? 'AI Analysis In Progress' : 'Ready for Analysis'}
                                             </h3>
                                             <p className="text-sm font-medium text-slate-500 mb-8 max-w-sm">
-                                                {ticket.internalStatus === 'AI_PROCESSING'
-                                                    ? 'PropCare AI is currently analyzing this request in the background. Results will appear automatically.'
+                                                {reprocessing || ticket.internalStatus === 'AI_PROCESSING'
+                                                    ? 'PropCare AI is currently analyzing this request. Results will appear automatically in a few seconds.'
                                                     : 'This ticket is awaiting an AI assessment. Click below to generate a classification and email draft.'}
                                             </p>
                                             <button
