@@ -159,13 +159,13 @@ export default function TicketDetailPage() {
                 status: data.status,
                 aiStatus: data.ai_status,
                 aiClassification: result.classification?.category || null,
-                aiUrgency: result.classification?.urgency || null,
-                aiEmailDraft: result.draftEmail?.bodyText || '',
+                aiUrgency: result.classification?.urgency || result.urgency || null,
+                aiEmailDraft: result.draftEmail?.bodyText || result.draftEmail?.body_text || '',
                 aiEmailSubject: result.draftEmail?.subject || '',
-                aiMissingInfo: result.missingInfo || [],
-                aiContractors: result.recommendedContractors || [],
+                aiMissingInfo: result.missingInfo || result.missing_info || [],
+                aiContractors: result.recommendedContractors || result.recommended_contractors || [],
                 errorMessage: result.errorMessage || data.error_message || null,
-                messages: (data.messages || []).sort((a: any, b: any) =>
+                messages: (data.messages || data.ticket_messages || []).sort((a: any, b: any) =>
                     new Date(a.createdAt || a.created_at).getTime() - new Date(b.createdAt || b.created_at).getTime()
                 ),
                 auditLogs: (data.auditLogs || data.audit_logs || []).sort((a: any, b: any) =>
@@ -309,7 +309,7 @@ export default function TicketDetailPage() {
                         Back to Dashboard
                     </button>
                     <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest bg-slate-50 px-3 py-1 rounded-full border border-slate-100">
-                        Deployment v3.4-fullstack-hardened
+                        Deployment v3.5-fullstack-hardened
                     </span>
                 </div>
 

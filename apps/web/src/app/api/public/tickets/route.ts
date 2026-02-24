@@ -16,18 +16,33 @@ export async function POST(request: NextRequest) {
         const supabase = getSupabase();
         const body = await request.json();
 
-        // 1. Validate basic required fields (minimal, lean)
+        console.log('[API] Creating public ticket for property:', body.propertyId);
+
+        // 1. Validate basic required fields
         if (!body.description || !body.propertyId) {
             return NextResponse.json({ error: 'Missing description or propertyId' }, { status: 400 });
         }
 
+        // 2. Fetch Property to get the correct Tenant ID
+        const { data: property, error: pError } = await supabase
+            .from('properties')
+            .select('tenant_id')
+            .eq('id', body.propertyId)
+            .single();
+
+        if (pError || !property) {
+            console.error('[API] Property not found or error:', pError);
+            return NextResponse.json({ error: 'Invalid property selection' }, { status: 400 });
+        }
+
+        const tenantId = property.tenant_id;
         const referenceCode = `T-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
 
-        // 2. Insert ticket into Supabase
+        // 3. Insert ticket into Supabase
         const { data: ticket, error } = await supabase
             .from('tickets')
             .insert({
-                tenant_id: body.tenantId || '7297f6c3-6311-460d-85f0-6cca266e7465', // Default demo tenant if not provided
+                tenant_id: tenantId,
                 property_id: body.propertyId,
                 unit_label: body.unitLabel,
                 description: body.description,
@@ -44,9 +59,17 @@ export async function POST(request: NextRequest) {
 
         if (error) throw error;
 
-        // 3. Trigger AI processing asynchronously (don't await for faster response)
-        // Note: In Vercel serverless, we might need to await anyway or use a background job,
-        // but here we'll try a fast-return pattern or await for safety in serverless.
+        // 4. Create Audit Log for creation
+        await supabase.from('audit_logs').insert({
+            tenant_id: tenantId,
+            action: 'TICKET_CREATED',
+            target_type: 'TICKET',
+            target_id: ticket.id,
+            details: `Ticket created via public portal. Ref: ${referenceCode}`,
+            metadata_json: { source: 'PUBLIC_PORTAL' }
+        });
+
+        // 5. Trigger AI processing asynchronously
         processTicketAi(ticket.id).catch(err => {
             console.error(`[BG AI] Failed for ${ticket.id}:`, err.message);
         });

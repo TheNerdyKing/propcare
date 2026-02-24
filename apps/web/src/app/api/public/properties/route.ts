@@ -13,14 +13,20 @@ function getSupabase() {
 export async function GET() {
     try {
         const supabase = getSupabase();
+        console.log('[API] Fetching public properties...');
         const { data, error } = await supabase
             .from('properties')
             .select('id, name')
             .order('name');
 
-        if (error) throw error;
+        if (error) {
+            console.error('[API] Property fetch error:', error);
+            throw error;
+        }
+        console.log(`[API] Found ${data?.length || 0} properties`);
         return NextResponse.json(data);
     } catch (error: any) {
+        console.error('[API] Public Properties Fetch Failed:', error);
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }

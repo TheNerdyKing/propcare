@@ -46,10 +46,13 @@ export default function TenantReportingPage() {
     useEffect(() => {
         async function fetchProperties() {
             try {
+                console.log('Fetching properties from public API (DE)...');
                 const response = await api.get('public/properties');
-                setProperties(response.data);
-            } catch (err) {
+                console.log('Public properties response (DE):', response.data);
+                setProperties(response.data || []);
+            } catch (err: any) {
                 console.error('Failed to fetch properties', err);
+                setError('Laden der Gebäudeliste fehlgeschlagen: ' + (err.message || 'Unbekannter Fehler'));
             }
         }
         fetchProperties();

@@ -48,10 +48,13 @@ export default function PublicReportPage() {
     useEffect(() => {
         async function fetchProperties() {
             try {
+                console.log('Fetching properties from public API...');
                 const response = await api.get('public/properties');
+                console.log('Public properties response:', response.data);
                 setProperties(response.data || []);
-            } catch (err) {
+            } catch (err: any) {
                 console.error('Failed to fetch properties', err);
+                setError(`Could not load building list: ${err.message}`);
             }
         }
         fetchProperties();
