@@ -217,9 +217,33 @@ export default function TicketDetailPage() {
             return;
         }
 
+        // 1. FRONTEND GUARD: Prevent infinite loading for empty/short tickets
+        if (!ticket.description || ticket.description.trim().length < 10) {
+            console.log('Short description detected. Setting NEEDS_ATTENTION instantly.');
+            try {
+                const { error } = await supabase
+                    .from('tickets')
+                    .update({
+                        internal_status: 'NEEDS_ATTENTION',
+                        status: 'NEEDS_ATTENTION',
+                        updatedAt: new Date().toISOString()
+                    })
+                    .eq('id', id)
+                    .eq('tenant_id', tenantId);
+
+                if (error) throw error;
+                await fetchTicket();
+                return;
+            } catch (err) {
+                console.error('Guard update failed', err);
+            } finally {
+                setReprocessing(false);
+            }
+            return;
+        }
+
         try {
-            // 1. Update internal_status directly in Supabase to trigger the Webhook
-            // This is the guaranteed-to-fire path for the user's environment
+            // 2. Update internal_status directly in Supabase to trigger the Webhook
             const { error } = await supabase
                 .from('tickets')
                 .update({
@@ -231,7 +255,7 @@ export default function TicketDetailPage() {
 
             if (error) throw error;
 
-            alert('AI Analysis requested. Supabase will now signal the backend.');
+            alert('AI Analysis requested. Results will appear in seconds.');
             await fetchTicket();
         } catch (err: any) {
             console.error('Reprocess failed', err);
@@ -289,7 +313,7 @@ export default function TicketDetailPage() {
                         Back to Dashboard
                     </button>
                     <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest bg-slate-50 px-3 py-1 rounded-full border border-slate-100">
-                        Deployment v1.12-loop-fixed
+                        Deployment v2.0-master-fix
                     </span>
                 </div>
 
@@ -661,15 +685,20 @@ export default function TicketDetailPage() {
                                     <button
                                         onClick={() => {
                                             setActiveTab('details');
+                                            // Small delay to ensure tab content is rendered before scrolling
                                             setTimeout(() => {
                                                 const el = document.getElementById('email-draft-area');
-                                                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                                            }, 100);
+                                                if (el) {
+                                                    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                                    el.classList.add('ring-4', 'ring-indigo-500/20', 'ring-offset-8');
+                                                    setTimeout(() => el.classList.remove('ring-4', 'ring-indigo-500/20', 'ring-offset-8'), 2000);
+                                                }
+                                            }, 300);
                                         }}
                                         className="w-full px-6 py-4 bg-indigo-600 text-white rounded-2xl font-black uppercase tracking-widest text-[11px] shadow-2xl shadow-indigo-100 hover:scale-105 transition-all flex items-center justify-center"
                                     >
                                         <Mail className="w-4 h-4 mr-3" />
-                                        Review & Send Email ➔
+                                        Review & Email Draft ➔
                                     </button>
                                 )}
 

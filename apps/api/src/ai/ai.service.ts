@@ -43,7 +43,7 @@ export class AiService {
         try {
             // 1. Instant Validation - Handle empty/short descriptions immediately
             if (!ticket.description || ticket.description.trim().length < 10) {
-                this.logger.log(`Ticket ${ticketId} has insufficient description (< 10 chars). Marking as NEEDS_ATTENTION.`);
+                this.logger.log(`Ticket ${ticketId} has insufficient description. Marking as NEEDS_ATTENTION.`);
 
                 // Audit Log: AI_SKIPPED
                 await this.prisma.auditLog.create({
@@ -64,37 +64,37 @@ export class AiService {
                     }
                 });
                 return;
-            } else {
-                // 2. Call OpenAI API
-                const response = await fetch(this.apiEndpoint, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${this.apiKey}`,
-                    },
-                    body: JSON.stringify({
-                        model: this.modelName,
-                        messages: [
-                            { role: 'system', content: 'You are a facility manager. Return ONLY JSON.' },
-                            { role: 'user', content: this.buildPrompt(ticket) }
-                        ],
-                        max_tokens: 500,
-                        temperature: 0,
-                        response_format: { type: "json_object" }
-                    }),
-                });
-
-                if (!response.ok) {
-                    throw new Error(`OpenAI API failed: ${response.statusText}`);
-                }
-
-                const data = await response.json();
-                const aiOutput = this.parseAiResponse(data);
-
-                classification = aiOutput.category || this.classifyDamage(ticket.description);
-                urgency = (aiOutput.urgency as Urgency) || (this.determineUrgency(ticket.description, 'NORMAL') as Urgency);
-                emailDraft = aiOutput.emailDraft || this.generateEmailDraft(ticket, classification, null);
             }
+
+            // 2. Call OpenAI API
+            const response = await fetch(this.apiEndpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${this.apiKey}`,
+                },
+                body: JSON.stringify({
+                    model: this.modelName,
+                    messages: [
+                        { role: 'system', content: 'You are a facility manager. Return ONLY JSON.' },
+                        { role: 'user', content: this.buildPrompt(ticket) }
+                    ],
+                    max_tokens: 500,
+                    temperature: 0,
+                    response_format: { type: "json_object" }
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error(`OpenAI API failed: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            const aiOutput = this.parseAiResponse(data);
+
+            classification = aiOutput.category || this.classifyDamage(ticket.description);
+            urgency = (aiOutput.urgency as Urgency) || (this.determineUrgency(ticket.description, 'NORMAL') as Urgency);
+            emailDraft = aiOutput.emailDraft || this.generateEmailDraft(ticket, classification, null);
 
             // 3. Save AI results
             await this.prisma.aiResult.create({
@@ -133,16 +133,19 @@ export class AiService {
                 }
             });
 
-            this.logger.log(`AI processing completed successfully for ticket: ${ticketId}`);
+            this.logger.log(`AI processing completed successfully (Terminal: AI_READY) for ticket: ${ticketId}`);
 
         } catch (err) {
-            this.logger.error(`AI Processing failed for ${ticketId}: ${err.message}`);
+            this.logger.error(`AI Processing FAILED for ${ticketId}: ${err.message}`);
 
             // GUARANTEE TERMINAL STATE: Force update to FAILED if anything crashes
             try {
                 await this.prisma.ticket.update({
                     where: { id: ticketId },
-                    data: { internalStatus: 'FAILED' as any }
+                    data: {
+                        status: 'FAILED' as any,
+                        internalStatus: 'FAILED' as any
+                    }
                 });
 
                 // Audit Log: AI_FAILED
@@ -159,7 +162,7 @@ export class AiService {
                 this.logger.error(`FATAL: Could not even set terminal FAILED state for ${ticketId}: ${dbErr.message}`);
             }
 
-            throw err; // Still throw for BullMQ retries if applicable
+            throw err;
         }
     }
 

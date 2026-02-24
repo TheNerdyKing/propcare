@@ -240,14 +240,14 @@ export default function TenantStatusPage() {
                                 </div>
                             ) : (
                                 messages.map((msg: any) => (
-                                    <div key={msg.id} className={`flex ${msg.sender_type === 'TENANT' ? 'justify-end' : 'justify-start'}`}>
-                                        <div className={`max-w-[85%] p-5 rounded-3xl shadow-sm text-sm leading-relaxed ${msg.sender_type === 'TENANT'
-                                                ? 'bg-indigo-600 text-white rounded-tr-none'
-                                                : 'bg-white text-slate-800 rounded-tl-none border border-slate-100 font-medium'
+                                    <div key={msg.id} className={`flex ${msg.sender_type === 'TENANT' || msg.senderType === 'TENANT' ? 'justify-end' : 'justify-start'}`}>
+                                        <div className={`max-w-[85%] p-5 rounded-3xl shadow-sm text-sm leading-relaxed ${(msg.sender_type === 'TENANT' || msg.senderType === 'TENANT')
+                                            ? 'bg-indigo-600 text-white rounded-tr-none'
+                                            : 'bg-white text-slate-800 rounded-tl-none border border-slate-100 font-medium'
                                             }`}>
                                             <div className="flex items-center justify-between mb-2 opacity-60">
                                                 <span className="text-[9px] font-black uppercase tracking-[0.2em]">
-                                                    {msg.sender_type === 'TENANT' ? 'You' : 'Staff'}
+                                                    {(msg.sender_type === 'TENANT' || msg.senderType === 'TENANT') ? 'You (Tenant)' : 'Management (Staff)'}
                                                 </span>
                                                 <span className="text-[9px] font-medium ml-4">
                                                     {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
