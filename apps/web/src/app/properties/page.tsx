@@ -29,7 +29,7 @@ export default function PropertiesPage() {
         if (!userStr) return null;
         try {
             const user = JSON.parse(userStr);
-            return user.tenantId || user.tenant_id;
+            return user.tenantId || user.tenant_id || user.tenants?.id || user.tenants?.[0]?.id;
         } catch (e) {
             return null;
         }
@@ -37,7 +37,10 @@ export default function PropertiesPage() {
 
     const fetchProperties = async () => {
         const tenantId = getTenantId();
-        if (!tenantId) return;
+        if (!tenantId) {
+            setLoading(false);
+            return;
+        }
 
         try {
             const { data, error } = await supabase

@@ -28,15 +28,19 @@ export default function TenantStatusPage() {
 
     useEffect(() => {
         fetchTicketData();
+    }, [id]);
+
+    useEffect(() => {
+        if (!ticket?.id) return;
 
         // Subscribe to ticket changes
         const ticketSubscription = supabase
-            .channel(`public-ticket-${id}`)
+            .channel(`public-ticket-${ticket.id}`)
             .on('postgres_changes', {
                 event: 'UPDATE',
                 schema: 'public',
                 table: 'tickets',
-                filter: `id=eq.${id}`
+                filter: `id=eq.${ticket.id}`
             }, (payload) => {
                 setTicket(prev => ({ ...prev, ...payload.new }));
             })
@@ -44,12 +48,12 @@ export default function TenantStatusPage() {
 
         // Subscribe to messages
         const messageSubscription = supabase
-            .channel(`public-messages-${id}`)
+            .channel(`public-messages-${ticket.id}`)
             .on('postgres_changes', {
                 event: 'INSERT',
                 schema: 'public',
                 table: 'ticket_messages',
-                filter: `ticket_id=eq.${id}`
+                filter: `ticket_id=eq.${ticket.id}`
             }, (payload) => {
                 const newMsg = payload.new;
                 setMessages(prev => [...prev || [], newMsg].sort(
@@ -62,7 +66,7 @@ export default function TenantStatusPage() {
             supabase.removeChannel(ticketSubscription);
             supabase.removeChannel(messageSubscription);
         };
-    }, [id]);
+    }, [ticket?.id]);
 
     useEffect(() => {
         if (scrollRef.current) {
@@ -72,21 +76,36 @@ export default function TenantStatusPage() {
 
     const fetchTicketData = async () => {
         try {
-            // Fetch Ticket
-            const { data: ticketData, error: ticketError } = await supabase
+            // Fetch Ticket - Try by exact ID (UUID) first
+            let { data: ticketData, error: ticketError } = await supabase
                 .from('tickets')
                 .select('*, property:properties(name)')
                 .eq('id', id)
                 .single();
 
-            if (ticketError) throw ticketError;
+            // Fallback: Try by reference_code if ID fails (e.g. if link used reference code)
+            if (ticketError || !ticketData) {
+                console.log(`Ticket not found by ID [${id}], trying by reference_code...`);
+                const { data: refData, error: refError } = await supabase
+                    .from('tickets')
+                    .select('*, property:properties(name)')
+                    .eq('reference_code', id)
+                    .single();
+
+                if (refError) {
+                    console.error('Ticket not found by reference_code either:', refError);
+                    throw new Error('Maintenance request not found. Please check your reference code.');
+                }
+                ticketData = refData;
+            }
+
             setTicket(ticketData);
 
             // Fetch Messages - Use snake_case for DB query ordering
             const { data: messageData, error: messageError } = await supabase
                 .from('ticket_messages')
                 .select('*')
-                .eq('ticket_id', id)
+                .eq('ticket_id', ticketData.id)
                 .order('created_at', { ascending: true }); // Supabase query needs snake_case
 
             if (messageError) throw messageError;

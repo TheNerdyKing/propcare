@@ -35,7 +35,8 @@ export default function TicketsPage() {
         if (!userStr) return null;
         try {
             const user = JSON.parse(userStr);
-            return user.tenantId || user.tenant_id;
+            // Robust check for various user object shapes (Staff Portal / Auth Fallback)
+            return user.tenantId || user.tenant_id || user.tenants?.id || user.tenants?.[0]?.id;
         } catch (e) {
             return null;
         }
@@ -43,7 +44,11 @@ export default function TicketsPage() {
 
     const fetchTickets = async () => {
         const tenantId = getTenantId();
-        if (!tenantId) return;
+        if (!tenantId) {
+            console.warn('No tenantId found, stopping fetch');
+            setLoading(false);
+            return;
+        }
 
         setLoading(true);
         try {
@@ -84,7 +89,10 @@ export default function TicketsPage() {
 
     const fetchProperties = async () => {
         const tenantId = getTenantId();
-        if (!tenantId) return;
+        if (!tenantId) {
+            setLoading(false);
+            return;
+        }
         try {
             const { data, error } = await supabase
                 .from('properties')

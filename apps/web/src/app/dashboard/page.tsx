@@ -28,7 +28,7 @@ export default function DashboardPage() {
         if (!userStr) return null;
         try {
             const user = JSON.parse(userStr);
-            return user.tenantId || user.tenant_id;
+            return user.tenantId || user.tenant_id || user.tenants?.id || user.tenants?.[0]?.id;
         } catch (e) {
             return null;
         }
@@ -36,7 +36,10 @@ export default function DashboardPage() {
 
     const fetchTickets = async (showLoading = true) => {
         const tenantId = getTenantId();
-        if (!tenantId) return;
+        if (!tenantId) {
+            setLoading(false);
+            return;
+        }
 
         if (showLoading) setLoading(true);
         try {
