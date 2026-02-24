@@ -15,7 +15,7 @@
     "dev:web": "npm --prefix apps/web run dev",
     "build": "npm run build --workspaces",
     "lint": "npm run lint --workspaces",
-    "postinstall": "npm --prefix apps/api exec prisma generate --schema=./prisma/schema.prisma"
+    "postinstall": "cd apps/api && npx prisma generate --schema=prisma/schema.prisma"
   },
   "prisma": {
     "seed": "ts-node apps/api/prisma/seed.ts"
