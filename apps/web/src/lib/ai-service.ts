@@ -133,7 +133,7 @@ async function suggestContractors(tenantId: string, category: string, propertyId
 
     if (internal && internal.length > 0) {
         return internal.map(c => ({
-            source: 'INTERNAL',
+            source: 'INTERNAL' as const,
             contractorId: c.id,
             name: c.name,
             reason: 'Preferred provider in your service network'
@@ -142,7 +142,7 @@ async function suggestContractors(tenantId: string, category: string, propertyId
 
     // 2. Fallback to placeholder discovery
     return [{
-        source: 'GOOGLE',
+        source: 'GOOGLE' as const,
         name: `Local ${category} Specialist`,
         reason: `Discovered for ${property?.city || 'the region'} via PropCare Network`
     }];
