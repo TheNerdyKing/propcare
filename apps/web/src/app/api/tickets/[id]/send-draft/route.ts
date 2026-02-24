@@ -2,10 +2,19 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { Resend } from 'resend';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
-const resend = new Resend(process.env.RESEND_API_KEY || 're_... '); // User should set this
+export const dynamic = 'force-dynamic';
+
+function getClients() {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const resendApiKey = process.env.RESEND_API_KEY;
+
+    if (!supabaseServiceKey) throw new Error('SUPABASE_SERVICE_ROLE_KEY is required');
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const resend = new Resend(resendApiKey || 're_... ');
+
+    return { supabase, resend };
+}
 
 export async function POST(
     request: NextRequest,
@@ -16,6 +25,7 @@ export async function POST(
     const { toEmail, subject, message } = body;
 
     try {
+        const { supabase, resend } = getClients();
         console.log(`[API] Sending contractor email for ticket ${id} to ${toEmail}`);
 
         // 1. Send Email via Resend

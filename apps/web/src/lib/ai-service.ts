@@ -1,10 +1,17 @@
 import { createClient } from '@supabase/supabase-js';
 import { AIAnalysisSchema, AIAnalysis } from '@propcare/shared';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!; // Use service role for backend operations
-
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
+function getSupabase() {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!supabaseServiceKey) {
+        // Fallback for build time static analysis if needed, 
+        // but since this is a private service called from API routes,
+        // we throw here and let the dynamic API routes handle the cycle.
+        throw new Error('SUPABASE_SERVICE_ROLE_KEY is required');
+    }
+    return createClient(supabaseUrl, supabaseServiceKey);
+}
 
 const OPENAI_API_KEY = process.env.AI_API_KEY || process.env.OPENAI_API_KEY;
 const OPENAI_MODEL = process.env.AI_MODEL_NAME || 'gpt-4o-mini';
@@ -12,6 +19,7 @@ const OPENAI_ENDPOINT = 'https://api.openai.com/v1/chat/completions';
 
 export async function processTicketAi(ticketId: string) {
     console.log(`[AI] Starting analysis for ticket: ${ticketId}`);
+    const supabase = getSupabase();
 
     try {
         // 1. Fetch Ticket
@@ -123,6 +131,7 @@ async function analyzeWithOpenAi(ticket: any): Promise<AIAnalysis> {
 }
 
 async function suggestContractors(tenantId: string, category: string, propertyId: string, property: any) {
+    const supabase = getSupabase();
     // 1. Check internal contractors for this tenant and trade
     const { data: internal } = await supabase
         .from('contractors')
