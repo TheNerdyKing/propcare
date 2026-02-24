@@ -309,7 +309,7 @@ export default function TicketDetailPage() {
                         Back to Dashboard
                     </button>
                     <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest bg-slate-50 px-3 py-1 rounded-full border border-slate-100">
-                        Deployment v3.2-api-fix
+                        Deployment v3.4-fullstack-hardened
                     </span>
                 </div>
 

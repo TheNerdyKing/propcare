@@ -7,11 +7,12 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 export async function GET(
     request: NextRequest,
-    { params }: { params: { referenceCode: string } }
+    { params }: { params: Promise<{ referenceCode: string }> }
 ) {
-    const { referenceCode } = params;
+    const { referenceCode } = await params;
 
     try {
+        console.log(`[API] Fetching public ticket: ${referenceCode}`);
         const { data, error } = await supabase
             .from('tickets')
             .select('*, property:properties(name, city, zip), messages:ticket_messages(*)')
@@ -32,12 +33,13 @@ export async function GET(
 
 export async function POST(
     request: NextRequest,
-    { params }: { params: { referenceCode: string } }
+    { params }: { params: Promise<{ referenceCode: string }> }
 ) {
-    const { referenceCode } = params;
+    const { referenceCode } = await params;
     const { content } = await request.json();
 
     try {
+        console.log(`[API] Posting message to public ticket: ${referenceCode}`);
         // Find ticket first to get IDs
         const { data: ticket } = await supabase
             .from('tickets')
