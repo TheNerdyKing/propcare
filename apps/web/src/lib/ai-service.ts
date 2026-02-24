@@ -33,11 +33,22 @@ export async function processTicketAi(ticketId: string) {
             throw new Error(`Ticket ${ticketId} not found.`);
         }
 
-        // 2. Update status to PROCESSING
+        // 2. Update status to PROCESSING & Log Start
         await supabase
             .from('tickets')
             .update({ ai_status: 'PROCESSING' })
             .eq('id', ticketId);
+
+        await supabase
+            .from('audit_logs')
+            .insert({
+                tenant_id: ticket.tenant_id,
+                action: 'AI_START',
+                target_type: 'TICKET',
+                target_id: ticketId,
+                details: 'AI Analysis triggered remotely',
+                metadata_json: { model: OPENAI_MODEL }
+            });
 
         // 3. Perform AI Analysis
         const aiOutput = await analyzeWithOpenAi(ticket);
@@ -57,7 +68,7 @@ export async function processTicketAi(ticketId: string) {
                 output_json: aiOutput
             });
 
-        // 6. Final Ticket Update
+        // 6. Final Ticket Update & Log Success
         await supabase
             .from('tickets')
             .update({
@@ -68,15 +79,46 @@ export async function processTicketAi(ticketId: string) {
             })
             .eq('id', ticketId);
 
+        await supabase
+            .from('audit_logs')
+            .insert({
+                tenant_id: ticket.tenant_id,
+                action: 'AI_SUCCESS',
+                target_type: 'TICKET',
+                target_id: ticketId,
+                details: `AI classification: ${aiOutput.classification.category}`,
+                metadata_json: {
+                    category: aiOutput.classification.category,
+                    urgency: aiOutput.classification.urgency
+                }
+            });
+
         console.log(`[AI] Successfully processed ticket: ${ticketId}`);
         return aiOutput;
 
     } catch (err: any) {
         console.error(`[AI] Failed for ${ticketId}:`, err.message);
+
+        // Fetch ticket one more time for tenant_id if not available
+        const { data: fallbackTicket } = await supabase.from('tickets').select('tenant_id').eq('id', ticketId).single();
+
         await supabase
             .from('tickets')
             .update({ ai_status: 'FAILED' })
             .eq('id', ticketId);
+
+        if (fallbackTicket) {
+            await supabase
+                .from('audit_logs')
+                .insert({
+                    tenant_id: fallbackTicket.tenant_id,
+                    action: 'AI_FAILED',
+                    target_type: 'TICKET',
+                    target_id: ticketId,
+                    details: `Analysis failed: ${err.message}`,
+                    metadata_json: { error: err.message }
+                });
+        }
         throw err;
     }
 }

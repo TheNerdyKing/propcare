@@ -169,7 +169,7 @@ export default function TicketDetailPage() {
                     new Date(a.createdAt || a.created_at).getTime() - new Date(b.createdAt || b.created_at).getTime()
                 ),
                 auditLogs: (data.auditLogs || data.audit_logs || []).sort((a: any, b: any) =>
-                    new Date(b.createdAt || b.created_at).getTime() - new Date(a.createdAt || a.created_at).getTime()
+                    new Date(b.created_at || b.createdAt).getTime() - new Date(a.created_at || a.createdAt).getTime()
                 )
             });
 
@@ -383,7 +383,6 @@ export default function TicketDetailPage() {
                         <div className="flex items-center space-x-8 border-b border-slate-100 px-2">
                             {[
                                 { id: 'details', label: 'AI Analysis', icon: Sparkles },
-                                { id: 'conversation', label: 'Chat', icon: MessageSquare },
                                 { id: 'audit', label: 'Audit Log', icon: History }
                             ].map((tab) => (
                                 <button
@@ -597,40 +596,6 @@ export default function TicketDetailPage() {
                                 </div>
                             )}
 
-                            {activeTab === 'conversation' && (
-                                <div className="flex flex-col h-[500px] animate-in fade-in slide-in-from-bottom-2 duration-300">
-                                    <div className="flex-1 p-8 space-y-6 overflow-y-auto bg-slate-50/30">
-                                        {(ticket.messages || []).map((msg: any) => (
-                                            <div key={msg.id} className={`flex ${msg.sender_type === 'STAFF' || msg.senderType === 'STAFF' ? 'justify-end' : 'justify-start'}`}>
-                                                <div className={`max-w-[80%] p-4 rounded-2xl shadow-sm text-sm leading-relaxed ${msg.sender_type === 'STAFF' || msg.senderType === 'STAFF'
-                                                    ? 'bg-indigo-600 text-white rounded-tr-none'
-                                                    : 'bg-white text-slate-800 rounded-tl-none border border-slate-100'
-                                                    }`}>
-                                                    <div className="flex items-center justify-between mb-2 opacity-70">
-                                                        <span className="text-[10px] font-black uppercase tracking-widest">{msg.sender_type || msg.senderType}</span>
-                                                        <span className="text-[10px] font-medium ml-4">{new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                                                    </div>
-                                                    <p className="font-medium">{msg.content}</p>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                    <div className="p-6 bg-white border-t border-slate-100 flex gap-4">
-                                        <textarea
-                                            className="flex-1 bg-slate-50 border-none rounded-2xl p-4 text-slate-900 font-medium text-sm focus:ring-2 focus:ring-indigo-500 shadow-inner resize-none h-20"
-                                            placeholder="Type your message to the tenant..."
-                                            value={newMessage}
-                                            onChange={(e) => setNewMessage(e.target.value)}
-                                        />
-                                        <button
-                                            onClick={sendMessage}
-                                            className="self-end p-4 bg-indigo-600 text-white rounded-2xl hover:bg-indigo-700 transition shadow-lg shadow-indigo-100"
-                                        >
-                                            <Send className="w-5 h-5" />
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
 
                             {activeTab === 'audit' && (
                                 <div className="p-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
@@ -656,7 +621,7 @@ export default function TicketDetailPage() {
                                                 <div key={log.id} className="mb-10 ml-8 relative group">
                                                     <div className="absolute -left-[41px] top-1 w-4 h-4 rounded-full border-4 border-white bg-slate-300 group-hover:bg-indigo-600 transition-colors" />
                                                     <div className="flex items-center justify-between mb-2">
-                                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{new Date(log.createdAt).toLocaleString()}</p>
+                                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{new Date(log.created_at || log.createdAt).toLocaleString()}</p>
                                                         <span className="px-2 py-0.5 bg-slate-100 text-[10px] font-black text-slate-500 rounded-md tracking-widest">{log.action}</span>
                                                     </div>
                                                     <p className="text-slate-800 font-bold mb-1">{getAuditMessage()}</p>
@@ -688,7 +653,7 @@ export default function TicketDetailPage() {
                                     </button>
                                 )}
 
-                                {ticket.status === 'AI_READY' && (
+                                {ticket.aiStatus === 'AI_READY' && ticket.status !== 'CLOSED' && (
                                     <button
                                         onClick={() => {
                                             setActiveTab('details');
@@ -697,27 +662,18 @@ export default function TicketDetailPage() {
                                                 const el = document.getElementById('email-draft-area');
                                                 if (el) {
                                                     el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                                                    el.classList.add('ring-4', 'ring-indigo-500/20', 'ring-offset-8');
-                                                    setTimeout(() => el.classList.remove('ring-4', 'ring-indigo-500/20', 'ring-offset-8'), 2000);
+                                                    el.classList.add('ring-4', 'ring-indigo-500/10', 'ring-offset-8');
+                                                    setTimeout(() => el.classList.remove('ring-4', 'ring-indigo-500/10', 'ring-offset-8'), 2000);
                                                 }
                                             }, 300);
                                         }}
-                                        className="w-full px-6 py-4 bg-indigo-600 text-white rounded-2xl font-black uppercase tracking-widest text-[11px] shadow-2xl shadow-indigo-100 hover:scale-105 transition-all flex items-center justify-center"
+                                        className="w-full px-6 py-4 bg-indigo-600 text-white rounded-2xl font-black uppercase tracking-widest text-[11px] shadow-2xl shadow-indigo-100 hover:scale-105 transition-all flex items-center justify-center animate-bounce-subtle"
                                     >
                                         <Mail className="w-4 h-4 mr-3" />
                                         Review & Email Draft ➔
                                     </button>
                                 )}
 
-                                {ticket.status === 'SENT' && (
-                                    <button
-                                        onClick={() => setActiveTab('conversation')}
-                                        className="w-full px-6 py-4 bg-indigo-600 text-white rounded-2xl font-black uppercase tracking-widest text-[11px] shadow-2xl shadow-indigo-100 hover:scale-105 transition-all flex items-center justify-center"
-                                    >
-                                        <MessageSquare className="w-4 h-4 mr-3" />
-                                        Chat with Tenant ➔
-                                    </button>
-                                )}
 
                                 {ticket.status === 'CLOSED' && (
                                     <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-2xl flex items-center justify-center">
@@ -771,7 +727,7 @@ export default function TicketDetailPage() {
                             <Sparkles className="absolute top-4 right-4 text-indigo-400/20 w-16 h-16 pointer-events-none group-hover:scale-110 transition-transform duration-500" />
                             <h3 className="text-xs font-black text-indigo-400 uppercase tracking-widest mb-4">Automation Hub</h3>
                             <p className="text-sm font-medium text-slate-400 mb-6 leading-relaxed">
-                                Our AI system is monitoring this ticket activity. It will suggest next steps based on chat messages.
+                                Our AI system is monitoring this ticket activity. It will suggest next steps based on its analysis.
                             </p>
                             <div className="p-4 bg-indigo-600/10 border border-indigo-400/20 rounded-2xl flex items-center">
                                 <Sparkles className="w-5 h-5 mr-3 text-indigo-400" />

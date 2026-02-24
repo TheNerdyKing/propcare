@@ -39,26 +39,35 @@ export async function POST(
 
         if (resendError) throw resendError;
 
+        // Fetch ticket to get tenant_id for logging
+        const { data: ticket } = await supabase.from('tickets').select('tenant_id').eq('id', id).single();
+
         // 2. Log to Outbound Emails
         await supabase
             .from('outbound_emails')
             .insert({
+                tenant_id: ticket?.tenant_id,
                 ticket_id: id,
                 recipient_email: toEmail,
                 subject: subject,
                 content_text: message,
-                sent_at: new Date().toISOString()
+                sent_at: new Date().toISOString(),
+                status: 'SENT'
             });
 
         // 3. Create Audit Log
-        await supabase
-            .from('audit_logs')
-            .insert({
-                action: 'EMAIL_SENT',
-                target_type: 'TICKET',
-                target_id: id,
-                details: `Email sent to ${toEmail}`
-            });
+        if (ticket) {
+            await supabase
+                .from('audit_logs')
+                .insert({
+                    tenant_id: ticket.tenant_id,
+                    action: 'EMAIL_SENT',
+                    target_type: 'TICKET',
+                    target_id: id,
+                    details: `Email sent to ${toEmail}`,
+                    metadata_json: { to: toEmail, subject }
+                });
+        }
 
         return NextResponse.json({ success: true, messageId: resendData?.id });
 
