@@ -4,7 +4,7 @@ const getBaseURL = () => {
     // 1. Explicit env var (Best for Vercel Dashboard)
     if (process.env.NEXT_PUBLIC_API_URL) {
         const url = process.env.NEXT_PUBLIC_API_URL;
-        return url.endsWith('/api') ? url : `${url.replace(/\/$/, '')}/api`;
+        return url.endsWith('/api/') ? url : `${url.replace(/\/$/, '')}/api/`;
     }
 
     // 2. Browser detection
