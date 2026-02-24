@@ -15,12 +15,30 @@ export default function DashboardPage() {
     useEffect(() => {
         fetchTickets();
 
-        // Real-time updates: Poll every 10 seconds
-        const interval = setInterval(() => {
-            fetchTickets(false); // background fetch
-        }, 10000);
+        const tenantId = getTenantId();
+        if (!tenantId) return;
 
-        return () => clearInterval(interval);
+        // Real-time updates via Supabase Realtime
+        const channel = supabase
+            .channel('dashboard-updates')
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'tickets',
+                    filter: `tenant_id=eq.${tenantId}`,
+                },
+                (payload) => {
+                    console.log('Real-time update received:', payload);
+                    fetchTickets(false); // background refresh
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
     }, [statusFilter]);
 
     const getTenantId = () => {

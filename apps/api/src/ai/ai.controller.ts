@@ -31,8 +31,8 @@ export class AiController {
         if (table === 'tickets') {
             const ticketId = record?.id || body.old_record?.id;
 
-            // Manual trigger via status update to AI_PROCESSING (Manual Click)
-            if (type === 'UPDATE' && record.internal_status === 'AI_PROCESSING') {
+            // Manual trigger via status update to PROCESSING (Manual Click or Event)
+            if (type === 'UPDATE' && record.ai_status === 'PROCESSING') {
                 this.logger.log(`Manual AI trigger via UPDATE detected for ticket: ${ticketId}`);
                 try {
                     await this.aiService.processTicket(ticketId);
@@ -42,7 +42,7 @@ export class AiController {
                 return { handled: true, ticketId, action: 'UPDATE_TRIGGER' };
             }
 
-            this.logger.warn(`Ticket update ignored for ${ticketId}: type=${type}, status=${record?.internal_status}`);
+            this.logger.warn(`Ticket update ignored for ${ticketId}: type=${type}, status=${record?.ai_status}`);
         } else {
             this.logger.warn(`Webhook ignored: No matching logic for table=${table}, type=${type}`);
         }

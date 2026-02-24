@@ -7,7 +7,7 @@ import { TicketsModule } from './tickets/tickets.module';
 import { ContractorsModule } from './contractors/contractors.module';
 import { PropertiesModule } from './properties/properties.module';
 import { AiModule } from './ai/ai.module';
-// import { BullModule } from '@nestjs/bullmq';
+import { EmailModule } from './email/email.module';
 import { APP_GUARD } from '@nestjs/core';
 import { AuthGuard } from './auth/guards/auth.guard';
 import { RolesGuard } from './auth/guards/roles.guard';
@@ -25,6 +25,7 @@ import { RolesGuard } from './auth/guards/roles.guard';
         ContractorsModule,
         PropertiesModule,
         AiModule,
+        EmailModule,
         /*
         BullModule.forRoot({
             connection: {

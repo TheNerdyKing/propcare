@@ -50,7 +50,8 @@ export default function TicketDetailPage() {
                 table: 'tickets',
                 filter: `id=eq.${id}`
             }, (payload) => {
-                const newStatus = payload.new.internal_status || payload.new.status;
+                const newStatus = payload.new.status;
+                const newAiStatus = payload.new.ai_status;
 
                 // CRITICAL: Preserve derived AI fields from previous state if they exist
                 setTicket(prev => {
@@ -58,18 +59,17 @@ export default function TicketDetailPage() {
                     return {
                         ...prev,
                         ...payload.new,
-                        internalStatus: payload.new.internal_status,
-                        // Preserve these fields which are joined from other tables
+                        aiStatus: newAiStatus,
+                        // Preserve these fields which are joined from other tables if not in payload
                         aiClassification: prev.aiClassification,
                         aiUrgency: prev.aiUrgency,
                         aiEmailDraft: prev.aiEmailDraft,
-                        contractor: prev.contractor
                     };
                 });
 
-                // If AI finished or Email sent, re-fetch the full joined data
-                if (newStatus === 'AI_READY' || newStatus === 'FAILED' || newStatus === 'SENT') {
-                    console.log(`State transition to ${newStatus} detected via Realtime, re-fetching full record...`);
+                // If AI finished or state changes significantly, re-fetch full record to get joined data
+                if (newAiStatus === 'AI_READY' || newAiStatus === 'FAILED' || newStatus === 'SENT') {
+                    console.log(`State transition to ${newAiStatus || newStatus} detected via Realtime, re-fetching full record...`);
                     fetchTicket();
                 }
             })
@@ -146,10 +146,8 @@ export default function TicketDetailPage() {
             const result = latestResultRaw?.output_json || latestResultRaw?.outputJson || {};
 
             console.log(`Latest AI Result for ${id}:`, {
-                rawKeys: latestResultRaw ? Object.keys(latestResultRaw) : 'none',
-                resultKeys: result ? Object.keys(result) : 'none',
-                category: result.category,
-                internalStatus: data.internal_status
+                category: result.classification?.category,
+                aiStatus: data.ai_status
             });
 
             setTicket({
@@ -159,10 +157,13 @@ export default function TicketDetailPage() {
                 tenantName: data.tenant_name,
                 urgency: data.urgency,
                 status: data.status,
-                internalStatus: data.internal_status || data.internalStatus,
-                aiClassification: result.category || null,
-                aiUrgency: result.urgency || null,
-                aiEmailDraft: result.emailDraft || '',
+                aiStatus: data.ai_status,
+                aiClassification: result.classification?.category || null,
+                aiUrgency: result.classification?.urgency || null,
+                aiEmailDraft: result.draftEmail?.bodyText || '',
+                aiEmailSubject: result.draftEmail?.subject || '',
+                aiMissingInfo: result.missingInfo || [],
+                aiContractors: result.recommendedContractors || [],
                 errorMessage: result.errorMessage || data.error_message || null,
                 messages: (data.messages || []).sort((a: any, b: any) =>
                     new Date(a.createdAt || a.created_at).getTime() - new Date(b.createdAt || b.created_at).getTime()
@@ -172,13 +173,13 @@ export default function TicketDetailPage() {
                 )
             });
 
-            if (result.emailDraft) {
-                setDraftEmail(result.emailDraft);
-                setDraftSubject(`Maintenance Request: ${data.referenceCode} - ${data.property?.name || 'Inquiry'}`);
+            if (result.draftEmail) {
+                setDraftEmail(result.draftEmail.bodyText);
+                setDraftSubject(result.draftEmail.subject || `Maintenance Request: ${data.referenceCode}`);
             }
 
-            // Try to find a suggested contractor email
-            const suggestedEmail = result.contractors?.[0]?.email || '';
+            // Try to find a suggested contractor email if available
+            const suggestedEmail = result.recommendedContractors?.[0]?.email || '';
             setDraftRecipient(suggestedEmail);
         } catch (err) {
             console.error('Failed to fetch ticket', err);
@@ -247,52 +248,10 @@ export default function TicketDetailPage() {
 
     const reprocessAi = async () => {
         setReprocessing(true);
-        const tenantId = getTenantId();
-        if (!tenantId) {
-            setReprocessing(false);
-            return;
-        }
-
-        // 1. FRONTEND GUARD: Prevent infinite loading for empty/short tickets
-        if (!ticket.description || ticket.description.trim().length < 10) {
-            console.log('Short description detected. Setting NEEDS_ATTENTION instantly.');
-            try {
-                const { error } = await supabase
-                    .from('tickets')
-                    .update({
-                        internal_status: 'NEEDS_ATTENTION',
-                        status: 'NEEDS_ATTENTION',
-                        updatedAt: new Date().toISOString()
-                    })
-                    .eq('id', id)
-                    .eq('tenant_id', tenantId);
-
-                if (error) throw error;
-                await fetchTicket();
-                return;
-            } catch (err) {
-                console.error('Guard update failed', err);
-            } finally {
-                setReprocessing(false);
-            }
-            return;
-        }
-
         try {
-            // 2. Update internal_status directly in Supabase to trigger the Webhook
-            const { error } = await supabase
-                .from('tickets')
-                .update({
-                    internal_status: 'AI_PROCESSING',
-                    updatedAt: new Date().toISOString()
-                })
-                .eq('id', id)
-                .eq('tenant_id', tenantId);
-
-            if (error) throw error;
-
+            await api.post(`/tickets/${id}/analyze`);
             alert('AI Analysis requested. Results will appear in seconds.');
-            await fetchTicket();
+            fetchTicket();
         } catch (err: any) {
             console.error('Reprocess failed', err);
             alert(`Failed to request AI analysis: ${err.message || 'Unknown error'}`);
@@ -308,16 +267,17 @@ export default function TicketDetailPage() {
         }
         setSendingEmail(true);
         try {
-            await api.post(`/tickets/${id}/send-email`, {
-                to: draftRecipient,
+            await api.post(`/tickets/${id}/send-draft`, {
+                toEmail: draftRecipient,
                 subject: draftSubject,
-                body: draftEmail
+                message: draftEmail,
+                useAiDraft: false // We are sending the manual/edited draft from the field
             });
             alert('Email sent successfully!');
             fetchTicket();
-        } catch (err) {
+        } catch (err: any) {
             console.error('Failed to send email', err);
-            alert('Failed to send email.');
+            alert(`Failed to send email: ${err.response?.data?.message || err.message}`);
         } finally {
             setSendingEmail(false);
         }
@@ -463,7 +423,7 @@ export default function TicketDetailPage() {
                                         </button>
                                     </div>
 
-                                    {reprocessing ? (
+                                    {reprocessing || ticket.aiStatus === 'PROCESSING' ? (
                                         <div className="flex flex-col items-center justify-center py-16 px-8 text-center bg-indigo-50/20 rounded-[2rem] border border-dashed border-indigo-100">
                                             <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-100/50 mb-6 font-bold text-indigo-500">
                                                 <RefreshCw className="w-8 h-8 animate-spin" />
@@ -472,19 +432,8 @@ export default function TicketDetailPage() {
                                             <p className="text-sm font-medium text-slate-500 max-w-sm mb-6">
                                                 PropCare AI is lightning fast. Your results will appear in a second or two.
                                             </p>
-
-                                            {/* Watchdog/Reset after 5 seconds to prevent hanging */}
-                                            <button
-                                                onClick={() => {
-                                                    supabase.from('tickets').update({ internal_status: 'NEW' }).eq('id', id);
-                                                    setTicket(prev => prev ? ({ ...prev, internalStatus: 'NEW' }) : null);
-                                                }}
-                                                className="text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-indigo-600 transition-colors"
-                                            >
-                                                Take too long? Reset & Try Again
-                                            </button>
                                         </div>
-                                    ) : ticket.internalStatus === 'NEEDS_ATTENTION' ? (
+                                    ) : ticket.aiStatus === 'NEEDS_ATTENTION' ? (
                                         <div className="flex flex-col items-center justify-center py-16 px-8 text-center bg-amber-50 rounded-[2rem] border border-dashed border-amber-200">
                                             <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-lg shadow-amber-100 mb-6">
                                                 <AlertTriangle className="w-8 h-8 text-amber-500" />
@@ -502,7 +451,7 @@ export default function TicketDetailPage() {
                                                 {reprocessing ? 'Processing...' : 'Try Again'}
                                             </button>
                                         </div>
-                                    ) : (ticket.internalStatus === 'FAILED' || ticket.errorMessage) ? (
+                                    ) : ticket.aiStatus === 'FAILED' ? (
                                         <div className="flex flex-col items-center justify-center py-16 px-8 text-center bg-red-50 rounded-[2rem] border border-dashed border-red-200">
                                             <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-lg shadow-red-100 mb-6">
                                                 <AlertTriangle className="w-8 h-8 text-red-500" />
@@ -520,26 +469,24 @@ export default function TicketDetailPage() {
                                                 {reprocessing ? 'Trying again...' : 'Retry Analysis'}
                                             </button>
                                         </div>
-                                    ) : !ticket.aiClassification ? (
+                                    ) : (!ticket.aiClassification && ticket.aiStatus === 'NOT_REQUESTED') ? (
                                         <div className="flex flex-col items-center justify-center py-16 px-8 text-center bg-slate-50/50 rounded-[2rem] border border-dashed border-slate-200">
                                             <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-sm mb-6">
                                                 <Sparkles className="w-8 h-8 text-indigo-400" />
                                             </div>
                                             <h3 className="text-lg font-black text-slate-900 mb-2">
-                                                {reprocessing || ticket.internalStatus === 'AI_PROCESSING' ? 'AI Analysis In Progress' : 'Ready for Analysis'}
+                                                Ready for Analysis
                                             </h3>
                                             <p className="text-sm font-medium text-slate-500 mb-8 max-w-sm">
-                                                {reprocessing || ticket.internalStatus === 'AI_PROCESSING'
-                                                    ? 'PropCare AI is currently analyzing this request. Results will appear automatically in a few seconds.'
-                                                    : 'This ticket is awaiting an AI assessment. Click below to generate a classification and email draft.'}
+                                                This ticket is awaiting an AI assessment. Click below to generate a classification and email draft.
                                             </p>
                                             <button
                                                 onClick={reprocessAi}
                                                 disabled={reprocessing}
                                                 className="px-8 py-4 bg-indigo-600 text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-xl shadow-indigo-100 hover:scale-105 transition-all disabled:opacity-50 flex items-center"
                                             >
-                                                <RefreshCw className={`w-4 h-4 mr-3 ${reprocessing || ticket.internalStatus === 'AI_PROCESSING' ? 'animate-spin' : ''}`} />
-                                                {reprocessing || ticket.internalStatus === 'AI_PROCESSING' ? 'Analyzing...' : 'Start AI Analysis'}
+                                                <RefreshCw className={`w-4 h-4 mr-3 ${reprocessing ? 'animate-spin' : ''}`} />
+                                                {reprocessing ? 'Analyzing...' : 'Start AI Analysis'}
                                             </button>
                                         </div>
                                     ) : (
@@ -555,30 +502,50 @@ export default function TicketDetailPage() {
                                                 </div>
                                             </div>
 
-                                            <div>
-                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6">Suggested Contractor</p>
-                                                {ticket.contractor ? (
-                                                    <div className="flex items-center justify-between p-6 bg-emerald-50/50 border border-emerald-100 rounded-2xl">
-                                                        <div className="flex items-center">
-                                                            <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center mr-4">
-                                                                <Wrench className="w-6 h-6 text-emerald-600" />
-                                                            </div>
-                                                            <div>
-                                                                <h4 className="font-black text-slate-900">{ticket.contractor.name}</h4>
-                                                                <p className="text-xs font-bold text-emerald-600 uppercase tracking-wider">{ticket.contractor.tradeTypes?.join(', ')}</p>
+                                            {ticket.aiMissingInfo && ticket.aiMissingInfo.length > 0 && (
+                                                <div className="p-6 bg-amber-50/50 border border-amber-100 rounded-2xl mt-6">
+                                                    <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest mb-3 flex items-center">
+                                                        <AlertTriangle className="w-3.5 h-3.5 mr-2" />
+                                                        Missing Information Identified
+                                                    </p>
+                                                    <ul className="space-y-2">
+                                                        {ticket.aiMissingInfo.map((info: string, i: number) => (
+                                                            <li key={i} className="text-sm font-medium text-slate-700 flex items-start">
+                                                                <span className="w-1.5 h-1.5 bg-amber-400 rounded-full mt-1.5 mr-3 flex-shrink-0" />
+                                                                {info}
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                </div>
+                                            )}
+
+                                            <div className="mt-6">
+                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6">Suggested Contractors</p>
+                                                <div className="space-y-4">
+                                                    {ticket.aiContractors && ticket.aiContractors.length > 0 ? ticket.aiContractors.map((c: any, i: number) => (
+                                                        <div key={i} className={`flex items-center justify-between p-6 bg-white border border-slate-100 rounded-2xl shadow-sm hover:border-indigo-100 transition-colors`}>
+                                                            <div className="flex items-center">
+                                                                <div className={`w-12 h-12 ${c.source === 'INTERNAL' ? 'bg-emerald-100' : 'bg-slate-100'} rounded-xl flex items-center justify-center mr-4`}>
+                                                                    <Wrench className={`w-6 h-6 ${c.source === 'INTERNAL' ? 'text-emerald-600' : 'text-slate-600'}`} />
+                                                                </div>
+                                                                <div>
+                                                                    <div className="flex items-center gap-2">
+                                                                        <h4 className="font-black text-slate-900">{c.name}</h4>
+                                                                        <span className={`text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-tighter ${c.source === 'INTERNAL' ? 'bg-emerald-600 text-white' : 'bg-slate-200 text-slate-500'}`}>
+                                                                            {c.source}
+                                                                        </span>
+                                                                    </div>
+                                                                    <p className="text-xs font-medium text-slate-500">{c.reason}</p>
+                                                                </div>
                                                             </div>
                                                         </div>
-                                                        <div className="text-right">
-                                                            <p className="text-xs font-medium text-slate-500">{ticket.contractor.email}</p>
-                                                            <p className="text-xs font-medium text-slate-500">{ticket.contractor.phone}</p>
+                                                    )) : (
+                                                        <div className="flex flex-col items-center py-8 text-slate-400 bg-slate-50 border border-dashed rounded-2xl">
+                                                            <AlertTriangle className="w-8 h-8 mb-2 opacity-50" />
+                                                            <p className="text-sm font-bold">No contractor matched your criteria.</p>
                                                         </div>
-                                                    </div>
-                                                ) : (
-                                                    <div className="flex flex-col items-center py-8 text-slate-400 bg-slate-50 border border-dashed rounded-2xl">
-                                                        <AlertTriangle className="w-8 h-8 mb-2 opacity-50" />
-                                                        <p className="text-sm font-bold">No contractor matched your criteria.</p>
-                                                    </div>
-                                                )}
+                                                    )}
+                                                </div>
                                             </div>
 
                                             {ticket.aiEmailDraft && (

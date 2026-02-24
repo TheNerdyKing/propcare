@@ -21,20 +21,23 @@ export class TicketsController {
         return this.ticketsService.findOne(req.user.tenantId, id);
     }
 
+    @Post(':id/send-draft')
+    async sendDraft(
+        @Request() req: any,
+        @Param('id') id: string,
+        @Body() dto: { toEmail: string, subject?: string, message?: string, useAiDraft: boolean }
+    ) {
+        return this.ticketsService.sendDraftEmail(req.user.tenantId, id, dto, req.user.id);
+    }
+
+    @Post(':id/analyze')
+    async analyze(@Request() req: any, @Param('id') id: string) {
+        return this.ticketsService.reprocessAi(req.user.tenantId, id);
+    }
+
     @Patch(':id')
     async update(@Request() req: any, @Param('id') id: string, @Body() data: any) {
         return this.ticketsService.update(req.user.tenantId, id, data, req.user.id);
-    }
-
-    @Post(':id/send-email')
-    async sendEmail(
-        @Request() req: any,
-        @Param('id') id: string,
-        @Body('to') to: string,
-        @Body('subject') subject: string,
-        @Body('body') body: string
-    ) {
-        return this.ticketsService.sendEmail(req.user.tenantId, id, to, subject, body, req.user.id);
     }
 
     @Post(':id/messages')

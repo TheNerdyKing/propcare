@@ -1,9 +1,7 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, HttpException, HttpStatus } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { TicketStatus, Role, InternalStatus } from '@prisma/client';
-import { MailsService } from '../mails/mails.service';
-// import { InjectQueue } from '@nestjs/bullmq';
-// import { Queue } from 'bullmq';
+import { TicketStatus, Role, AiStatus } from '@prisma/client';
+import { EmailService } from '../email/email.service';
 import { AiService } from '../ai/ai.service';
 import { PublicService } from '../public/public.service';
 
@@ -11,7 +9,7 @@ import { PublicService } from '../public/public.service';
 export class TicketsService {
     constructor(
         private prisma: PrismaService,
-        private mailsService: MailsService,
+        private emailService: EmailService,
         private publicService: PublicService,
         private aiService: AiService,
     ) { }
@@ -65,50 +63,67 @@ export class TicketsService {
         });
     }
 
-    async sendEmail(tenantId: string, id: string, to: string, subject: string, body: string, userId: string) {
+    async sendDraftEmail(tenantId: string, id: string, dto: { toEmail: string, subject?: string, message?: string, useAiDraft: boolean }, userId: string) {
         const ticket = await this.findOne(tenantId, id);
 
-        // Send Email
-        const result = await this.mailsService.sendEmail(to, subject, body);
+        let subject = dto.subject;
+        let body = dto.message;
+
+        if (dto.useAiDraft) {
+            const aiResult = ticket.aiResults[0];
+            if (aiResult?.outputJson) {
+                const output = aiResult.outputJson as any;
+                subject = output.draftEmail?.subject || subject;
+                body = output.draftEmail?.bodyText || body;
+            }
+        }
+
+        if (!subject || !body) {
+            throw new HttpException('Email subject and body are required', HttpStatus.BAD_REQUEST);
+        }
+
+        const result = await this.emailService.sendDraftEmail({
+            to: dto.toEmail,
+            subject: subject,
+            html: body.replace(/\n/g, '<br>'),
+            text: body
+        });
 
         // Log Outbound Email
         await this.prisma.outboundEmail.create({
             data: {
                 tenantId,
                 ticketId: id,
-                toEmail: to,
+                toEmail: dto.toEmail,
                 subject: subject,
                 body: body,
-                status: result.success ? 'SENT' : 'FAILED',
-                errorMessage: result.error,
+                status: 'SENT',
                 sentByUserId: userId,
             },
         });
 
-        if (result.success) {
-            // Update Ticket Status
-            await this.prisma.ticket.update({
-                where: { id, tenantId },
-                data: {
-                    status: TicketStatus.SENT,
-                    internalStatus: InternalStatus.SENT,
-                },
-            });
+        // Update Ticket Status
+        await this.prisma.ticket.update({
+            where: { id, tenantId },
+            data: {
+                status: TicketStatus.SENT,
+                updatedAt: new Date()
+            },
+        });
 
-            // Audit Log
-            await this.prisma.auditLog.create({
-                data: {
-                    tenantId,
-                    actorUserId: userId,
-                    action: 'EMAIL_SENT',
-                    targetType: 'TICKET',
-                    targetId: id,
-                    metadataJson: { to, subject },
-                },
-            });
-        }
+        // Audit Log
+        await this.prisma.auditLog.create({
+            data: {
+                tenantId,
+                actorUserId: userId,
+                action: 'EMAIL_SENT',
+                targetType: 'TICKET',
+                targetId: id,
+                metadataJson: { to: dto.toEmail, subject },
+            },
+        });
 
-        return result;
+        return { ok: true, resendId: result.resendId, newStatus: TicketStatus.SENT };
     }
 
     async update(tenantId: string, id: string, data: any, userId: string) {
@@ -136,22 +151,12 @@ export class TicketsService {
     }
 
     async reprocessAi(tenantId: string, id: string) {
-        console.log(`[TicketsService] Reprocess AI requested for ticket ${id} (Tenant: ${tenantId})`);
         try {
             const ticket = await this.findOne(tenantId, id);
-            if (!ticket) {
-                console.error(`[TicketsService] Ticket ${id} not found for reprocess`);
-                throw new NotFoundException('Ticket not found');
-            }
-
-            console.log(`[TicketsService] Triggering direct AI analysis for ticket ${id}`);
-            // Direct call, bypasses queue
             await this.aiService.processTicket(id);
-
             return { success: true };
         } catch (err) {
-            console.error(`[TicketsService] Failed to reprocess AI for ${id}:`, err.message);
-            throw err;
+            throw new HttpException(`Failed to reprocess AI: ${err.message}`, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 }

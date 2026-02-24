@@ -31,8 +31,8 @@ export class AuthService {
             role: user.role
         };
 
-        const secret = this.configService.get<string>('JWT_SECRET') || 'default-secret';
-        const refreshSecret = this.configService.get<string>('JWT_REFRESH_SECRET') || 'default-refresh-secret';
+        const secret = this.configService.get<string>('JWT_SECRET') || 'your_jwt_secret_here';
+        const refreshSecret = this.configService.get<string>('JWT_REFRESH_SECRET') || 'your_refresh_secret_here';
 
         return {
             accessToken: jwt.sign(payload, secret, { expiresIn: '1h' }),

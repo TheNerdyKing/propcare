@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateTicketDto } from './dto/create-ticket.dto';
-import { TicketType, InternalStatus, TicketStatus, Urgency, SenderType } from '@prisma/client';
+import { TicketType, AiStatus, TicketStatus, Urgency, SenderType } from '@prisma/client';
 import { AiService } from '../ai/ai.service';
 
 @Injectable()
@@ -28,7 +28,7 @@ export class PublicService {
                 tenantPhone: dto.tenantPhone,
                 permissionToEnter: dto.permissionToEnter,
                 urgency: dto.urgency || Urgency.UNKNOWN,
-                internalStatus: InternalStatus.AI_PROCESSING,
+                aiStatus: AiStatus.PROCESSING,
             },
         });
 

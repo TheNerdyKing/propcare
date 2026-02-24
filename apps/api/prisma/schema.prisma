@@ -22,20 +22,18 @@ enum TicketType {
 
 enum TicketStatus {
   NEW
-  AI_PROCESSING
-  AI_READY
-  NEEDS_ATTENTION
+  OPEN
   IN_PROGRESS
+  READY
   SENT
-  COMPLETED
   CLOSED
 }
 
-enum InternalStatus {
-  AI_PROCESSING
+enum AiStatus {
+  NOT_REQUESTED
+  PROCESSING
   AI_READY
   NEEDS_ATTENTION
-  SENT
   FAILED
 }
 
@@ -116,7 +114,7 @@ model Ticket {
   referenceCode     String         @unique @map("reference_code")
   type              TicketType     @default(DAMAGE_REPORT)
   status            TicketStatus   @default(NEW)
-  internalStatus    InternalStatus? @map("internal_status")
+  aiStatus          AiStatus       @default(NOT_REQUESTED) @map("ai_status")
   propertyId        String?        @map("property_id")
   unitLabel         String?        @map("unit_label")
   category          String?        // AI or manual
@@ -130,6 +128,7 @@ model Ticket {
   createdAt         DateTime       @default(now())
   updatedAt         DateTime       @updatedAt
   closedAt          DateTime?      @map("closed_at")
+  lastAiRunAt       DateTime?      @map("last_ai_run_at")
 
   tenant         Tenant          @relation(fields: [tenantId], references: [id])
   property       Property?       @relation(fields: [propertyId], references: [id])

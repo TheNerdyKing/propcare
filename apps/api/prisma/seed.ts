@@ -144,7 +144,7 @@ async function main() {
             tenantId: tenant.id,
             referenceCode: 'TKT-2024-003',
             type: TicketType.DAMAGE_REPORT,
-            status: TicketStatus.COMPLETED,
+            status: TicketStatus.CLOSED,
             propertyId: property1.id,
             unitLabel: 'Apt 2A',
             description: 'Beeping smoke detector battery replacement.',
