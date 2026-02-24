@@ -338,7 +338,7 @@ export default function TicketDetailPage() {
                         Back to Dashboard
                     </button>
                     <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest bg-slate-50 px-3 py-1 rounded-full border border-slate-100">
-                        Deployment v2.5-refresh-reset
+                        Deployment v2.6-auto-restored
                     </span>
                 </div>
 
@@ -514,17 +514,21 @@ export default function TicketDetailPage() {
                                             <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-sm mb-6">
                                                 <Sparkles className="w-8 h-8 text-indigo-400" />
                                             </div>
-                                            <h3 className="text-lg font-black text-slate-900 mb-2">Ready for Analysis</h3>
+                                            <h3 className="text-lg font-black text-slate-900 mb-2">
+                                                {ticket.internalStatus === 'AI_PROCESSING' ? 'AI Analysis In Progress' : 'Ready for Analysis'}
+                                            </h3>
                                             <p className="text-sm font-medium text-slate-500 mb-8 max-w-sm">
-                                                This ticket is awaiting a manual AI assessment. Click below to generate a categorization and email draft.
+                                                {ticket.internalStatus === 'AI_PROCESSING'
+                                                    ? 'PropCare AI is currently analyzing this request in the background. Results will appear automatically.'
+                                                    : 'This ticket is awaiting an AI assessment. Click below to generate a classification and email draft.'}
                                             </p>
                                             <button
                                                 onClick={reprocessAi}
                                                 disabled={reprocessing}
                                                 className="px-8 py-4 bg-indigo-600 text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-xl shadow-indigo-100 hover:scale-105 transition-all disabled:opacity-50 flex items-center"
                                             >
-                                                <RefreshCw className={`w-4 h-4 mr-3 ${reprocessing ? 'animate-spin' : ''}`} />
-                                                {reprocessing ? 'Processing...' : 'Start AI Analysis'}
+                                                <RefreshCw className={`w-4 h-4 mr-3 ${reprocessing || ticket.internalStatus === 'AI_PROCESSING' ? 'animate-spin' : ''}`} />
+                                                {reprocessing || ticket.internalStatus === 'AI_PROCESSING' ? 'Analyzing...' : 'Start AI Analysis'}
                                             </button>
                                         </div>
                                     ) : (
