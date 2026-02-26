@@ -65,8 +65,10 @@ export async function POST(request: NextRequest) {
             action: 'TICKET_CREATED',
             target_type: 'TICKET',
             target_id: ticket.id,
-            details: `Ticket created via public portal. Ref: ${referenceCode}`,
-            metadata_json: { source: 'PUBLIC_PORTAL' }
+            metadata_json: { 
+                source: 'PUBLIC_PORTAL',
+                details: `Ticket created via public portal. Ref: ${referenceCode}`
+            }
         });
 
         // 5. Trigger AI processing asynchronously

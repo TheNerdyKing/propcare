@@ -5,9 +5,6 @@ function getSupabase() {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
     if (!supabaseServiceKey) {
-        // Fallback for build time static analysis if needed, 
-        // but since this is a private service called from API routes,
-        // we throw here and let the dynamic API routes handle the cycle.
         throw new Error('SUPABASE_SERVICE_ROLE_KEY is required');
     }
     return createClient(supabaseUrl, supabaseServiceKey);
@@ -46,15 +43,17 @@ export async function processTicketAi(ticketId: string) {
                 action: 'AI_START',
                 target_type: 'TICKET',
                 target_id: ticketId,
-                details: 'AI Analysis triggered remotely',
-                metadata_json: { model: OPENAI_MODEL }
+                metadata_json: { 
+                    model: OPENAI_MODEL,
+                    details: 'KI-Analyse remote gestartet' 
+                }
             });
 
         // 3. Perform AI Analysis
         const aiOutput = await analyzeWithOpenAi(ticket);
 
         // 4. Suggest Contractors (Internal First)
-        const recommendedContractors = await suggestContractors(ticket.tenant_id, aiOutput.classification.category, ticket.property_id, ticket.property);
+        const recommendedContractors = await suggestContractors(ticket.tenant_id, aiOutput.classification.category, ticket.property_id || '', ticket.property);
         aiOutput.recommendedContractors = recommendedContractors;
 
         // 5. Save AI Results
@@ -64,7 +63,7 @@ export async function processTicketAi(ticketId: string) {
                 tenant_id: ticket.tenant_id,
                 ticket_id: ticket.id,
                 model_name: OPENAI_MODEL,
-                prompt_version: '8.0-web-native',
+                prompt_version: '8.1-german-native',
                 output_json: aiOutput
             });
 
@@ -86,10 +85,10 @@ export async function processTicketAi(ticketId: string) {
                 action: 'AI_SUCCESS',
                 target_type: 'TICKET',
                 target_id: ticketId,
-                details: `AI classification: ${aiOutput.classification.category}`,
                 metadata_json: {
                     category: aiOutput.classification.category,
-                    urgency: aiOutput.classification.urgency
+                    urgency: aiOutput.classification.urgency,
+                    details: `KI-Klassifizierung erfolgreich: ${aiOutput.classification.category}`
                 }
             });
 
@@ -99,7 +98,6 @@ export async function processTicketAi(ticketId: string) {
     } catch (err: any) {
         console.error(`[AI] Failed for ${ticketId}:`, err.message);
 
-        // Fetch ticket one more time for tenant_id if not available
         const { data: fallbackTicket } = await supabase.from('tickets').select('tenant_id').eq('id', ticketId).single();
 
         await supabase
@@ -115,8 +113,10 @@ export async function processTicketAi(ticketId: string) {
                     action: 'AI_FAILED',
                     target_type: 'TICKET',
                     target_id: ticketId,
-                    details: `Analysis failed: ${err.message}`,
-                    metadata_json: { error: err.message }
+                    metadata_json: { 
+                        error: err.message,
+                        details: `KI-Analyse fehlgeschlagen: ${err.message}`
+                    }
                 });
         }
         throw err;
@@ -124,13 +124,15 @@ export async function processTicketAi(ticketId: string) {
 }
 
 async function analyzeWithOpenAi(ticket: any): Promise<AIAnalysis> {
-    const prompt = `You are a professional Facility Manager for PropCare. 
+    const prompt = `You are a professional Facility Manager for PropCare in Switzerland/Germany. 
     Analyze the maintenance request and return structured JSON.
+    IMPORTANT: All text content like 'draftEmail' subject and body MUST be in GERMAN.
+    The response must be in valid JSON.
 
     REQUEST:
     - DESCRIPTION: "${ticket.description}"
-    - PROPERTY: ${ticket.property?.name || 'Unknown'}
-    - UNIT: ${ticket.unit_label || 'Common Area'}
+    - PROPERTY: ${ticket.property?.name || 'Unbekannt'}
+    - UNIT: ${ticket.unit_label || 'Allgemein'}
 
     REQUIRED JSON STRUCTURE:
     {
@@ -141,9 +143,9 @@ async function analyzeWithOpenAi(ticket: any): Promise<AIAnalysis> {
         "confidence": 0.95
       },
       "ticketState": { "inferred": "NEW", "reason": "..." },
-      "missingInfo": ["..."],
+      "missingInfo": ["In German..."],
       "recommendedContractors": [],
-      "draftEmail": { "subject": "...", "bodyText": "...", "bodyHtml": "..." },
+      "draftEmail": { "subject": "In German...", "bodyText": "In German...", "bodyHtml": "In German..." },
       "safety": { "piiDetected": false, "notes": "..." }
     }`;
 
@@ -156,7 +158,7 @@ async function analyzeWithOpenAi(ticket: any): Promise<AIAnalysis> {
         body: JSON.stringify({
             model: OPENAI_MODEL,
             messages: [
-                { role: 'system', content: 'Return valid JSON only.' },
+                { role: 'system', content: 'Return valid JSON only. All generated text must be in German.' },
                 { role: 'user', content: prompt }
             ],
             response_format: { type: "json_object" }
@@ -167,14 +169,13 @@ async function analyzeWithOpenAi(ticket: any): Promise<AIAnalysis> {
         throw new Error(`OpenAI API Error: ${await response.text()}`);
     }
 
-    const data = await response.json();
-    const content = data.choices[0].message.content;
+    const json = await response.json();
+    const content = json.choices[0].message.content;
     return AIAnalysisSchema.parse(JSON.parse(content));
 }
 
 async function suggestContractors(tenantId: string, category: string, propertyId: string, property: any) {
     const supabase = getSupabase();
-    // 1. Check internal contractors for this tenant and trade
     const { data: internal } = await supabase
         .from('contractors')
         .select('*')
@@ -187,14 +188,14 @@ async function suggestContractors(tenantId: string, category: string, propertyId
             source: 'INTERNAL' as const,
             contractorId: c.id,
             name: c.name,
-            reason: 'Preferred provider in your service network'
+            email: c.email,
+            reason: 'Bevorzugter Partner in Ihrem Netzwerk'
         }));
     }
 
-    // 2. Fallback to placeholder discovery
     return [{
         source: 'GOOGLE' as const,
-        name: `Local ${category} Specialist`,
-        reason: `Discovered for ${property?.city || 'the region'} via PropCare Network`
+        name: `Lokaler ${category} Spezialist`,
+        reason: `Gefunden für ${property?.city || 'die Region'} über PropCare Netzwerk`
     }];
 }

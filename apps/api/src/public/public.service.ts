@@ -59,17 +59,16 @@ export class PublicService {
     }
 
     async getProperties() {
-        // Find first tenant to show properties for the demo/public portal
-        const tenant = await this.prisma.tenant.findFirst({
-            select: { id: true }
-        });
-
-        if (!tenant) return [];
-
-        return this.prisma.property.findMany({
-            where: { tenantId: tenant.id },
+        // Find properties - if we have a demo tenant or any properties at all, show them
+        // In a real multi-tenant app this would be more restricted, but for MVP/Demo
+        // we want to ensure the public form works.
+        const properties = await this.prisma.property.findMany({
             select: { id: true, name: true },
+            take: 100, // Limit for sanity
+            orderBy: { name: 'asc' }
         });
+
+        return properties;
     }
 
     async getTicketByReference(referenceCode: string) {

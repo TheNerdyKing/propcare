@@ -14,9 +14,23 @@ export async function GET() {
     try {
         const supabase = getSupabase();
         console.log('[API] Fetching public properties...');
+        
+        // 1. Get the first tenant (default demo tenant)
+        const { data: tenant, error: tError } = await supabase
+            .from('tenants')
+            .select('id')
+            .limit(1)
+            .single();
+
+        if (tError || !tenant) {
+            console.warn('[API] No tenant found for public portal');
+            return NextResponse.json([]);
+        }
+
         const { data, error } = await supabase
             .from('properties')
             .select('id, name')
+            .eq('tenant_id', tenant.id)
             .order('name');
 
         if (error) {

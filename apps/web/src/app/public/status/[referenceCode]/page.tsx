@@ -67,125 +67,123 @@ export default function PublicStatusPage() {
         );
     }
 
+    const getStatusText = (status: string) => {
+        switch (status) {
+            case 'NEW': return 'Neu erfasst';
+            case 'IN_PROGRESS': return 'In Bearbeitung';
+            case 'COMPLETED': return 'Abgeschlossen';
+            default: return status;
+        }
+    };
+
     const getStatusColor = (status: string) => {
         switch (status) {
-            case 'OPEN': return 'bg-blue-100 text-blue-700 border-blue-200';
-            case 'IN_PROGRESS': return 'bg-yellow-100 text-yellow-700 border-yellow-200';
-            case 'COMPLETED': return 'bg-green-100 text-green-700 border-green-200';
-            default: return 'bg-gray-100 text-gray-700 border-gray-200';
+            case 'NEW': return 'bg-blue-50 text-blue-700 border-blue-100';
+            case 'IN_PROGRESS': return 'bg-amber-50 text-amber-700 border-amber-100';
+            case 'COMPLETED': return 'bg-emerald-50 text-emerald-700 border-emerald-100';
+            default: return 'bg-slate-50 text-slate-700 border-slate-100';
         }
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-            <div className="max-w-4xl mx-auto space-y-8">
+        <div className="min-h-screen bg-slate-50 py-12 px-4 sm:px-6 lg:px-8 font-sans text-slate-900">
+            <div className="max-w-4xl mx-auto space-y-10">
                 {/* Header */}
-                <div className="bg-white shadow-xl shadow-gray-200/50 rounded-3xl p-8 border border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div className="bg-white shadow-2xl shadow-slate-200/50 rounded-[3rem] p-10 border border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-8">
                     <div>
-                        <div className="flex items-center gap-3 mb-2">
-                            <span className="text-indigo-600 font-black text-2xl uppercase tracking-tighter">PropCare</span>
-                            <span className="h-6 w-[2px] bg-gray-200"></span>
-                            <span className="text-gray-400 font-bold text-sm tracking-widest uppercase">Status Portal</span>
+                        <div className="flex items-center gap-4 mb-4">
+                            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center font-black text-white shadow-lg shadow-blue-600/20 transform -rotate-6">
+                                PC
+                            </div>
+                            <span className="text-3xl font-black text-slate-900 tracking-tighter uppercase">Status <span className="text-blue-600">Portal</span></span>
                         </div>
-                        <h1 className="text-3xl font-black text-gray-900 leading-tight"> Maintenance Report</h1>
-                        <p className="text-gray-500 font-mono text-sm mt-1">Ref: <span className="text-indigo-600 font-bold">{referenceCode}</span></p>
+                        <h1 className="text-4xl font-black text-slate-900 leading-none tracking-tighter uppercase mb-2">Service-Meldung</h1>
+                        <p className="text-slate-400 font-mono text-xs uppercase tracking-widest">Referenz: <span className="text-blue-600 font-black">{referenceCode}</span></p>
                     </div>
-                    <div className={`px-6 py-3 rounded-2xl border-2 text-center font-black uppercase tracking-widest text-sm shadow-sm ${getStatusColor(ticket.status)}`}>
-                        {ticket.status.replace(/_/g, ' ')}
+                    <div className={`px-8 py-4 rounded-2xl border font-black uppercase tracking-[0.2em] text-[10px] shadow-sm ${getStatusColor(ticket.status)}`}>
+                        {getStatusText(ticket.status)}
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
                     {/* Left: Summary */}
-                    <div className="lg:col-span-1 space-y-6">
-                        <div className="bg-white shadow-xl shadow-gray-200/50 rounded-2xl p-6 border border-gray-100">
-                            <h2 className="text-sm font-black text-gray-400 uppercase tracking-widest mb-4">Report Summary</h2>
-                            <div className="space-y-4">
+                    <div className="lg:col-span-1 space-y-8">
+                        <div className="bg-white shadow-xl shadow-slate-200/30 rounded-[2.5rem] p-8 border border-slate-100">
+                            <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-6">Zusammenfassung</h2>
+                            <div className="space-y-6">
                                 <div>
-                                    <p className="text-[10px] font-black text-gray-400 uppercase mb-1">Created On</p>
-                                    <p className="text-gray-800 font-bold">{new Date(ticket.createdAt).toLocaleDateString(undefined, { dateStyle: 'long' })}</p>
+                                    <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-1.5">Eingereicht am</p>
+                                    <p className="text-slate-900 font-bold text-sm">{new Date(ticket.createdAt || ticket.created_at).toLocaleDateString('de-CH', { dateStyle: 'long' })}</p>
                                 </div>
                                 <div>
-                                    <p className="text-[10px] font-black text-gray-400 uppercase mb-1">Property</p>
-                                    <p className="text-gray-800 font-bold">{ticket.property?.name || 'Main Residence'}</p>
-                                    {ticket.unitLabel && <p className="text-gray-500 text-sm">Unit: {ticket.unitLabel}</p>}
+                                    <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-1.5">Liegenschaft</p>
+                                    <p className="text-slate-900 font-bold text-sm uppercase tracking-tight">{ticket.property?.name || '---'}</p>
+                                    {ticket.unitLabel && <p className="text-slate-500 text-[10px] font-bold mt-1 uppercase">Einheit: {ticket.unitLabel}</p>}
                                 </div>
-                                <div className="pt-4 border-t border-gray-50">
-                                    <p className="text-[10px] font-black text-gray-400 uppercase mb-2">Description</p>
-                                    <p className="text-gray-600 text-sm leading-relaxed italic">"{ticket.description}"</p>
+                                <div className="pt-6 border-t border-slate-50">
+                                    <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-3 text-blue-600">Beschreibung</p>
+                                    <p className="text-slate-600 text-sm leading-relaxed font-medium italic">"{ticket.description}"</p>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="bg-indigo-600 rounded-2xl p-6 text-white shadow-lg shadow-indigo-200">
-                            <h3 className="font-black mb-2 text-lg">Need Help?</h3>
-                            <p className="text-indigo-100 text-sm mb-4 leading-relaxed">If you have urgent questions, please use the chat or contact your property manager directly.</p>
-                            <div className="bg-indigo-500/50 rounded-xl p-3 text-xs font-bold flex items-center gap-2">
-                                <span className="text-xl">📞</span> Emergency: +41 00 000 00 00
+                        <div className="bg-blue-600 rounded-[2.5rem] p-8 text-white shadow-2xl shadow-blue-600/20">
+                            <h3 className="font-black mb-3 text-lg uppercase tracking-tight">Unterstützung</h3>
+                            <p className="text-blue-100 text-xs mb-6 font-medium leading-relaxed">Unser Team bearbeitet Ihr Anliegen schnellstmöglich. Bei dringenden Rückfragen wenden Sie sich bitte an die Notfall-Nummer.</p>
+                            <div className="bg-blue-500/50 rounded-2xl p-4 text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-3 backdrop-blur-sm">
+                                📞 Notfall: +41 00 000 00 00
                             </div>
                         </div>
                     </div>
 
-                    {/* Right: Conversation */}
+                    {/* Right: Activity Log */}
                     <div className="lg:col-span-2">
-                        <div className="bg-white shadow-xl shadow-gray-200/50 rounded-2xl border border-gray-100 flex flex-col h-[600px]">
-                            <div className="p-6 border-b border-gray-100 bg-gray-50/50 rounded-t-2xl flex items-center justify-between">
+                        <div className="bg-white shadow-2xl shadow-slate-200/30 rounded-[2.5rem] border border-slate-100 flex flex-col min-h-[500px]">
+                            <div className="p-8 border-b border-slate-50 bg-slate-50/30 rounded-t-[2.5rem] flex items-center justify-between">
                                 <div>
-                                    <h2 className="text-xl font-black text-gray-900">Communication Thread</h2>
-                                    <p className="text-sm text-gray-500 font-medium">Support team interactive chat</p>
+                                    <h2 className="text-xl font-black text-slate-900 uppercase tracking-tighter">Verlauf & Kommunikation</h2>
+                                    <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-1">Status-Updates und Rückmeldungen</p>
                                 </div>
-                                <div className="h-2 w-2 bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.6)]"></div>
+                                <div className="h-2 w-2 bg-blue-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(37,99,235,0.4)]"></div>
                             </div>
 
-                            <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-opacity-5">
-                                {ticket.messages?.length === 0 ? (
-                                    <div className="h-full flex flex-col items-center justify-center text-center opacity-40 py-20">
-                                        <div className="text-6xl mb-4">📨</div>
-                                        <p className="font-extrabold text-gray-900 text-lg">No messages yet</p>
-                                        <p className="text-sm max-w-[200px] mx-auto">Feel free to send a message to the facility manager.</p>
+                            <div className="flex-1 p-8 space-y-10">
+                                {(!ticket.messages || ticket.messages.length === 0) ? (
+                                    <div className="h-full flex flex-col items-center justify-center text-center py-20">
+                                        <div className="w-20 h-20 bg-slate-50 rounded-3xl flex items-center justify-center mb-6">
+                                            <History className="w-10 h-10 text-slate-200" />
+                                        </div>
+                                        <p className="font-black text-slate-900 text-sm uppercase tracking-widest">Warten auf Bearbeitung</p>
+                                        <p className="text-[10px] text-slate-400 font-bold max-w-[200px] mt-2 uppercase tracking-tight">Sobald unser Team mit der Bearbeitung beginnt, finden Sie hier Updates.</p>
                                     </div>
                                 ) : (
-                                    ticket.messages.map((msg: any) => (
-                                        <div key={msg.id} className={`flex ${msg.senderType === 'TENANT' ? 'justify-end' : 'justify-start'}`}>
-                                            <div className={`max-w-[85%] rounded-2xl px-5 py-3 shadow-md border ${msg.senderType === 'TENANT' ? 'bg-indigo-600 text-white border-indigo-500 rounded-tr-none' : 'bg-white text-gray-800 border-gray-100 rounded-tl-none'}`}>
-                                                <div className="flex items-center justify-between mb-1 gap-6">
-                                                    <span className={`text-[10px] font-black uppercase tracking-widest ${msg.senderType === 'TENANT' ? 'opacity-80' : 'text-indigo-600'}`}>
-                                                        {msg.senderType === 'TENANT' ? 'You' : 'Staff Member'}
-                                                    </span>
-                                                    <span className={`text-[9px] font-bold ${msg.senderType === 'TENANT' ? 'opacity-60' : 'text-gray-400'}`}>
-                                                        {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                    </span>
+                                    <div className="space-y-8">
+                                        {ticket.messages.map((msg: any) => (
+                                            <div key={msg.id} className="flex gap-6 items-start">
+                                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${msg.senderType === 'TENANT' ? 'bg-blue-50 text-blue-600' : 'bg-slate-900 text-white'}`}>
+                                                    <User className="w-5 h-5" />
                                                 </div>
-                                                <p className="text-sm leading-relaxed whitespace-pre-wrap font-medium">{msg.content}</p>
+                                                <div className="flex-1 space-y-1">
+                                                    <div className="flex items-center justify-between">
+                                                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                                                            {msg.senderType === 'TENANT' ? 'Ihre Nachricht' : 'Hausverwaltung'}
+                                                        </span>
+                                                        <span className="text-[10px] font-bold text-slate-300">
+                                                            {new Date(msg.createdAt || msg.created_at).toLocaleString('de-CH', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' })}
+                                                        </span>
+                                                    </div>
+                                                    <p className="text-sm font-bold text-slate-700 leading-relaxed bg-slate-50/50 p-4 rounded-2xl rounded-tl-none border border-slate-100">{msg.content}</p>
+                                                </div>
                                             </div>
-                                        </div>
-                                    ))
+                                        ))}
+                                    </div>
                                 )}
                             </div>
 
-                            <div className="p-6 border-t border-gray-100 bg-white rounded-b-2xl">
-                                <div className="relative group">
-                                    <textarea
-                                        className="w-full border-2 border-gray-100 rounded-2xl pr-28 pl-5 py-4 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 shadow-sm transition-all resize-none group-hover:border-gray-200"
-                                        placeholder="Type your reply here..."
-                                        rows={3}
-                                        value={messageContent}
-                                        onChange={(e) => setMessageContent(e.target.value)}
-                                        onKeyDown={(e) => {
-                                            if (e.key === 'Enter' && !e.shiftKey) {
-                                                e.preventDefault();
-                                                sendMessage();
-                                            }
-                                        }}
-                                    />
-                                    <button
-                                        onClick={sendMessage}
-                                        disabled={isSending || !messageContent.trim()}
-                                        className="absolute right-3 bottom-3 bg-indigo-600 text-white px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-xl disabled:opacity-50 disabled:shadow-none translate-y-0 active:translate-y-1"
-                                    >
-                                        {isSending ? 'Sending' : 'Send'}
-                                    </button>
-                                </div>
+                            <div className="p-8 border-t border-slate-50">
+                                <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest text-center italic">
+                                    Dies ist ein automatisches Status-Portal. Alle Änderungen werden in Echtzeit synchronisiert.
+                                </p>
                             </div>
                         </div>
                     </div>

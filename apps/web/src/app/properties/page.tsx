@@ -25,11 +25,14 @@ export default function PropertiesPage() {
     }, []);
 
     const getTenantId = () => {
-        const userStr = localStorage.getItem('user');
-        if (!userStr) return null;
         try {
+            const userStr = localStorage.getItem('user');
+            if (!userStr) return null;
             const user = JSON.parse(userStr);
-            return user.tenantId || user.tenant_id || user.tenants?.id || user.tenants?.[0]?.id;
+            return user.tenantId || 
+                   user.tenant_id || 
+                   (user.tenants?.id) || 
+                   (Array.isArray(user.tenants) ? user.tenants[0]?.id : user.tenants?.id);
         } catch (e) {
             return null;
         }
@@ -45,11 +48,7 @@ export default function PropertiesPage() {
         try {
             const { data, error } = await supabase
                 .from('properties')
-                .select(`
-                    *,
-                    units(count),
-                    tickets(count)
-                `)
+                .select(`*, units(count), tickets(count)`)
                 .eq('tenant_id', tenantId)
                 .order('name', { ascending: true });
 
@@ -74,7 +73,7 @@ export default function PropertiesPage() {
     };
 
     const handleDelete = async (id: string, name: string) => {
-        if (!confirm(`Are you sure you want to delete "${name}"? All associated units and tickets will be lost.`)) return;
+        if (!confirm(`Sind Sie sicher, dass Sie "${name}" löschen möchten? Alle Einheiten und Tickets werden ebenfalls gelöscht.`)) return;
         const tenantId = getTenantId();
         if (!tenantId) return;
 
@@ -88,8 +87,7 @@ export default function PropertiesPage() {
             if (error) throw error;
             await fetchProperties();
         } catch (err: any) {
-            console.error('Delete failed', err);
-            alert(`Failed: ${err.message}`);
+            alert(`Fehler: ${err.message}`);
         } finally {
             setActionLoading(false);
         }
@@ -98,7 +96,7 @@ export default function PropertiesPage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         const tenantId = getTenantId();
-        if (!tenantId) return alert('No active session. Please log in again.');
+        if (!tenantId) return;
 
         setActionLoading(true);
         try {
@@ -114,8 +112,7 @@ export default function PropertiesPage() {
                 const { error } = await supabase
                     .from('properties')
                     .update(dbData)
-                    .eq('id', editingProperty.id)
-                    .eq('tenant_id', tenantId);
+                    .eq('id', editingProperty.id);
                 if (error) throw error;
             } else {
                 const { error } = await supabase
@@ -128,8 +125,7 @@ export default function PropertiesPage() {
             setFormData({ name: '', addressLine1: '', zip: '', city: '' });
             await fetchProperties();
         } catch (err: any) {
-            console.error('Failed to save property', err);
-            alert(`Failed to save property: ${err.message || 'Unknown error'}`);
+            alert(`Fehler beim Speichern: ${err.message}`);
         } finally {
             setActionLoading(false);
         }
@@ -143,7 +139,7 @@ export default function PropertiesPage() {
         setActionLoading(true);
         try {
             const lines = csvText.trim().split('\n').filter(l => l.includes(','));
-            if (lines.length < 2) throw new Error('Invalid CSV format. Header is required.');
+            if (lines.length < 2) throw new Error('Ungültiges CSV-Format. Kopfzeile erforderlich.');
 
             const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
             const dataToInsert = lines.slice(1).map(line => {
@@ -152,9 +148,9 @@ export default function PropertiesPage() {
                 headers.forEach((h, i) => {
                     const val = values[i];
                     if (h === 'name') obj.name = val;
-                    if (h === 'address' || h === 'addressline1' || h === 'street') obj.address_line1 = val;
-                    if (h === 'zip' || h === 'postcode') obj.zip = val;
-                    if (h === 'city') obj.city = val;
+                    if (h === 'address' || h === 'street') obj.address_line1 = val;
+                    if (h === 'zip' || h === 'plz') obj.zip = val;
+                    if (h === 'city' || h === 'ort') obj.city = val;
                 });
                 return obj;
             }).filter(o => o.name && o.address_line1);
@@ -165,32 +161,33 @@ export default function PropertiesPage() {
             setShowImportModal(false);
             setCsvText('');
             await fetchProperties();
-            alert('Batch import successful!');
+            alert('Import erfolgreich!');
         } catch (err: any) {
-            console.error('Import failed', err);
-            alert(`Import failed: ${err.message}`);
+            alert(`Import fehlgeschlagen: ${err.message}`);
         } finally {
             setActionLoading(false);
         }
     };
 
-    const safeProperties = Array.isArray(properties) ? properties : [];
-
     return (
         <AuthenticatedLayout>
-            <div className="p-10 max-w-7xl mx-auto">
-                <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-12">
+            <div className="p-10 max-w-7xl mx-auto font-sans text-slate-900">
+                <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-16">
                     <div>
-                        <h1 className="text-5xl font-black text-slate-900 tracking-tighter mb-4 italic">Real Estate Assets</h1>
-                        <p className="text-slate-500 font-medium text-xl max-w-2xl italic">Inventory and status oversight across your managed portfolio.</p>
+                        <div className="inline-flex items-center space-x-2 bg-blue-50 text-blue-600 px-4 py-2 rounded-full mb-6">
+                            <Building2 className="w-4 h-4" />
+                            <span className="text-[10px] font-black uppercase tracking-widest text-blue-700">Bestand</span>
+                        </div>
+                        <h1 className="text-5xl font-black text-slate-900 tracking-tighter mb-2 uppercase">Liegenschaften</h1>
+                        <p className="text-slate-500 font-medium text-xl max-w-2xl italic">Echtzeit-Verwaltung Ihres Immobilienportfolios.</p>
                     </div>
                     <div className="flex items-center gap-4">
                         <button
                             onClick={() => setShowImportModal(true)}
-                            className="bg-white text-slate-900 border border-slate-200 px-6 py-4 rounded-[1.5rem] font-black text-[10px] uppercase tracking-widest hover:bg-slate-50 transition shadow-sm flex items-center group"
+                            className="bg-white text-slate-500 border border-slate-100 px-8 py-4.5 rounded-[1.25rem] font-black text-[10px] uppercase tracking-widest hover:bg-slate-50 shadow-sm hover:shadow-xl transition-all flex items-center"
                         >
-                            <Download className="w-4 h-4 mr-3 group-hover:-translate-y-1 transition-transform" />
-                            Batch Input
+                            <Download className="w-4 h-4 mr-3 text-blue-500" />
+                            Daten Import
                         </button>
                         <button
                             onClick={() => {
@@ -198,81 +195,64 @@ export default function PropertiesPage() {
                                 setFormData({ name: '', addressLine1: '', zip: '', city: '' });
                                 setShowModal(true);
                             }}
-                            className="bg-indigo-600 text-white px-8 py-4 rounded-[1.5rem] font-black text-[10px] uppercase tracking-widest hover:bg-indigo-700 transition shadow-2xl shadow-indigo-600/30 flex items-center group"
+                            className="bg-blue-600 text-white px-8 py-4.5 rounded-[1.25rem] font-black text-[10px] uppercase tracking-widest hover:bg-blue-700 transition-all shadow-2xl shadow-blue-600/30 flex items-center hover:-translate-y-1"
                         >
-                            <Plus className="w-5 h-5 mr-3 group-hover:rotate-90 transition-transform" />
-                            New Asset
+                            <Plus className="w-5 h-5 mr-3" />
+                            Neu Erfassen
                         </button>
                     </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
                     {loading ? (
-                        <div className="col-span-full py-32 text-center">
-                            <div className="animate-spin w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full mx-auto mb-8" />
-                            <p className="text-slate-400 font-black uppercase tracking-[0.3em] text-[10px]">Accessing Vault Records...</p>
+                        <div className="col-span-full py-40 text-center">
+                            <Loader2 className="animate-spin w-16 h-16 text-blue-600 mx-auto mb-10" />
+                            <p className="text-slate-400 font-black uppercase tracking-[0.4em] text-[10px]">Bestandsdaten werden geladen...</p>
                         </div>
-                    ) : safeProperties.length === 0 ? (
-                        <div className="col-span-full flex flex-col items-center justify-center py-32 bg-white border-2 border-dashed border-slate-200 rounded-[3rem] shadow-sm">
-                            <div className="w-28 h-28 bg-slate-50 rounded-[2.5rem] flex items-center justify-center mb-10 border border-slate-100 shadow-inner group">
-                                <Building2 className="w-12 h-12 text-slate-200 group-hover:text-indigo-600 transition-colors" />
-                            </div>
-                            <h3 className="text-3xl font-black text-slate-900 mb-4 tracking-tight">Zero assets listed</h3>
-                            <p className="mt-2 text-slate-500 max-w-sm text-center font-medium text-lg leading-relaxed">
-                                Initialize your command center by adding your first property or processing a batch import.
-                            </p>
+                    ) : properties.length === 0 ? (
+                        <div className="col-span-full flex flex-col items-center justify-center py-32 bg-white border border-slate-100 rounded-[3.5rem] shadow-2xl shadow-slate-200/40">
+                            <Building2 className="w-20 h-20 text-slate-100 mb-10" />
+                            <h3 className="text-3xl font-black text-slate-900 mb-4 uppercase tracking-tighter">Keine Objekte</h3>
+                            <p className="text-slate-400 font-medium text-lg italic max-w-sm text-center">Beginnen Sie mit der Erfassung Ihrer ersten Liegenschaft.</p>
                         </div>
                     ) : (
-                        safeProperties.map((p) => (
-                            <div key={p.id} className="group bg-white rounded-[3rem] shadow-sm border border-slate-200/60 p-10 hover:shadow-2xl hover:shadow-indigo-500/10 transition-all duration-700 hover:-translate-y-2 relative overflow-hidden">
-                                <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-50/50 rounded-full translate-x-16 -translate-y-16 blur-3xl pointer-events-none group-hover:bg-indigo-500/10 transition-colors" />
-
+                        properties.map((p) => (
+                            <div key={p.id} className="group bg-white rounded-[3rem] shadow-xl shadow-slate-200/30 border border-slate-50 p-10 hover:shadow-2xl hover:shadow-blue-600/10 transition-all duration-500 hover:-translate-y-2 relative overflow-hidden">
                                 <div className="flex justify-between items-start mb-10">
-                                    <div className="w-16 h-16 bg-indigo-50 rounded-[1.5rem] flex items-center justify-center group-hover:bg-indigo-600 transition-all duration-500 shadow-sm border border-indigo-100/50">
-                                        <Building2 className="w-8 h-8 text-indigo-600 group-hover:text-white transition-colors duration-500" />
+                                    <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center group-hover:bg-blue-600 transition-all duration-500 shadow-sm">
+                                        <Building2 className="w-8 h-8 text-blue-600 group-hover:text-white" />
                                     </div>
-                                    <div className="flex items-center gap-2 relative z-10">
-                                        <button
-                                            onClick={() => handleDelete(p.id, p.name)}
-                                            disabled={actionLoading}
-                                            className="text-slate-400 hover:text-red-600 font-black text-[10px] transition-all uppercase tracking-[0.2em] bg-slate-50 px-4 py-2 rounded-xl border border-slate-100 opacity-60 hover:opacity-100 disabled:opacity-30"
-                                        >
-                                            <Trash2 className="w-3 h-3" />
+                                    <div className="flex items-center gap-2">
+                                        <button onClick={() => handleDelete(p.id, p.name)} className="text-slate-200 hover:text-red-500 p-2.5 transition-colors bg-slate-50 rounded-xl">
+                                            <Trash2 className="w-4.5 h-4.5" />
                                         </button>
                                         <button onClick={() => {
                                             setEditingProperty(p);
-                                            setFormData({ name: p.name || '', addressLine1: p.addressLine1 || '', zip: p.zip || '', city: p.city || '' });
+                                            setFormData({ name: p.name || '', addressLine1: p.address_line1 || '', zip: p.zip || '', city: p.city || '' });
                                             setShowModal(true);
-                                        }} className="text-slate-400 hover:text-indigo-600 font-black text-[10px] transition-all uppercase tracking-[0.2em] bg-slate-50 px-4 py-2 rounded-xl border border-slate-100 opacity-60 hover:opacity-100">
-                                            Modify
+                                        }} className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-blue-600 bg-slate-50 px-4 py-2.5 rounded-xl border border-slate-100 transition-all">
+                                            Bearbeiten
                                         </button>
                                     </div>
                                 </div>
-                                <h3 className="text-3xl font-black text-slate-900 mb-4 truncate leading-tight group-hover:text-indigo-700 transition-colors uppercase tracking-tighter">{p.name || 'Undefined'}</h3>
-                                <div className="text-sm text-slate-500 font-black space-y-2 mb-12 uppercase tracking-tight">
-                                    <p className="flex items-center opacity-70 group-hover:opacity-100 transition-opacity">
-                                        <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center mr-4 group-hover:bg-indigo-50 transition-colors">
-                                            <MapPin className="w-4 h-4 text-slate-300 group-hover:text-indigo-400" />
-                                        </div>
-                                        {p.addressLine1 || '---'}
-                                    </p>
-                                    <p className="flex items-center opacity-70 group-hover:opacity-100 transition-opacity pl-12 font-mono text-xs italic">
-                                        {p.zip || '---'} {p.city || '---'}
-                                    </p>
+                                <h3 className="text-2xl font-black text-slate-900 mb-4 uppercase tracking-tighter truncate leading-none">{p.name}</h3>
+                                <div className="space-y-2 mb-10 text-slate-500 font-bold text-xs uppercase tracking-tight">
+                                    <p className="flex items-center"><MapPin className="w-4 h-4 mr-3 text-slate-200" /> {p.address_line1}</p>
+                                    <p className="pl-7">{p.zip} {p.city}</p>
                                 </div>
-                                <div className="pt-8 border-t border-slate-100 flex justify-between items-center">
-                                    <div className="flex space-x-8">
+                                <div className="pt-8 border-t border-slate-50 flex justify-between items-center">
+                                    <div className="flex gap-8">
                                         <div className="flex flex-col">
-                                            <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest mb-2 font-mono">Capacity</span>
-                                            <span className="text-2xl font-black text-slate-900 font-mono tracking-tighter">{p._count?.units || 0} U</span>
+                                            <span className="text-[10px] text-slate-300 font-black uppercase tracking-widest mb-1.5 px-0.5">Einheiten</span>
+                                            <span className="text-2xl font-black text-slate-900 tracking-tighter">{p._count?.units || 0}</span>
                                         </div>
                                         <div className="flex flex-col">
-                                            <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest mb-2 font-mono">Activity</span>
-                                            <span className="text-2xl font-black text-indigo-600 font-mono tracking-tighter">{p._count?.tickets || 0} T</span>
+                                            <span className="text-[10px] text-slate-300 font-black uppercase tracking-widest mb-1.5 px-0.5">Tickets</span>
+                                            <span className="text-2xl font-black text-blue-600 tracking-tighter">{p._count?.tickets || 0}</span>
                                         </div>
                                     </div>
-                                    <div className="w-12 h-12 rounded-[1.25rem] bg-slate-50 flex items-center justify-center opacity-0 group-hover:opacity-100 group-hover:bg-indigo-600 transition-all duration-500 shadow-xl shadow-indigo-600/20 -translate-x-4 group-hover:translate-x-0">
-                                        <ChevronRight className="w-6 h-6 text-indigo-600 group-hover:text-white" />
+                                    <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-200 group-hover:bg-blue-600 group-hover:text-white group-hover:translate-x-2 transition-all shadow-sm">
+                                        <ChevronRight className="w-6 h-6" />
                                     </div>
                                 </div>
                             </div>
@@ -280,70 +260,66 @@ export default function PropertiesPage() {
                     )}
                 </div>
 
-                {/* Add/Edit Modal */}
+                {/* Modal */}
                 {showModal && (
-                    <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-xl flex items-center justify-center p-6 z-50 overflow-y-auto">
-                        <div className="bg-white rounded-[3rem] shadow-[0_40px_100px_rgba(0,0,0,0.1)] max-w-md w-full p-12 border border-slate-200/50 animate-in zoom-in-95 duration-300 my-8">
-                            <div className="flex justify-between items-start mb-10">
-                                <h2 className="text-4xl font-black text-slate-900 tracking-tighter uppercase">{editingProperty ? 'Edit' : 'Add'} Property</h2>
-                                <button onClick={() => setShowModal(false)} className="p-2 hover:bg-slate-50 rounded-xl transition-colors">
+                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xl flex items-center justify-center p-6 z-[100] animate-in fade-in duration-300">
+                        <div className="bg-white rounded-[3rem] shadow-[0_30px_100px_rgba(0,0,0,0.2)] max-w-md w-full border border-white/20 overflow-hidden animate-in zoom-in-95 duration-500">
+                            <div className="p-10 border-b border-slate-50 bg-slate-50/30 flex justify-between items-center">
+                                <h2 className="text-3xl font-black text-slate-900 tracking-tighter uppercase leading-none">{editingProperty ? 'Objekt editieren' : 'Neu Erfassen'}</h2>
+                                <button onClick={() => setShowModal(false)} className="w-12 h-12 bg-white border border-slate-100 hover:bg-slate-50 rounded-2xl flex items-center justify-center transition-all">
                                     <X className="w-6 h-6 text-slate-400" />
                                 </button>
                             </div>
-                            <form onSubmit={handleSubmit} className="space-y-8">
-                                <div>
-                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-4">Property Name</label>
+                            <form onSubmit={handleSubmit} className="p-10 space-y-8 bg-white">
+                                <div className="space-y-4">
+                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.26em] px-1">Bezeichnung</label>
                                     <input
-                                        type="text"
-                                        required
+                                        type="text" required
                                         value={formData.name}
                                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                        className="w-full bg-slate-50/50 border-2 border-slate-100 rounded-2xl px-6 py-5 text-slate-900 font-black focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 shadow-inner transition-all uppercase placeholder:opacity-30"
-                                        placeholder="e.g. LUXURY PLAZA"
+                                        className="w-full bg-slate-50 border border-slate-100 rounded-[1.25rem] px-6 py-4.5 text-sm text-slate-900 font-bold outline-none focus:ring-4 focus:ring-blue-500/10 uppercase transition-all placeholder:text-slate-300 shadow-inner"
+                                        placeholder="z.B. SEESICHT RESIDENZ"
                                     />
                                 </div>
-                                <div>
-                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-4">Address</label>
+                                <div className="space-y-4">
+                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.26em] px-1">Strasse / Nummer</label>
                                     <input
-                                        type="text"
-                                        required
+                                        type="text" required
                                         value={formData.addressLine1}
                                         onChange={(e) => setFormData({ ...formData, addressLine1: e.target.value })}
-                                        className="w-full bg-slate-50/50 border-2 border-slate-100 rounded-2xl px-6 py-5 text-slate-900 font-black focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 shadow-inner transition-all uppercase"
+                                        className="w-full bg-slate-50 border border-slate-100 rounded-[1.25rem] px-6 py-4.5 text-sm text-slate-900 font-bold outline-none focus:ring-4 focus:ring-blue-500/10 uppercase transition-all placeholder:text-slate-300 shadow-inner"
+                                        placeholder="HAUPTSTRASSE 12"
                                     />
                                 </div>
-                                <div className="flex gap-6">
-                                    <div className="w-1/3">
-                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-4">Zip Code</label>
+                                <div className="grid grid-cols-3 gap-6">
+                                    <div className="space-y-4">
+                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.26em] px-1">PLZ</label>
                                         <input
-                                            type="text"
-                                            required
+                                            type="text" required
                                             value={formData.zip}
                                             onChange={(e) => setFormData({ ...formData, zip: e.target.value })}
-                                            className="w-full bg-slate-50/50 border-2 border-slate-100 rounded-2xl px-6 py-5 text-slate-900 font-black focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 shadow-inner font-mono text-center transition-all"
+                                            className="w-full bg-slate-50 border border-slate-100 rounded-[1.25rem] px-6 py-4.5 text-sm text-slate-900 font-bold outline-none focus:ring-4 focus:ring-blue-500/10 text-center transition-all placeholder:text-slate-300 shadow-inner"
+                                            placeholder="8000"
                                         />
                                     </div>
-                                    <div className="flex-1">
-                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-4">City</label>
+                                    <div className="col-span-2 space-y-4">
+                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.26em] px-1">Ort</label>
                                         <input
-                                            type="text"
-                                            required
+                                            type="text" required
                                             value={formData.city}
                                             onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                                            className="w-full bg-slate-50/50 border-2 border-slate-100 rounded-2xl px-6 py-5 text-slate-900 font-black focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 shadow-inner transition-all uppercase"
+                                            className="w-full bg-slate-50 border border-slate-100 rounded-[1.25rem] px-6 py-4.5 text-sm text-slate-900 font-bold outline-none focus:ring-4 focus:ring-blue-500/10 uppercase transition-all placeholder:text-slate-300 shadow-inner"
+                                            placeholder="ZÜRICH"
                                         />
                                     </div>
                                 </div>
-                                <div className="flex flex-col gap-4 pt-10 border-t border-slate-100 mt-6">
-                                    <button
-                                        type="submit"
-                                        disabled={actionLoading}
-                                        className="w-full py-5 rounded-2xl font-black text-white bg-indigo-600 hover:bg-indigo-700 shadow-2xl shadow-indigo-600/40 transition-all uppercase tracking-[0.2em] text-[10px] flex items-center justify-center disabled:opacity-50"
-                                    >
-                                        {actionLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                                        {editingProperty ? 'Update Property' : 'Add Property'}
-                                    </button>
-                                </div>
+                                <button
+                                    type="submit"
+                                    disabled={actionLoading}
+                                    className="w-full h-20 rounded-[1.5rem] font-black text-white bg-blue-600 hover:bg-blue-700 shadow-2xl shadow-blue-600/30 transition-all uppercase tracking-[0.2em] text-[11px] mt-10"
+                                >
+                                    {actionLoading ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : 'DATENSATZ SPEICHERN ➔'}
+                                </button>
                             </form>
                         </div>
                     </div>
@@ -351,48 +327,132 @@ export default function PropertiesPage() {
 
                 {/* Import Modal */}
                 {showImportModal && (
-                    <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-xl flex items-center justify-center p-6 z-50 overflow-y-auto">
-                        <div className="bg-white rounded-[3rem] shadow-[0_40px_100px_rgba(0,0,0,0.1)] max-w-2xl w-full p-12 border border-slate-200/50 animate-in zoom-in-95 duration-300 my-8">
-                            <div className="flex justify-between items-start mb-10">
+                    <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-md flex items-center justify-center p-6 z-50">
+                        <div className="bg-white rounded-[2.5rem] shadow-2xl max-w-2xl w-full p-10 border border-slate-100">
+                            <div className="flex justify-between items-start mb-8">
                                 <div>
-                                    <h2 className="text-4xl font-black text-slate-900 tracking-tighter uppercase mb-2 italic">Batch Input</h2>
-                                    <p className="text-slate-500 font-medium">Paste CSV data to initialize multiple assets at once.</p>
+                                    <h2 className="text-2xl font-black text-slate-900 tracking-tighter uppercase mb-1">Massen-Import</h2>
+                                    <p className="text-slate-400 font-medium text-xs">Laden Sie eine CSV-Datei hoch oder ziehen Sie diese hierher.</p>
                                 </div>
                                 <button onClick={() => setShowImportModal(false)} className="p-2 hover:bg-slate-50 rounded-xl transition-colors">
-                                    <X className="w-6 h-6 text-slate-400" />
+                                    <X className="w-5 h-5 text-slate-400" />
                                 </button>
                             </div>
 
-                            <div className="mb-8 bg-blue-50 border border-blue-100 rounded-2xl p-6 flex items-start space-x-4">
-                                <AlertCircle className="w-5 h-5 text-blue-500 mt-1 flex-shrink-0" />
-                                <div className="text-sm">
-                                    <p className="text-blue-900 font-black uppercase tracking-widest text-[10px] mb-2">Required Header Format</p>
-                                    <code className="text-blue-700 font-bold font-mono text-xs">name, address, zip, city</code>
+                            <div 
+                                onDragOver={(e) => e.preventDefault()}
+                                onDrop={async (e) => {
+                                    e.preventDefault();
+                                    const file = e.dataTransfer.files[0];
+                                    if (file && (file.name.endsWith('.csv') || file.name.endsWith('.xlsx'))) {
+                                        const text = await file.text();
+                                        setCsvText(text);
+                                    }
+                                }}
+                                className="w-full h-48 bg-slate-50 border-2 border-dashed border-slate-200 rounded-3xl flex flex-col items-center justify-center space-y-4 group hover:border-blue-400 hover:bg-blue-50/30 transition-all cursor-pointer mb-8"
+                                onClick={() => document.getElementById('file-input')?.click()}
+                            >
+                                <div className="w-12 h-12 bg-white rounded-xl shadow-sm border border-slate-100 flex items-center justify-center text-slate-400 group-hover:text-blue-500 transition-colors">
+                                    <Download className="w-6 h-6" />
                                 </div>
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
+                                    {csvText ? 'Datei bereit zum Import' : 'Datei hierher ziehen oder klicken'}
+                                </p>
+                                <input 
+                                    id="file-input" 
+                                    type="file" 
+                                    className="hidden" 
+                                    accept=".csv,.xlsx" 
+                                    onChange={async (e) => {
+                                        const file = e.target.files?.[0];
+                                        if (file) {
+                                            const text = await file.text();
+                                            setCsvText(text);
+                                        }
+                                    }}
+                                />
                             </div>
 
-                            <form onSubmit={handleImport} className="space-y-8">
+                            <div className="bg-blue-50/50 border border-blue-100 rounded-xl p-4 mb-8 text-[10px] font-bold text-blue-800 leading-relaxed">
+                                <span className="uppercase tracking-widest text-blue-900 block mb-1">Format-Vorgabe:</span>
+                                Kopfzeile: <code className="bg-white px-1.5 py-0.5 rounded border border-blue-100 font-mono">name, address, zip, city</code>
+                            </div>
+
+                            <button
+                                onClick={handleImport}
+                                disabled={actionLoading || !csvText.trim()}
+                                className="w-full py-4 rounded-xl font-black text-white bg-blue-600 hover:bg-blue-700 shadow-xl shadow-blue-600/10 transition-all uppercase tracking-widest text-[10px] disabled:opacity-50"
+                            >
+                                {actionLoading ? 'Importiert...' : 'Import Starten'}
+                            </button>
+                        </div>
+                    </div>
+                )}
+            </div>
+        </AuthenticatedLayout>
+    );
+}
+
+                {/* Import Modal */}
+                {showImportModal && (
+                    <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-md flex items-center justify-center p-6 z-50">
+                        <div className="bg-white rounded-[2.5rem] shadow-2xl max-w-2xl w-full p-10 border border-slate-100">
+                            <div className="flex justify-between items-start mb-8">
                                 <div>
-                                    <textarea
-                                        rows={8}
-                                        required
-                                        value={csvText}
-                                        onChange={(e) => setCsvText(e.target.value)}
-                                        className="w-full bg-slate-50/50 border-2 border-slate-100 rounded-3xl px-8 py-6 text-slate-900 font-mono text-xs focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 shadow-inner transition-all resize-none"
-                                        placeholder={`name, address, zip, city\nGrand Hotel, Broadway 1, 10001, New York\nSky Towers, Main St 4, 8000, Zurich`}
-                                    />
+                                    <h2 className="text-2xl font-black text-slate-900 tracking-tighter uppercase mb-1">Massen-Import</h2>
+                                    <p className="text-slate-400 font-medium text-xs">Laden Sie eine CSV-Datei hoch oder ziehen Sie diese hierher.</p>
                                 </div>
-                                <div className="flex flex-col gap-4 pt-6 border-t border-slate-100">
-                                    <button
-                                        type="submit"
-                                        disabled={actionLoading || !csvText.trim()}
-                                        className="w-full py-5 rounded-2xl font-black text-white bg-indigo-600 hover:bg-indigo-700 shadow-2xl shadow-indigo-600/40 transition-all uppercase tracking-[0.2em] text-[10px] flex items-center justify-center disabled:opacity-50"
-                                    >
-                                        {actionLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                                        Commence Batch Processing
-                                    </button>
+                                <button onClick={() => setShowImportModal(false)} className="p-2 hover:bg-slate-50 rounded-xl transition-colors">
+                                    <X className="w-5 h-5 text-slate-400" />
+                                </button>
+                            </div>
+
+                            <div 
+                                onDragOver={(e) => e.preventDefault()}
+                                onDrop={async (e) => {
+                                    e.preventDefault();
+                                    const file = e.dataTransfer.files[0];
+                                    if (file && (file.name.endsWith('.csv') || file.name.endsWith('.xlsx'))) {
+                                        const text = await file.text();
+                                        setCsvText(text);
+                                    }
+                                }}
+                                className="w-full h-48 bg-slate-50 border-2 border-dashed border-slate-200 rounded-3xl flex flex-col items-center justify-center space-y-4 group hover:border-blue-400 hover:bg-blue-50/30 transition-all cursor-pointer mb-8"
+                                onClick={() => document.getElementById('file-input')?.click()}
+                            >
+                                <div className="w-12 h-12 bg-white rounded-xl shadow-sm border border-slate-100 flex items-center justify-center text-slate-400 group-hover:text-blue-500 transition-colors">
+                                    <Download className="w-6 h-6" />
                                 </div>
-                            </form>
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
+                                    {csvText ? 'Datei bereit zum Import' : 'Datei hierher ziehen oder klicken'}
+                                </p>
+                                <input 
+                                    id="file-input" 
+                                    type="file" 
+                                    className="hidden" 
+                                    accept=".csv,.xlsx" 
+                                    onChange={async (e) => {
+                                        const file = e.target.files?.[0];
+                                        if (file) {
+                                            const text = await file.text();
+                                            setCsvText(text);
+                                        }
+                                    }}
+                                />
+                            </div>
+
+                            <div className="bg-blue-50/50 border border-blue-100 rounded-xl p-4 mb-8 text-[10px] font-bold text-blue-800 leading-relaxed">
+                                <span className="uppercase tracking-widest text-blue-900 block mb-1">Format-Vorgabe:</span>
+                                Kopfzeile: <code className="bg-white px-1.5 py-0.5 rounded border border-blue-100 font-mono">name, address, zip, city</code>
+                            </div>
+
+                            <button
+                                onClick={handleImport}
+                                disabled={actionLoading || !csvText.trim()}
+                                className="w-full py-4 rounded-xl font-black text-white bg-blue-600 hover:bg-blue-700 shadow-xl shadow-blue-600/10 transition-all uppercase tracking-widest text-[10px] disabled:opacity-50"
+                            >
+                                {actionLoading ? 'Importiert...' : 'Import Starten'}
+                            </button>
                         </div>
                     </div>
                 )}

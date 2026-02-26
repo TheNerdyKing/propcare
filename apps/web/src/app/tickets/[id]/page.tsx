@@ -20,6 +20,7 @@ import {
     RefreshCw,
     Wrench,
     HelpCircle,
+    Loader2
 } from 'lucide-react';
 
 export default function TicketDetailPage() {
@@ -29,19 +30,19 @@ export default function TicketDetailPage() {
 
     const [ticket, setTicket] = useState<any>(null);
     const [loading, setLoading] = useState(true);
-    const [newMessage, setNewMessage] = useState('');
-    const [activeTab, setActiveTab] = useState<'details' | 'conversation' | 'audit'>('details');
+    const [activeTab, setActiveTab] = useState<'details' | 'audit'>('details');
     const [sendingEmail, setSendingEmail] = useState(false);
     const [draftEmail, setDraftEmail] = useState('');
     const [draftRecipient, setDraftRecipient] = useState('');
     const [draftSubject, setDraftSubject] = useState('');
     const [reprocessing, setReprocessing] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         if (!id) return;
         fetchTicket();
 
-        // Subscribe to ticket changes
+        // Real-time updates
         const ticketSubscription = supabase
             .channel(`staff-ticket-${id}`)
             .on('postgres_changes', {
@@ -49,65 +50,25 @@ export default function TicketDetailPage() {
                 schema: 'public',
                 table: 'tickets',
                 filter: `id=eq.${id}`
-            }, (payload) => {
-                const newStatus = payload.new.status;
-                const newAiStatus = payload.new.ai_status;
-
-                // CRITICAL: Preserve derived AI fields from previous state if they exist
-                setTicket(prev => {
-                    if (!prev) return null;
-                    return {
-                        ...prev,
-                        ...payload.new,
-                        aiStatus: newAiStatus,
-                        // Preserve these fields which are joined from other tables if not in payload
-                        aiClassification: prev.aiClassification,
-                        aiUrgency: prev.aiUrgency,
-                        aiEmailDraft: prev.aiEmailDraft,
-                    };
-                });
-
-                // If AI finished or state changes significantly, re-fetch full record to get joined data
-                if (newAiStatus === 'AI_READY' || newAiStatus === 'FAILED' || newStatus === 'SENT') {
-                    console.log(`State transition to ${newAiStatus || newStatus} detected via Realtime, re-fetching full record...`);
-                    fetchTicket();
-                }
-            })
-            .subscribe();
-
-        // Subscribe to messages
-        const messageSubscription = supabase
-            .channel(`staff-messages-${id}`)
-            .on('postgres_changes', {
-                event: 'INSERT',
-                schema: 'public',
-                table: 'ticket_messages',
-                filter: `ticket_id=eq.${id}`
-            }, (payload) => {
-                const newMsg = payload.new;
-                setTicket(prev => {
-                    if (!prev) return null;
-                    // Standardize sort with fallback for Supabase created_at vs Prisma createdAt
-                    const updatedMessages = [...(prev.messages || []), newMsg].sort(
-                        (a: any, b: any) => new Date(a.createdAt || a.created_at).getTime() - new Date(b.createdAt || b.created_at).getTime()
-                    );
-                    return { ...prev, messages: updatedMessages };
-                });
+            }, () => {
+                fetchTicket();
             })
             .subscribe();
 
         return () => {
             supabase.removeChannel(ticketSubscription);
-            supabase.removeChannel(messageSubscription);
         };
     }, [id]);
 
     const getTenantId = () => {
-        const userStr = localStorage.getItem('user');
-        if (!userStr) return null;
         try {
+            const userStr = localStorage.getItem('user');
+            if (!userStr) return null;
             const user = JSON.parse(userStr);
-            return user.tenantId || user.tenant_id || user.tenants?.id || user.tenants?.[0]?.id;
+            return user.tenantId || 
+                   user.tenant_id || 
+                   (user.tenants?.id) || 
+                   (Array.isArray(user.tenants) ? user.tenants[0]?.id : user.tenants?.id);
         } catch (e) {
             return null;
         }
@@ -121,12 +82,11 @@ export default function TicketDetailPage() {
         }
 
         try {
-            const { data, error } = await supabase
+            const { data, error: fetchErr } = await supabase
                 .from('tickets')
                 .select(`
                     *,
                     property:properties(*),
-                    messages:ticket_messages(*),
                     results:ai_results(*),
                     auditLogs:audit_logs(*)
                 `)
@@ -134,80 +94,40 @@ export default function TicketDetailPage() {
                 .eq('tenant_id', tenantId)
                 .single();
 
-            if (error) throw error;
+            if (fetchErr) throw fetchErr;
 
-            // Map common properties for easy access
-            const aiResults = data.results || data.ai_results || [];
-            const latestResultRaw = [...aiResults].sort((a: any, b: any) =>
-                new Date(b.createdAt || b.created_at).getTime() - new Date(a.createdAt || a.created_at).getTime()
+            const aiResults = data.results || [];
+            const latestResult = [...aiResults].sort((a: any, b: any) =>
+                new Date(b.created_at || b.createdAt).getTime() - new Date(a.created_at || a.createdAt).getTime()
             )[0];
 
-            // ROBUST EXTRACTION: Handle both snake_case (DB/PostgREST) and camelCase (Prisma)
-            const result = latestResultRaw?.output_json || latestResultRaw?.outputJson || {};
-
-            console.log(`Latest AI Result for ${id}:`, {
-                category: result.classification?.category,
-                aiStatus: data.ai_status
-            });
+            const result = latestResult?.output_json || {};
 
             setTicket({
                 ...data,
-                referenceCode: data.reference_code,
-                unitLabel: data.unit_label,
-                tenantName: data.tenant_name,
-                urgency: data.urgency,
-                status: data.status,
                 aiStatus: data.ai_status,
                 aiClassification: result.classification?.category || null,
-                aiUrgency: result.classification?.urgency || result.urgency || null,
-                aiEmailDraft: result.draftEmail?.bodyText || result.draftEmail?.body_text || '',
+                aiUrgency: result.classification?.urgency || null,
+                aiEmailDraft: result.draftEmail?.bodyText || '',
                 aiEmailSubject: result.draftEmail?.subject || '',
-                aiMissingInfo: result.missingInfo || result.missing_info || [],
-                aiContractors: result.recommendedContractors || result.recommended_contractors || [],
-                errorMessage: result.errorMessage || data.error_message || null,
-                messages: (data.messages || data.ticket_messages || []).sort((a: any, b: any) =>
-                    new Date(a.createdAt || a.created_at).getTime() - new Date(b.createdAt || b.created_at).getTime()
-                ),
-                auditLogs: (data.auditLogs || data.audit_logs || []).sort((a: any, b: any) =>
+                aiMissingInfo: result.missingInfo || [],
+                aiContractors: result.recommendedContractors || [],
+                auditLogs: (data.auditLogs || []).sort((a: any, b: any) =>
                     new Date(b.created_at || b.createdAt).getTime() - new Date(a.created_at || a.createdAt).getTime()
                 )
             });
 
             if (result.draftEmail) {
                 setDraftEmail(result.draftEmail.bodyText);
-                setDraftSubject(result.draftEmail.subject || `Maintenance Request: ${data.referenceCode}`);
+                setDraftSubject(result.draftEmail.subject || `Anfrage: ${data.reference_code}`);
             }
+            setDraftRecipient(result.recommendedContractors?.[0]?.email || '');
 
-            // Try to find a suggested contractor email if available
-            const suggestedEmail = result.recommendedContractors?.[0]?.email || '';
-            setDraftRecipient(suggestedEmail);
-        } catch (err) {
-            console.error('Failed to fetch ticket', err);
+        } catch (err: any) {
+            console.error('Fetch error:', err);
+            setError('Ticket konnte nicht geladen werden.');
         } finally {
             setLoading(false);
-        }
-    };
-
-    const sendMessage = async () => {
-        if (!newMessage.trim()) return;
-        const tenantId = getTenantId();
-        if (!tenantId) return;
-
-        try {
-            const { error } = await supabase
-                .from('ticket_messages')
-                .insert([{
-                    ticket_id: id,
-                    tenant_id: tenantId,
-                    content: newMessage,
-                    sender_type: 'STAFF'
-                }]);
-            if (error) throw error;
-
-            setNewMessage('');
-            // No need to call fetchTicket() here as Realtime will pick up the insert
-        } catch (err) {
-            console.error('Failed to send message', err);
         }
     };
 
@@ -216,33 +136,27 @@ export default function TicketDetailPage() {
         if (!tenantId) return;
 
         try {
-            // 1. Update status
-            const { error: updateError } = await supabase
+            const { error: updErr } = await supabase
                 .from('tickets')
-                .update({
-                    status,
-                    updatedAt: new Date().toISOString()
-                })
-                .eq('id', id)
-                .eq('tenant_id', tenantId);
-            if (updateError) throw updateError;
+                .update({ status, updated_at: new Date().toISOString() })
+                .eq('id', id);
+            
+            if (updErr) throw updErr;
 
-            // 2. Create Audit Log
-            await supabase
-                .from('audit_logs')
-                .insert([{
-                    tenant_id: tenantId,
-                    action: 'STATUS_CHANGED',
-                    target_type: 'TICKET',
-                    target_id: id,
-                    details: `Status updated to ${status} via Staff Portal`,
-                    metadata_json: { newStatus: status }
-                }]);
+            await supabase.from('audit_logs').insert({
+                tenant_id: tenantId,
+                action: 'STATUS_CHANGED',
+                target_type: 'TICKET',
+                target_id: id,
+                metadata_json: { 
+                    newStatus: status,
+                    details: `Status manuell auf ${status} geändert.` 
+                }
+            });
 
             fetchTicket();
         } catch (err: any) {
-            console.error('Failed to update status', err);
-            alert(`Failed to update status: ${err.message}`);
+            alert(`Fehler: ${err.message}`);
         }
     };
 
@@ -250,267 +164,181 @@ export default function TicketDetailPage() {
         setReprocessing(true);
         try {
             await api.post(`tickets/${id}/analyze`);
-            alert('AI Analysis requested. Results will appear in seconds.');
             fetchTicket();
         } catch (err: any) {
-            console.error('Reprocess failed', err);
-            alert(`Failed to request AI analysis: ${err.message || 'Unknown error'}`);
+            alert(`KI-Analyse fehlgeschlagen: ${err.message}`);
         } finally {
             setReprocessing(false);
         }
     };
 
     const sendContractorEmail = async () => {
-        if (!draftRecipient) {
-            alert('Please provide a recipient email address.');
-            return;
-        }
+        if (!draftRecipient) return alert('Bitte Empfänger-E-Mail angeben.');
         setSendingEmail(true);
         try {
             await api.post(`tickets/${id}/send-draft`, {
                 toEmail: draftRecipient,
                 subject: draftSubject,
-                message: draftEmail,
-                useAiDraft: false // We are sending the manual/edited draft from the field
+                message: draftEmail
             });
-            alert('Email sent successfully!');
+            alert('E-Mail erfolgreich versendet!');
             fetchTicket();
         } catch (err: any) {
-            console.error('Failed to send email', err);
-            alert(`Failed to send email: ${err.response?.data?.message || err.message}`);
+            alert('Versand fehlgeschlagen.');
         } finally {
             setSendingEmail(false);
+        }
+    };
+
+    const getStatusText = (status: string) => {
+        switch (status) {
+            case 'NEW': return 'Neu';
+            case 'IN_PROGRESS': return 'In Bearbeitung';
+            case 'COMPLETED': return 'Abgeschlossen';
+            default: return status;
         }
     };
 
     if (loading) return (
         <AuthenticatedLayout>
             <div className="flex items-center justify-center min-h-[60vh]">
-                <div className="animate-spin w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full" />
+                <Loader2 className="animate-spin w-12 h-12 text-blue-600" />
             </div>
         </AuthenticatedLayout>
     );
 
-    if (!ticket) return (
+    if (error || !ticket) return (
         <AuthenticatedLayout>
-            <div className="p-8 text-center text-slate-500">Ticket not found</div>
+            <div className="p-20 text-center">
+                <AlertTriangle className="w-16 h-16 text-red-500 mx-auto mb-6" />
+                <p className="text-slate-500 font-black uppercase tracking-widest text-xs">{error || 'Ticket nicht gefunden'}</p>
+            </div>
         </AuthenticatedLayout>
     );
 
     return (
         <AuthenticatedLayout>
-            <div className="p-8 max-w-6xl mx-auto text-slate-900">
-                <div className="flex items-center justify-between mb-6">
-                    <button
-                        onClick={() => router.back()}
-                        className="flex items-center text-slate-500 hover:text-indigo-600 font-bold text-sm transition-colors uppercase tracking-widest"
-                    >
-                        <ChevronLeft className="w-4 h-4 mr-1" />
-                        Back to Dashboard
+            <div className="p-10 max-w-7xl mx-auto font-sans text-slate-900">
+                <div className="flex items-center justify-between mb-8">
+                    <button onClick={() => router.back()} className="flex items-center text-slate-400 hover:text-blue-600 font-black text-[10px] uppercase tracking-widest transition-all hover:-translate-x-1">
+                        <ChevronLeft className="w-4 h-4 mr-1.5" />
+                        Zurück
                     </button>
-                    <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest bg-slate-50 px-3 py-1 rounded-full border border-slate-100">
-                        Deployment v3.5-fullstack-hardened
-                    </span>
+                    <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-blue-600 shadow-[0_0_8px_rgba(37,99,235,0.4)] animate-pulse" />
+                        <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Live Ansicht</span>
+                    </div>
                 </div>
 
-                <div className="flex flex-col lg:flex-row gap-8">
-                    {/* Main Content */}
-                    <div className="flex-1 space-y-8">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+                    <div className="lg:col-span-2 space-y-10">
                         {/* Header Card */}
-                        <div className="bg-white rounded-3xl shadow-sm border border-slate-200/60 p-8">
-                            <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
-                                <div className="flex items-center space-x-3">
-                                    <span className="text-xs font-black text-indigo-400 uppercase tracking-widest font-mono bg-indigo-50 px-3 py-1 rounded-lg">
-                                        {ticket.referenceCode}
-                                    </span>
-                                    <h1 className="text-2xl font-black text-slate-900">
-                                        {ticket.property?.name} • {ticket.unitLabel || 'Common Area'}
-                                    </h1>
-                                </div>
-                                <div className="flex items-center gap-3">
+                        <div className="bg-white rounded-[2.5rem] shadow-2xl shadow-slate-200/40 border border-slate-100 p-12">
+                            <div className="flex items-center justify-between mb-10">
+                                <span className="font-mono font-black text-blue-600 bg-blue-50 px-5 py-2.5 rounded-xl text-[10px] uppercase border border-blue-100">
+                                    {ticket.reference_code}
+                                </span>
+                                <div className="relative group">
                                     <select
-                                        className="bg-slate-50 border-none rounded-xl px-4 py-2 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+                                        className="bg-slate-50 border border-slate-100 rounded-xl px-6 py-3 text-[10px] font-black uppercase tracking-widest text-slate-600 outline-none focus:ring-4 focus:ring-blue-500/10 cursor-pointer appearance-none pr-12 transition-all hover:bg-slate-100"
                                         value={ticket.status}
                                         onChange={(e) => updateStatus(e.target.value)}
                                     >
-                                        <option value="NEW">New</option>
-                                        <option value="IN_PROGRESS">In Progress</option>
-                                        <option value="COMPLETED">Completed</option>
+                                        <option value="NEW">Neu</option>
+                                        <option value="IN_PROGRESS">In Bearbeitung</option>
+                                        <option value="COMPLETED">Abgeschlossen</option>
                                     </select>
+                                    <RefreshCw className="absolute right-4 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-300 pointer-events-none" />
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 py-6 border-y border-slate-50">
-                                <div className="space-y-1">
-                                    <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Urgency</p>
-                                    <div className="flex items-center text-sm font-bold text-slate-700">
-                                        <Clock className="w-4 h-4 mr-2 text-indigo-500" />
-                                        {ticket.urgency}
-                                    </div>
+                            <h1 className="text-5xl font-black tracking-tighter uppercase mb-2 leading-none">
+                                {ticket.property?.name || 'Unbekannt'}
+                            </h1>
+                            <p className="text-blue-600 font-black text-xs uppercase tracking-[0.2em] mb-12">
+                                Einheit: {ticket.unit_label || 'Allgemein'}
+                            </p>
+
+                            <div className="grid grid-cols-3 gap-8 py-10 border-y border-slate-50">
+                                <div>
+                                    <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-1.5 font-sans">Dringlichkeit</p>
+                                    <p className={`font-black text-xs uppercase tracking-tight ${ticket.urgency === 'EMERGENCY' ? 'text-red-500' : 'text-slate-700'}`}>{ticket.urgency}</p>
                                 </div>
-                                <div className="space-y-1">
-                                    <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Property</p>
-                                    <div className="flex items-center text-sm font-bold text-slate-700">
-                                        <MapPin className="w-4 h-4 mr-2 text-emerald-500" />
-                                        {ticket.property?.name}
-                                    </div>
+                                <div>
+                                    <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-1.5 font-sans">Kategorie</p>
+                                    <p className="font-black text-slate-700 text-xs uppercase tracking-tight">{ticket.category || 'Maintenance'}</p>
                                 </div>
-                                <div className="space-y-1">
-                                    <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Creator</p>
-                                    <div className="flex items-center text-sm font-bold text-slate-700">
-                                        <User className="w-4 h-4 mr-2 text-amber-500" />
-                                        Tenant
-                                    </div>
-                                </div>
-                                <div className="space-y-1">
-                                    <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Status</p>
-                                    <div className="flex items-center text-sm font-bold text-indigo-600">
-                                        <CheckCircle2 className="w-4 h-4 mr-2" />
-                                        {ticket.status.replace('_', ' ')}
-                                    </div>
+                                <div>
+                                    <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-1.5 font-sans">Erstellt am</p>
+                                    <p className="font-black text-slate-700 text-xs uppercase tracking-tight">{new Date(ticket.created_at).toLocaleDateString()}</p>
                                 </div>
                             </div>
 
-                            <div className="mt-8">
-                                <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Issue Description</h3>
-                                <div className="bg-slate-50/50 rounded-2xl p-6 border border-slate-100 italic text-slate-700 leading-relaxed font-light">
+                            <div className="mt-12">
+                                <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6 flex items-center">
+                                    <span className="w-8 h-[1px] bg-slate-100 mr-4" />
+                                    Beschreibung
+                                    <span className="w-full h-[1px] bg-slate-100 ml-4" />
+                                </h3>
+                                <div className="bg-slate-50 rounded-[2rem] p-8 italic text-slate-600 leading-relaxed font-medium text-lg border border-slate-100 shadow-inner">
                                     "{ticket.description}"
                                 </div>
                             </div>
                         </div>
 
                         {/* Tabs */}
-                        <div className="flex items-center space-x-8 border-b border-slate-100 px-2">
-                            {[
-                                { id: 'details', label: 'AI Analysis', icon: Sparkles },
-                                { id: 'audit', label: 'Audit Log', icon: History }
-                            ].map((tab) => (
-                                <button
-                                    key={tab.id}
-                                    onClick={() => setActiveTab(tab.id as any)}
-                                    className={`flex items-center py-4 text-sm font-bold transition-all relative ${activeTab === tab.id
-                                        ? 'text-indigo-600'
-                                        : 'text-slate-400 hover:text-slate-600'
-                                        }`}
-                                >
-                                    <tab.icon className="w-4 h-4 mr-2" />
-                                    {tab.label}
-                                    {activeTab === tab.id && (
-                                        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600 rounded-full" />
-                                    )}
-                                </button>
-                            ))}
+                        <div className="flex space-x-12 px-8 border-b border-slate-100">
+                            <button onClick={() => setActiveTab('details')} className={`py-6 text-[10px] font-black uppercase tracking-[0.2em] border-b-2 transition-all ${activeTab === 'details' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-300 hover:text-slate-500'}`}>
+                                KI-Assistent & Analyse
+                            </button>
+                            <button onClick={() => setActiveTab('audit')} className={`py-6 text-[10px] font-black uppercase tracking-[0.2em] border-b-2 transition-all ${activeTab === 'audit' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-300 hover:text-slate-500'}`}>
+                                Versionsverlauf
+                            </button>
                         </div>
 
                         {/* Tab Content */}
-                        <div className="bg-white rounded-3xl shadow-sm border border-slate-200/60 overflow-hidden min-h-[400px]">
+                        <div className="bg-white rounded-[2.5rem] shadow-2xl shadow-slate-200/40 border border-slate-100 p-12">
                             {activeTab === 'details' && (
-                                <div className="p-8 space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                                    {/* AI Overview */}
-                                    <div className="flex items-start justify-between">
-                                        <div className="flex items-center text-indigo-600">
-                                            <Sparkles className="w-5 h-5 mr-3 fill-indigo-50" />
-                                            <h2 className="text-xl font-black tracking-tight">AI Assistance Results</h2>
+                                <div className="space-y-12">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <div className="flex items-center text-blue-600">
+                                            <Sparkles className="w-5 h-5 mr-3" />
+                                            <h2 className="text-2xl font-black uppercase tracking-tighter">KI Intelligenz</h2>
                                         </div>
-                                        <button
-                                            onClick={reprocessAi}
-                                            disabled={reprocessing}
-                                            className="px-4 py-2 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-xl text-xs font-black uppercase tracking-widest transition-colors flex items-center disabled:opacity-50"
-                                        >
-                                            <RefreshCw className={`w-3.5 h-3.5 mr-2 ${reprocessing ? 'animate-spin' : ''}`} />
-                                            {reprocessing ? 'Processing...' : 'Reprocess AI'}
+                                        <button onClick={reprocessAi} disabled={reprocessing} className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center hover:text-blue-600 transition-all group">
+                                            <RefreshCw className={`w-3.5 h-3.5 mr-2 group-hover:rotate-180 transition-transform duration-500 ${reprocessing ? 'animate-spin' : ''}`} />
+                                            Neu Analysieren
                                         </button>
                                     </div>
 
-                                    {reprocessing || ticket.aiStatus === 'PROCESSING' ? (
-                                        <div className="flex flex-col items-center justify-center py-16 px-8 text-center bg-indigo-50/20 rounded-[2rem] border border-dashed border-indigo-100">
-                                            <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-100/50 mb-6 font-bold text-indigo-500">
-                                                <RefreshCw className="w-8 h-8 animate-spin" />
-                                            </div>
-                                            <h3 className="text-lg font-black text-slate-900 mb-2">Analyzing Request...</h3>
-                                            <p className="text-sm font-medium text-slate-500 max-w-sm mb-6">
-                                                PropCare AI is lightning fast. Your results will appear in a second or two.
-                                            </p>
-                                        </div>
-                                    ) : ticket.aiStatus === 'NEEDS_ATTENTION' ? (
-                                        <div className="flex flex-col items-center justify-center py-16 px-8 text-center bg-amber-50 rounded-[2rem] border border-dashed border-amber-200">
-                                            <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-lg shadow-amber-100 mb-6">
-                                                <AlertTriangle className="w-8 h-8 text-amber-500" />
-                                            </div>
-                                            <h3 className="text-lg font-black text-amber-900 mb-2">Insufficient Details</h3>
-                                            <p className="text-sm font-medium text-amber-600 mb-8 max-w-sm">
-                                                The description is too short for a reliable AI assessment. Please add more details and click reprocess.
-                                            </p>
-                                            <button
-                                                onClick={reprocessAi}
-                                                disabled={reprocessing}
-                                                className="px-8 py-4 bg-amber-600 text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-xl shadow-amber-100 hover:scale-105 transition-all disabled:opacity-50 flex items-center"
-                                            >
-                                                <RefreshCw className={`w-4 h-4 mr-3 ${reprocessing ? 'animate-spin' : ''}`} />
-                                                {reprocessing ? 'Processing...' : 'Try Again'}
-                                            </button>
-                                        </div>
-                                    ) : ticket.aiStatus === 'FAILED' ? (
-                                        <div className="flex flex-col items-center justify-center py-16 px-8 text-center bg-red-50 rounded-[2rem] border border-dashed border-red-200">
-                                            <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-lg shadow-red-100 mb-6">
-                                                <AlertTriangle className="w-8 h-8 text-red-500" />
-                                            </div>
-                                            <h3 className="text-lg font-black text-red-900 mb-2">AI Analysis Failed</h3>
-                                            <p className="text-sm font-medium text-red-600 mb-8 max-w-sm">
-                                                {ticket.errorMessage || "The AI system encountered an unexpected error while processing this ticket."}
-                                            </p>
-                                            <button
-                                                onClick={reprocessAi}
-                                                disabled={reprocessing}
-                                                className="px-8 py-4 bg-red-600 text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-xl shadow-red-100 hover:scale-105 transition-all disabled:opacity-50 flex items-center"
-                                            >
-                                                <RefreshCw className={`w-4 h-4 mr-3 ${reprocessing ? 'animate-spin' : ''}`} />
-                                                {reprocessing ? 'Trying again...' : 'Retry Analysis'}
-                                            </button>
-                                        </div>
-                                    ) : (!ticket.aiClassification && ticket.aiStatus === 'NOT_REQUESTED') ? (
-                                        <div className="flex flex-col items-center justify-center py-16 px-8 text-center bg-slate-50/50 rounded-[2rem] border border-dashed border-slate-200">
-                                            <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-sm mb-6">
-                                                <Sparkles className="w-8 h-8 text-indigo-400" />
-                                            </div>
-                                            <h3 className="text-lg font-black text-slate-900 mb-2">
-                                                Ready for Analysis
-                                            </h3>
-                                            <p className="text-sm font-medium text-slate-500 mb-8 max-w-sm">
-                                                This ticket is awaiting an AI assessment. Click below to generate a classification and email draft.
-                                            </p>
-                                            <button
-                                                onClick={reprocessAi}
-                                                disabled={reprocessing}
-                                                className="px-8 py-4 bg-indigo-600 text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-xl shadow-indigo-100 hover:scale-105 transition-all disabled:opacity-50 flex items-center"
-                                            >
-                                                <RefreshCw className={`w-4 h-4 mr-3 ${reprocessing ? 'animate-spin' : ''}`} />
-                                                {reprocessing ? 'Analyzing...' : 'Start AI Analysis'}
-                                            </button>
+                                    {ticket.aiStatus === 'PROCESSING' || reprocessing ? (
+                                        <div className="py-24 text-center">
+                                            <Loader2 className="animate-spin w-12 h-12 text-blue-600 mx-auto mb-6" />
+                                            <p className="text-slate-400 font-black uppercase tracking-[0.3em] text-[10px]">Verarbeite Daten...</p>
                                         </div>
                                     ) : (
                                         <>
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                                <div className="p-6 bg-slate-50/50 rounded-2xl border border-slate-100">
-                                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Classification</p>
-                                                    <p className="text-lg font-black text-slate-900">{ticket.aiClassification}</p>
+                                            <div className="grid grid-cols-2 gap-8">
+                                                <div className="p-8 bg-slate-50 rounded-[2rem] border border-slate-100 shadow-sm transition-all hover:bg-white hover:shadow-xl hover:scale-[1.02]">
+                                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Vorgeschlagene Kategorie</p>
+                                                    <p className="text-xl font-black uppercase tracking-tight text-slate-900">{ticket.aiClassification || 'Unbekannt'}</p>
                                                 </div>
-                                                <div className="p-6 bg-slate-50/50 rounded-2xl border border-slate-100">
-                                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">AI Urgency Score</p>
-                                                    <p className="text-lg font-black text-indigo-600">{ticket.aiUrgency}</p>
+                                                <div className="p-8 bg-slate-50 rounded-[2rem] border border-slate-100 shadow-sm transition-all hover:bg-white hover:shadow-xl hover:scale-[1.02]">
+                                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">KI-Dringlichkeit</p>
+                                                    <p className="text-xl font-black uppercase tracking-tight text-blue-600">{ticket.aiUrgency || 'Unbekannt'}</p>
                                                 </div>
                                             </div>
 
-                                            {ticket.aiMissingInfo && ticket.aiMissingInfo.length > 0 && (
-                                                <div className="p-6 bg-amber-50/50 border border-amber-100 rounded-2xl mt-6">
-                                                    <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest mb-3 flex items-center">
-                                                        <AlertTriangle className="w-3.5 h-3.5 mr-2" />
-                                                        Missing Information Identified
-                                                    </p>
-                                                    <ul className="space-y-2">
+                                            {ticket.aiMissingInfo?.length > 0 && (
+                                                <div className="p-8 bg-amber-50 border border-amber-100 rounded-[2rem] shadow-sm">
+                                                    <div className="flex items-center gap-3 mb-6">
+                                                        <AlertTriangle className="w-5 h-5 text-amber-500" />
+                                                        <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest">Kritische Lücken in der Meldung</p>
+                                                    </div>
+                                                    <ul className="space-y-3">
                                                         {ticket.aiMissingInfo.map((info: string, i: number) => (
-                                                            <li key={i} className="text-sm font-medium text-slate-700 flex items-start">
-                                                                <span className="w-1.5 h-1.5 bg-amber-400 rounded-full mt-1.5 mr-3 flex-shrink-0" />
+                                                            <li key={i} className="text-sm font-bold text-slate-700 flex items-center bg-white/50 p-3 rounded-xl border border-amber-100/50">
+                                                                <div className="w-1.5 h-1.5 bg-amber-400 rounded-full mr-3" />
                                                                 {info}
                                                             </li>
                                                         ))}
@@ -518,77 +346,37 @@ export default function TicketDetailPage() {
                                                 </div>
                                             )}
 
-                                            <div className="mt-6">
-                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6">Suggested Contractors</p>
-                                                <div className="space-y-4">
-                                                    {ticket.aiContractors && ticket.aiContractors.length > 0 ? ticket.aiContractors.map((c: any, i: number) => (
-                                                        <div key={i} className={`flex items-center justify-between p-6 bg-white border border-slate-100 rounded-2xl shadow-sm hover:border-indigo-100 transition-colors`}>
-                                                            <div className="flex items-center">
-                                                                <div className={`w-12 h-12 ${c.source === 'INTERNAL' ? 'bg-emerald-100' : 'bg-slate-100'} rounded-xl flex items-center justify-center mr-4`}>
-                                                                    <Wrench className={`w-6 h-6 ${c.source === 'INTERNAL' ? 'text-emerald-600' : 'text-slate-600'}`} />
-                                                                </div>
-                                                                <div>
-                                                                    <div className="flex items-center gap-2">
-                                                                        <h4 className="font-black text-slate-900">{c.name}</h4>
-                                                                        <span className={`text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-tighter ${c.source === 'INTERNAL' ? 'bg-emerald-600 text-white' : 'bg-slate-200 text-slate-500'}`}>
-                                                                            {c.source}
-                                                                        </span>
-                                                                    </div>
-                                                                    <p className="text-xs font-medium text-slate-500">{c.reason}</p>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    )) : (
-                                                        <div className="flex flex-col items-center py-8 text-slate-400 bg-slate-50 border border-dashed rounded-2xl">
-                                                            <AlertTriangle className="w-8 h-8 mb-2 opacity-50" />
-                                                            <p className="text-sm font-bold">No contractor matched your criteria.</p>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </div>
-
                                             {ticket.aiEmailDraft && (
-                                                <div id="email-draft-area" className="space-y-6 pt-6 border-t border-slate-100 mt-6">
-                                                    <div className="flex items-center justify-between">
-                                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Review & Send AI Draft</p>
+                                                <div className="space-y-8 pt-12 border-t border-slate-100">
+                                                    <div className="flex items-center justify-between mb-4">
+                                                        <div className="space-y-1">
+                                                            <h3 className="text-xl font-black uppercase tracking-tight">E-Mail Entwurf</h3>
+                                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Für Handwerker-Beauftragung</p>
+                                                        </div>
                                                         <button
                                                             onClick={sendContractorEmail}
-                                                            disabled={sendingEmail || !draftRecipient}
-                                                            className="flex items-center px-6 py-3 bg-indigo-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all hover:scale-105 disabled:opacity-50"
+                                                            disabled={sendingEmail}
+                                                            className="bg-blue-600 text-white px-8 py-4 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-2xl shadow-blue-600/30 hover:bg-blue-700 transition-all hover:-translate-y-1 disabled:opacity-50"
                                                         >
-                                                            <Mail className="w-4 h-4 mr-2" />
-                                                            {sendingEmail ? 'Sending...' : 'Send to Contractor'}
+                                                            {sendingEmail ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Senden an Handwerker'}
                                                         </button>
                                                     </div>
-
-                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                        <div className="space-y-2">
-                                                            <label className="text-[10px] font-black text-slate-300 uppercase tracking-widest ml-1">Recipient</label>
+                                                    <div className="space-y-4">
+                                                        <div className="relative">
+                                                            <Mail className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
                                                             <input
-                                                                type="email"
+                                                                className="w-full bg-slate-50 border border-slate-100 rounded-xl pl-14 pr-6 py-4 text-sm font-bold text-slate-700 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all placeholder:text-slate-300"
                                                                 value={draftRecipient}
                                                                 onChange={(e) => setDraftRecipient(e.target.value)}
-                                                                placeholder="contractor@email.com"
-                                                                className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-2 text-sm font-bold text-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none"
+                                                                placeholder="handwerker@email.ch"
                                                             />
                                                         </div>
-                                                        <div className="space-y-2">
-                                                            <label className="text-[10px] font-black text-slate-300 uppercase tracking-widest ml-1">Subject</label>
-                                                            <input
-                                                                type="text"
-                                                                value={draftSubject}
-                                                                onChange={(e) => setDraftSubject(e.target.value)}
-                                                                className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-2 text-sm font-bold text-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none"
-                                                            />
-                                                        </div>
+                                                        <textarea
+                                                            className="w-full bg-slate-900 text-blue-100 p-10 rounded-[2rem] font-mono text-sm leading-relaxed border border-slate-800 shadow-2xl min-h-[300px] outline-none focus:ring-4 focus:ring-blue-500/10 transition-all"
+                                                            value={draftEmail}
+                                                            onChange={(e) => setDraftEmail(e.target.value)}
+                                                        />
                                                     </div>
-
-                                                    <textarea
-                                                        value={draftEmail}
-                                                        onChange={(e) => setDraftEmail(e.target.value)}
-                                                        rows={10}
-                                                        className="w-full bg-slate-900 text-slate-300 p-8 rounded-[2rem] font-mono text-sm leading-relaxed border border-slate-800 shadow-2xl focus:ring-2 focus:ring-indigo-500 outline-none resize-none"
-                                                    />
                                                 </div>
                                             )}
                                         </>
@@ -596,143 +384,77 @@ export default function TicketDetailPage() {
                                 </div>
                             )}
 
-
                             {activeTab === 'audit' && (
-                                <div className="p-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                                    <h3 className="text-xl font-black text-slate-900 mb-8 tracking-tight">System Audit Log</h3>
-                                    <div className="space-y-0 relative border-l-2 border-slate-100 ml-3">
-                                        {(ticket.auditLogs || []).map((log: any) => {
-                                            const getAuditMessage = () => {
-                                                const meta = log.metadataJson || {};
-                                                switch (log.action) {
-                                                    case 'AI_START': return `AI analysis started using ${meta.model || 'gpt-4o-mini'}.`;
-                                                    case 'AI_SUCCESS': return `AI analysis completed: Classified as ${meta.category} with ${meta.urgency} urgency.`;
-                                                    case 'AI_FAILED': return `AI analysis failed: ${meta.error || 'Unknown error'}.`;
-                                                    case 'AI_SKIPPED': return `AI analysis skipped: ${meta.reason === 'insufficient_description' ? 'Insufficient details to analyze.' : meta.reason}`;
-                                                    case 'EMAIL_SENT': return `Contractor email sent to ${meta.to || 'recipient'}. Subject: ${meta.subject || '(no subject)'}`;
-                                                    case 'STATUS_CHANGED': return `Internal status manually changed to ${meta.newStatus}.`;
-                                                    case 'EXTERNAL_SYNC_SUCCESS': return `Successfully synced with external system (ID: ${meta.externalTicketId}).`;
-                                                    case 'EXTERNAL_SYNC_FAILED': return `External synchronization failed: ${meta.error || 'Unknown error'}.`;
-                                                    default: return `Action recorded: ${log.action.replace(/_/g, ' ')}.`;
-                                                }
-                                            };
-
-                                            return (
-                                                <div key={log.id} className="mb-10 ml-8 relative group">
-                                                    <div className="absolute -left-[41px] top-1 w-4 h-4 rounded-full border-4 border-white bg-slate-300 group-hover:bg-indigo-600 transition-colors" />
-                                                    <div className="flex items-center justify-between mb-2">
-                                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{new Date(log.created_at || log.createdAt).toLocaleString()}</p>
-                                                        <span className="px-2 py-0.5 bg-slate-100 text-[10px] font-black text-slate-500 rounded-md tracking-widest">{log.action}</span>
-                                                    </div>
-                                                    <p className="text-slate-800 font-bold mb-1">{getAuditMessage()}</p>
-                                                    <p className="text-xs font-medium text-slate-500">System generated via automation.</p>
+                                <div className="space-y-10">
+                                    <h2 className="text-2xl font-black uppercase tracking-tighter mb-10 flex items-center">
+                                        <History className="w-6 h-6 mr-3 text-blue-600" />
+                                        Systemprotokoll
+                                    </h2>
+                                    <div className="space-y-8 relative before:absolute before:left-3 before:top-2 before:bottom-2 before:w-[1px] before:bg-slate-100">
+                                        {(ticket.auditLogs || []).map((log: any) => (
+                                            <div key={log.id} className="flex gap-8 relative">
+                                                <div className="w-6 h-6 bg-white border-2 border-slate-100 rounded-full flex-shrink-0 z-10 flex items-center justify-center">
+                                                    <div className="w-2 h-2 bg-blue-600 rounded-full" />
                                                 </div>
-                                            );
-                                        })}
+                                                <div className="flex-1 bg-slate-50 rounded-2xl p-6 border border-slate-100 hover:bg-white hover:shadow-xl transition-all group">
+                                                    <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest group-hover:text-blue-600 transition-colors mb-2">{new Date(log.createdAt || log.created_at).toLocaleString('de-CH')}</p>
+                                                    <p className="font-bold text-sm text-slate-700 leading-snug">{log.metadata_json?.details || log.details || log.action}</p>
+                                                </div>
+                                            </div>
+                                        ))}
                                     </div>
                                 </div>
                             )}
                         </div>
                     </div>
 
-                    {/* Sidebar / Quick Actions */}
-                    <div className="lg:w-80 space-y-6">
-                        <div className="bg-white rounded-3xl shadow-sm border border-slate-200/60 p-8">
-                            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6">Workflow Actions</h3>
-
-                            {/* Primary Contextual Action */}
-                            <div className="mb-10">
-                                {ticket.status === 'NEW' && (
-                                    <button
-                                        onClick={reprocessAi}
-                                        disabled={reprocessing}
-                                        className="w-full px-6 py-4 bg-indigo-600 text-white rounded-2xl font-black uppercase tracking-widest text-[11px] shadow-2xl shadow-indigo-100 hover:scale-105 transition-all flex items-center justify-center"
-                                    >
-                                        {reprocessing ? <RefreshCw className="w-4 h-4 mr-3 animate-spin" /> : <Sparkles className="w-4 h-4 mr-3" />}
-                                        {reprocessing ? 'Processing...' : 'Run AI Analysis ➔'}
-                                    </button>
-                                )}
-
-                                {ticket.aiStatus === 'AI_READY' && ticket.status !== 'CLOSED' && (
-                                    <button
-                                        onClick={() => {
-                                            setActiveTab('details');
-                                            // Small delay to ensure tab content is rendered before scrolling
-                                            setTimeout(() => {
-                                                const el = document.getElementById('email-draft-area');
-                                                if (el) {
-                                                    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                                                    el.classList.add('ring-4', 'ring-indigo-500/10', 'ring-offset-8');
-                                                    setTimeout(() => el.classList.remove('ring-4', 'ring-indigo-500/10', 'ring-offset-8'), 2000);
-                                                }
-                                            }, 300);
-                                        }}
-                                        className="w-full px-6 py-4 bg-indigo-600 text-white rounded-2xl font-black uppercase tracking-widest text-[11px] shadow-2xl shadow-indigo-100 hover:scale-105 transition-all flex items-center justify-center animate-bounce-subtle"
-                                    >
-                                        <Mail className="w-4 h-4 mr-3" />
-                                        Review & Email Draft ➔
-                                    </button>
-                                )}
-
-
-                                {ticket.status === 'CLOSED' && (
-                                    <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-2xl flex items-center justify-center">
-                                        <CheckCircle2 className="w-5 h-5 text-emerald-600 mr-2" />
-                                        <span className="text-xs font-black text-emerald-800 uppercase tracking-widest">Case Resolved</span>
+                    {/* Quick Info Sidebar */}
+                    <div className="space-y-10">
+                        <div className="bg-white rounded-[2.5rem] shadow-2xl shadow-slate-200/40 border border-slate-100 p-10">
+                            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-10 text-center flex items-center">
+                                <span className="w-full h-[1px] bg-slate-50 mr-4" />
+                                Mieterprofil
+                                <span className="w-full h-[1px] bg-slate-50 ml-4" />
+                            </h3>
+                            <div className="space-y-8">
+                                <div className="flex items-center gap-5 group">
+                                    <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-600 transition-all">
+                                        <User className="w-6 h-6" />
                                     </div>
-                                )}
-                            </div>
-
-                            {/* Secondary Manual Overrides */}
-                            <div className="pt-8 border-t border-slate-100">
-                                <div className="flex items-center justify-between mb-6">
-                                    <h3 className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Manual Override</h3>
-                                    <div className="group relative">
-                                        <HelpCircle className="w-3.5 h-3.5 text-slate-200 cursor-help" />
-                                        <div className="absolute right-0 bottom-full mb-2 w-48 p-3 bg-slate-900 text-white text-[9px] rounded-xl opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity shadow-2xl z-50 leading-relaxed">
-                                            These buttons manually change the status label for your internal tracking.
+                                    <div className="flex-1 border-b border-slate-50 pb-4">
+                                        <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-1 font-sans">Name</p>
+                                        <p className="font-black text-sm uppercase tracking-tight text-slate-900">{ticket.tenant_name}</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-5 group">
+                                    <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-600 transition-all">
+                                        <Mail className="w-6 h-6" />
+                                    </div>
+                                    <div className="flex-1 border-b border-slate-50 pb-4">
+                                        <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-1 font-sans">E-Mail Adresse</p>
+                                        <p className="font-black text-xs break-all text-slate-900">{ticket.tenant_email}</p>
+                                    </div>
+                                </div>
+                                {ticket.tenant_phone && (
+                                    <div className="flex items-center gap-5">
+                                        <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400">
+                                            <HelpCircle className="w-6 h-6" />
+                                        </div>
+                                        <div className="flex-1 pb-4">
+                                            <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-1 font-sans">Telefon</p>
+                                            <p className="font-black text-sm uppercase tracking-tight text-slate-900">{ticket.tenant_phone}</p>
                                         </div>
                                     </div>
-                                </div>
-                                <div className="grid grid-cols-2 gap-2">
-                                    <button
-                                        onClick={() => updateStatus('NEW')}
-                                        className={`px-3 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${ticket.status === 'NEW' ? 'bg-slate-200 text-slate-700' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`}
-                                    >
-                                        New
-                                    </button>
-                                    <button
-                                        onClick={() => updateStatus('AI_READY')}
-                                        className={`px-3 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${ticket.status === 'AI_READY' ? 'bg-slate-200 text-slate-700' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`}
-                                    >
-                                        Ready
-                                    </button>
-                                    <button
-                                        onClick={() => updateStatus('SENT')}
-                                        className={`px-3 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${ticket.status === 'SENT' ? 'bg-slate-200 text-slate-700' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`}
-                                    >
-                                        Sent
-                                    </button>
-                                    <button
-                                        onClick={() => updateStatus('CLOSED')}
-                                        className={`px-3 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${ticket.status === 'CLOSED' ? 'bg-slate-200 text-slate-700' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`}
-                                    >
-                                        Resolve
-                                    </button>
-                                </div>
+                                )}
                             </div>
                         </div>
 
-                        <div className="bg-slate-900 rounded-3xl p-8 text-white relative overflow-hidden group">
-                            <Sparkles className="absolute top-4 right-4 text-indigo-400/20 w-16 h-16 pointer-events-none group-hover:scale-110 transition-transform duration-500" />
-                            <h3 className="text-xs font-black text-indigo-400 uppercase tracking-widest mb-4">Automation Hub</h3>
-                            <p className="text-sm font-medium text-slate-400 mb-6 leading-relaxed">
-                                Our AI system is monitoring this ticket activity. It will suggest next steps based on its analysis.
+                        <div className="bg-gradient-to-br from-blue-600 to-blue-800 rounded-[2.5rem] p-10 text-white shadow-2xl shadow-blue-600/30">
+                            <Sparkles className="w-10 h-10 text-white/30 mb-6" />
+                            <h3 className="font-black mb-4 text-xl uppercase tracking-tighter">Automatisierung</h3>
+                            <p className="text-sm font-medium leading-relaxed text-blue-100 opacity-90 italic">
+                                "Die KI analysiert jede Meldung automatisch und schlägt Handwerker sowie E-Mail-Entwürfe vor, um Ihre Bearbeitungszeit zu minimieren."
                             </p>
-                            <div className="p-4 bg-indigo-600/10 border border-indigo-400/20 rounded-2xl flex items-center">
-                                <Sparkles className="w-5 h-5 mr-3 text-indigo-400" />
-                                <span className="text-xs font-bold text-indigo-200">System standing by...</span>
-                            </div>
                         </div>
                     </div>
                 </div>

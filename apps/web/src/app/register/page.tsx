@@ -7,15 +7,16 @@ import * as z from 'zod';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabaseClient';
+import { Loader2, ShieldCheck, Mail, Lock, User, Building, ArrowRight } from 'lucide-react';
 
 const registerSchema = z.object({
-    tenantName: z.string().min(2, 'Company name is required'),
-    name: z.string().min(2, 'Your name is required'),
-    email: z.string().email('Invalid email address'),
-    password: z.string().min(6, 'Password must be at least 6 characters'),
+    tenantName: z.string().min(2, 'Name der Hausverwaltung ist erforderlich'),
+    name: z.string().min(2, 'Ihr Name ist erforderlich'),
+    email: z.string().email('Ungültige E-Mail-Adresse'),
+    password: z.string().min(6, 'Passwort muss mindestens 6 Zeichen lang sein'),
 });
 
-type RegisterFormValues = z.infer<typeof registerSchema>;
+type TicketFormValues = z.infer<typeof registerSchema>;
 
 export default function RegisterPage() {
     const router = useRouter();
@@ -26,15 +27,14 @@ export default function RegisterPage() {
         register,
         handleSubmit,
         formState: { errors },
-    } = useForm<RegisterFormValues>({
+    } = useForm<TicketFormValues>({
         resolver: zodResolver(registerSchema),
     });
 
-    const onSubmit = async (data: RegisterFormValues) => {
+    const onSubmit = async (data: TicketFormValues) => {
         setLoading(true);
         setError(null);
         try {
-            // 1. Sign up with Supabase Auth
             const { data: authData, error: authError } = await supabase.auth.signUp({
                 email: data.email,
                 password: data.password,
@@ -46,9 +46,8 @@ export default function RegisterPage() {
             });
 
             if (authError) throw authError;
-            if (!authData.user) throw new Error('Signup failed');
+            if (!authData.user) throw new Error('Registrierung fehlgeschlagen');
 
-            // 2. Create Tenant (direct to public.tenants)
             const { data: tenantData, error: tenantError } = await supabase
                 .from('tenants')
                 .insert([{ name: data.tenantName }])
@@ -57,8 +56,6 @@ export default function RegisterPage() {
 
             if (tenantError) throw tenantError;
 
-            // 3. Create User profile (direct to public.users)
-            // We link the UUID to the Supabase Auth UUID
             const { error: userError } = await supabase
                 .from('users')
                 .insert([{
@@ -72,101 +69,129 @@ export default function RegisterPage() {
 
             if (userError) throw userError;
 
-            // 4. Success -> Dashboard
-            // Note: If email confirmation is required, user may need to check email first.
-            // But by default for prototypes, it's often disabled.
             router.push('/login?registered=true');
         } catch (err: any) {
             console.error('Registration error details:', err);
-            setError(err.message || 'Registration failed. Please try again.');
+            setError(err.message === 'User already registered' ? 'Diese E-Mail-Adresse wird bereits verwendet.' : 'Registrierung fehlgeschlagen. Bitte versuchen Sie es erneut.');
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-slate-950 py-12 px-4 sm:px-6 lg:px-8">
-            <div className="max-w-md w-full space-y-8 p-10 rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl shadow-2xl">
-                <div>
-                    <h2 className="text-center text-3xl font-bold tracking-tight text-white font-sans">
-                        Create PropCare Account
+        <div className="min-h-screen flex items-center justify-center bg-slate-950 py-12 px-4 sm:px-6 lg:px-8 font-sans relative overflow-hidden">
+            <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-600/5 rounded-full blur-[100px] pointer-events-none" />
+            <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-900/5 rounded-full blur-[100px] pointer-events-none" />
+
+            <div className="max-w-md w-full space-y-10 p-12 rounded-[3.5rem] border border-white/5 bg-slate-900/60 backdrop-blur-3xl shadow-[0_30px_100px_rgba(0,0,0,0.5)] relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl p-1 pointer-events-none" />
+                
+                <div className="relative z-10 text-center">
+                    <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-8 shadow-2xl shadow-blue-600/20 transform -rotate-6">
+                        <span className="text-white font-black text-2xl">PC</span>
+                    </div>
+                    <h2 className="text-4xl font-black tracking-tighter text-white uppercase mb-2">
+                        Account <span className="text-blue-500">Erstellen</span>
                     </h2>
-                    <p className="mt-2 text-center text-sm text-slate-400 font-sans">
-                        Direct Supabase Connection Active
+                    <p className="text-slate-400 font-medium text-sm italic">
+                        Starten Sie jetzt mit der modernen Verwaltung Ihrer Liegenschaften.
                     </p>
                 </div>
-                <form className="mt-8 space-y-4" onSubmit={handleSubmit(onSubmit)}>
+
+                <form className="mt-10 space-y-5" onSubmit={handleSubmit(onSubmit)}>
                     {error && (
-                        <div className="rounded-lg bg-red-500/10 border border-red-500/50 p-4">
-                            <div className="text-sm text-red-400 font-sans">{error}</div>
+                        <div className="rounded-2xl bg-red-500/10 border border-red-500/30 p-4 animate-in fade-in slide-in-from-top-2">
+                            <div className="text-[10px] font-black uppercase text-red-400 tracking-widest text-center">{error}</div>
                         </div>
                     )}
 
                     <div className="space-y-4 font-sans">
-                        <div>
+                        <div className="relative group">
+                            <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-slate-500 group-focus-within:text-blue-400 transition-colors">
+                                <Building className="w-4 h-4" />
+                            </div>
                             <input
                                 {...register('tenantName')}
-                                placeholder="Management Company Name"
-                                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
+                                placeholder="Name der Hausverwaltung"
+                                className="w-full pl-12 pr-5 py-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder-slate-600 focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500/50 transition-all font-bold text-sm shadow-inner"
                             />
                             {errors.tenantName && (
-                                <p className="text-red-400 text-xs mt-1 px-1">{errors.tenantName.message}</p>
+                                <p className="text-red-400 text-[10px] font-black uppercase mt-2 ml-1 tracking-widest">{errors.tenantName.message}</p>
                             )}
                         </div>
 
-                        <div>
+                        <div className="relative group">
+                            <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-slate-500 group-focus-within:text-blue-400 transition-colors">
+                                <User className="w-4 h-4" />
+                            </div>
                             <input
                                 {...register('name')}
-                                placeholder="Your Name"
-                                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
+                                placeholder="Ihr vollständiger Name"
+                                className="w-full pl-12 pr-5 py-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder-slate-600 focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500/50 transition-all font-bold text-sm shadow-inner"
                             />
                             {errors.name && (
-                                <p className="text-red-400 text-xs mt-1 px-1">{errors.name.message}</p>
+                                <p className="text-red-400 text-[10px] font-black uppercase mt-2 ml-1 tracking-widest">{errors.name.message}</p>
                             )}
                         </div>
 
-                        <div>
+                        <div className="relative group">
+                            <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-slate-500 group-focus-within:text-blue-400 transition-colors">
+                                <Mail className="w-4 h-4" />
+                            </div>
                             <input
                                 {...register('email')}
                                 type="email"
-                                placeholder="Work Email"
-                                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
+                                placeholder="E-Mail Adresse"
+                                className="w-full pl-12 pr-5 py-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder-slate-600 focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500/50 transition-all font-bold text-sm shadow-inner"
                             />
                             {errors.email && (
-                                <p className="text-red-400 text-xs mt-1 px-1">{errors.email.message}</p>
+                                <p className="text-red-400 text-[10px] font-black uppercase mt-2 ml-1 tracking-widest">{errors.email.message}</p>
                             )}
                         </div>
 
-                        <div>
+                        <div className="relative group">
+                            <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-slate-500 group-focus-within:text-blue-400 transition-colors">
+                                <Lock className="w-4 h-4" />
+                            </div>
                             <input
                                 {...register('password')}
                                 type="password"
-                                placeholder="Password"
-                                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
+                                placeholder="Passwort"
+                                className="w-full pl-12 pr-5 py-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder-slate-600 focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500/50 transition-all font-bold text-sm shadow-inner"
                             />
                             {errors.password && (
-                                <p className="text-red-400 text-xs mt-1 px-1">{errors.password.message}</p>
+                                <p className="text-red-400 text-[10px] font-black uppercase mt-2 ml-1 tracking-widest">{errors.password.message}</p>
                             )}
                         </div>
                     </div>
 
-                    <div className="pt-4">
+                    <div className="pt-6">
                         <button
                             type="submit"
                             disabled={loading}
-                            className="w-full py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-semibold shadow-lg shadow-indigo-600/25 transition-all duration-300 disabled:opacity-50 font-sans"
+                            className="w-full h-16 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black uppercase tracking-[0.2em] text-[11px] shadow-2xl shadow-blue-600/30 flex items-center justify-center transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 group font-sans"
                         >
-                            {loading ? 'Creating Account...' : 'Get Started Now'}
+                            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (
+                                <>
+                                    Konto Jetzt Erstellen
+                                    <ArrowRight className="w-4 h-4 ml-3 group-hover:translate-x-1 transition-transform" />
+                                </>
+                            )}
                         </button>
                     </div>
 
-                    <div className="text-center text-sm text-slate-400 pt-2 font-sans">
-                        Already have an account?{' '}
-                        <Link href="/login" className="text-indigo-400 hover:text-indigo-300 font-medium transition">
-                            Sign in here
+                    <div className="text-center text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 pt-4 font-sans">
+                        Bereits registriert?{' '}
+                        <Link href="/login" className="text-blue-400 hover:text-blue-300 transition-colors">
+                            Hier anmelden
                         </Link>
                     </div>
                 </form>
+
+                <div className="mt-10 flex items-center justify-center space-x-2 text-[9px] font-black uppercase tracking-widest text-slate-600">
+                    <ShieldCheck className="w-3.5 h-3.5" />
+                    <span>Gesicherte SSL Verschlüsselung</span>
+                </div>
             </div>
         </div>
     );

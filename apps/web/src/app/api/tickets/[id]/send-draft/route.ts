@@ -42,21 +42,20 @@ export async function POST(
         // Fetch ticket to get tenant_id for logging
         const { data: ticket } = await supabase.from('tickets').select('tenant_id').eq('id', id).single();
 
-        // 2. Log to Outbound Emails
-        await supabase
-            .from('outbound_emails')
-            .insert({
-                tenant_id: ticket?.tenant_id,
-                ticket_id: id,
-                recipient_email: toEmail,
-                subject: subject,
-                content_text: message,
-                sent_at: new Date().toISOString(),
-                status: 'SENT'
-            });
-
-        // 3. Create Audit Log
         if (ticket) {
+            // 2. Log to Outbound Emails (matching schema fields: to_email, body)
+            await supabase
+                .from('outbound_emails')
+                .insert({
+                    tenant_id: ticket.tenant_id,
+                    ticket_id: id,
+                    to_email: toEmail,
+                    subject: subject || 'No Subject',
+                    body: message,
+                    status: 'SENT'
+                });
+
+            // 3. Create Audit Log (removing non-existent 'details' field)
             await supabase
                 .from('audit_logs')
                 .insert({
@@ -64,8 +63,11 @@ export async function POST(
                     action: 'EMAIL_SENT',
                     target_type: 'TICKET',
                     target_id: id,
-                    details: `Email sent to ${toEmail}`,
-                    metadata_json: { to: toEmail, subject }
+                    metadata_json: { 
+                        to: toEmail, 
+                        subject,
+                        details: `E-Mail an ${toEmail} gesendet.`
+                    }
                 });
         }
 
