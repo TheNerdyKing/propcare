@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import api from '@/lib/api';
-import { Loader2, CheckCircle2, AlertCircle, MessageSquare, HelpCircle } from 'lucide-react';
+import { Loader2, CheckCircle2, AlertCircle, MessageSquare, HelpCircle, ShieldCheck } from 'lucide-react';
 
 const inquirySchema = z.object({
     propertyId: z.string().uuid('Bitte wählen Sie ein Gebäude aus'),
