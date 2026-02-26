@@ -281,7 +281,3 @@ export default function ContractorsPage() {
         </AuthenticatedLayout>
     );
 }
-            </div>
-        </AuthenticatedLayout>
-    );
-}
