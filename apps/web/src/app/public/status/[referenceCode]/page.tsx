@@ -119,7 +119,7 @@ export default function PublicStatusPage() {
                                 <div>
                                     <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-1.5">Liegenschaft</p>
                                     <p className="text-slate-900 font-bold text-sm uppercase tracking-tight">{ticket.property?.name || '---'}</p>
-                                    {ticket.unitLabel && <p className="text-slate-500 text-[10px] font-bold mt-1 uppercase">Einheit: {ticket.unitLabel}</p>}
+                                    {(ticket.unitLabel || ticket.unit_label) && <p className="text-slate-500 text-[10px] font-bold mt-1 uppercase">Einheit: {ticket.unitLabel || ticket.unit_label}</p>}
                                 </div>
                                 <div className="pt-6 border-t border-slate-50">
                                     <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-3 text-blue-600">Beschreibung</p>

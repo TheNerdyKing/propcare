@@ -122,7 +122,7 @@ export default function TicketsPage() {
                 .insert([{
                     tenant_id: tenantId,
                     property_id: formData.propertyId,
-                    unit_label: formData.unit_label, // Ensure correct mapping
+                    unit_label: formData.unitLabel, // Ensure correct mapping
                     description: formData.description,
                     tenant_name: formData.tenantName,
                     tenant_email: formData.tenantEmail,
@@ -137,7 +137,7 @@ export default function TicketsPage() {
             setShowModal(false);
             setFormData({
                 propertyId: '',
-                unit_label: '',
+                unitLabel: '',
                 description: '',
                 tenantName: '',
                 tenantEmail: '',
@@ -346,8 +346,8 @@ export default function TicketsPage() {
                                             required
                                             placeholder="z.B. App. 402"
                                             className="w-full bg-slate-50 border border-slate-100 rounded-[1.25rem] px-6 py-4.5 text-sm font-bold text-slate-900 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all placeholder:text-slate-300"
-                                            value={formData.unit_label}
-                                            onChange={(e) => setFormData({ ...formData, unit_label: e.target.value })}
+                                            value={formData.unitLabel}
+                                            onChange={(e) => setFormData({ ...formData, unitLabel: e.target.value })}
                                         />
                                     </div>
                                 </div>
