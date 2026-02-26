@@ -12,11 +12,12 @@ function getSupabase() {
 
 export async function GET(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
+    const { id } = await params;
     try {
         const supabase = getSupabase();
-        const idOrRef = params.id;
+        const idOrRef = id;
 
         console.log('[API] Fetching ticket by ID or Ref:', idOrRef);
 
