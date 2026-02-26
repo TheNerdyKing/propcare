@@ -50,17 +50,17 @@ export default function RootPage() {
 
                     {/* Card 2: Allgemeine Frage */}
                     <Link href="/allgemein" className="group">
-                        <div className="bg-white p-12 rounded-[3.5rem] shadow-sm border border-slate-100 hover:shadow-2xl hover:shadow-blue-600/10 transition-all duration-700 hover:-translate-y-3 h-full flex flex-col relative overflow-hidden">
-                            <div className="absolute top-0 right-0 w-32 h-32 bg-slate-50/50 rounded-bl-[100px] -mr-10 -mt-10 group-hover:bg-blue-600 transition-colors duration-700"></div>
+                        <div className="bg-white p-12 rounded-[3.5rem] shadow-sm border border-slate-100 hover:shadow-2xl hover:shadow-emerald-600/10 transition-all duration-700 hover:-translate-y-3 h-full flex flex-col relative overflow-hidden">
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-50/50 rounded-bl-[100px] -mr-10 -mt-10 group-hover:bg-emerald-600 transition-colors duration-700"></div>
                             
-                            <div className="w-20 h-20 bg-slate-50 rounded-3xl flex items-center justify-center mb-10 group-hover:bg-blue-600 transition-colors duration-500 relative z-10">
-                                <MessageSquare className="w-10 h-10 text-slate-400 group-hover:text-white" />
+                            <div className="w-20 h-20 bg-emerald-50 rounded-3xl flex items-center justify-center mb-10 group-hover:bg-emerald-600 transition-colors duration-500 relative z-10">
+                                <MessageSquare className="w-10 h-10 text-emerald-600 group-hover:text-white" />
                             </div>
-                            <h2 className="text-3xl font-black text-slate-900 mb-6 uppercase tracking-tight relative z-10">Allgemeine Anfrage</h2>
+                            <h2 className="text-3xl font-black text-slate-900 mb-6 uppercase tracking-tight relative z-10">Administrative Anfrage</h2>
                             <p className="text-slate-500 font-medium text-lg mb-10 flex-grow relative z-10 leading-relaxed">
-                                Kontaktieren Sie uns für administrative Anfragen, allgemeine Auskünfte oder sonstige Anliegen.
+                                Kontaktieren Sie uns für administrative Anfragen, Mietverträge, Schlüssel oder sonstige Anliegen.
                             </p>
-                            <div className="flex items-center text-slate-400 font-black text-[11px] uppercase tracking-widest relative z-10 group-hover:text-blue-600">
+                            <div className="flex items-center text-emerald-600 font-black text-[11px] uppercase tracking-widest relative z-10">
                                 NACHRICHT SENDEN <span className="ml-3 group-hover:translate-x-3 transition-transform">➔</span>
                             </div>
                         </div>

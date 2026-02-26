@@ -1,19 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { Resend } from 'resend';
+import { sendEmail } from '@/lib/email';
 
 export const dynamic = 'force-dynamic';
 
-function getClients() {
+function getSupabase() {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    const resendApiKey = process.env.RESEND_API_KEY;
-
     if (!supabaseServiceKey) throw new Error('SUPABASE_SERVICE_ROLE_KEY is required');
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    const resend = new Resend(resendApiKey || 're_... ');
-
-    return { supabase, resend };
+    return createClient(supabaseUrl, supabaseServiceKey);
 }
 
 export async function POST(
@@ -25,25 +20,29 @@ export async function POST(
     const { toEmail, subject, message } = body;
 
     try {
-        const { supabase, resend } = getClients();
+        const supabase = getSupabase();
         console.log(`[API] Sending contractor email for ticket ${id} to ${toEmail}`);
 
-        // 1. Send Email via Resend
-        const { data: resendData, error: resendError } = await resend.emails.send({
-            from: 'PropCare <onboarding@resend.dev>', // Should be a verified domain in production
-            to: [toEmail],
+        if (!toEmail || !message) {
+            return NextResponse.json({ success: false, error: 'Recipient email and message are required' }, { status: 400 });
+        }
+
+        // 1. Send Email via shared utility
+        const emailResult = await sendEmail({
+            to: toEmail,
             subject: subject || 'Maintenance Request',
-            text: message,
-            html: `<div>${message.replace(/\n/g, '<br/>')}</div>`,
+            body: message,
         });
 
-        if (resendError) throw resendError;
+        if (!emailResult.success) {
+            throw new Error(emailResult.error as string);
+        }
 
         // Fetch ticket to get tenant_id for logging
         const { data: ticket } = await supabase.from('tickets').select('tenant_id').eq('id', id).single();
 
         if (ticket) {
-            // 2. Log to Outbound Emails (matching schema fields: to_email, body)
+            // 2. Log to Outbound Emails
             await supabase
                 .from('outbound_emails')
                 .insert({
@@ -55,7 +54,7 @@ export async function POST(
                     status: 'SENT'
                 });
 
-            // 3. Create Audit Log (removing non-existent 'details' field)
+            // 3. Create Audit Log
             await supabase
                 .from('audit_logs')
                 .insert({
@@ -69,9 +68,15 @@ export async function POST(
                         details: `E-Mail an ${toEmail} gesendet.`
                     }
                 });
+            
+            // 4. Update Ticket status to SENT
+            await supabase
+                .from('tickets')
+                .update({ status: 'SENT' })
+                .eq('id', id);
         }
 
-        return NextResponse.json({ success: true, messageId: resendData?.id });
+        return NextResponse.json({ success: true, messageId: (emailResult.data as any)?.id });
 
     } catch (error: any) {
         console.error(`[API] Failed to send email for ${id}:`, error);

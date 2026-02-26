@@ -10,6 +10,7 @@ import { Loader2, CheckCircle2, AlertCircle, MessageSquare, HelpCircle, ShieldCh
 const inquirySchema = z.object({
     propertyId: z.string().uuid('Bitte wählen Sie ein Gebäude aus'),
     unitLabel: z.string().optional(),
+    category: z.enum(['RENT', 'KEYS', 'CONTRACT', 'PARKING', 'ADMIN', 'OTHER']).default('ADMIN'),
     description: z.string().min(10, 'Bitte beschreiben Sie Ihr Anliegen (mind. 10 Zeichen)'),
     tenantName: z.string().min(2, 'Name ist erforderlich'),
     tenantEmail: z.string().email('Ungültige E-Mail-Adresse'),
@@ -31,6 +32,9 @@ export default function AllgemeinPage() {
         formState: { errors },
     } = useForm<InquiryFormValues>({
         resolver: zodResolver(inquirySchema),
+        defaultValues: {
+            category: 'ADMIN'
+        }
     });
 
     useEffect(() => {
@@ -53,7 +57,6 @@ export default function AllgemeinPage() {
         setLoading(true);
         setError(null);
         try {
-            // We use the same endpoint but treat it as a general inquiry
             await api.post('public/tickets', {
                 ...data,
                 type: 'GENERAL_INQUIRY',
@@ -71,8 +74,8 @@ export default function AllgemeinPage() {
     if (submitted) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4 font-sans text-slate-900">
-                <div className="max-w-xl w-full bg-white rounded-[3rem] p-12 shadow-2xl shadow-blue-100/50 text-center border border-slate-100">
-                    <div className="w-20 h-20 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-8">
+                <div className="max-w-xl w-full bg-white rounded-[3rem] p-12 shadow-2xl shadow-emerald-100/50 text-center border border-slate-100">
+                    <div className="w-20 h-20 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-8">
                         <CheckCircle2 className="w-10 h-10" />
                     </div>
                     <h2 className="text-4xl font-black text-slate-900 mb-4 tracking-tighter uppercase">Anfrage gesendet</h2>
@@ -81,7 +84,7 @@ export default function AllgemeinPage() {
                     </p>
                     <button
                         onClick={() => window.location.href = '/'}
-                        className="w-full px-8 h-16 bg-blue-600 text-white rounded-2xl flex items-center justify-center font-black uppercase tracking-widest text-[10px] shadow-xl shadow-blue-600/20 hover:scale-105 transition-transform"
+                        className="w-full px-8 h-16 bg-emerald-600 text-white rounded-2xl flex items-center justify-center font-black uppercase tracking-widest text-[10px] shadow-xl shadow-emerald-600/20 hover:scale-105 transition-transform"
                     >
                         Zurück zum Mieterportal ➔
                     </button>
@@ -94,15 +97,15 @@ export default function AllgemeinPage() {
         <div className="min-h-screen bg-slate-50 py-20 px-4 sm:px-6 lg:px-8 font-sans text-slate-900">
             <div className="max-w-4xl mx-auto">
                 <div className="mb-16 text-center">
-                    <div className="inline-flex items-center space-x-2 bg-blue-50 text-blue-600 px-4 py-2 rounded-full mb-6">
+                    <div className="inline-flex items-center space-x-2 bg-emerald-50 text-emerald-600 px-4 py-2 rounded-full mb-6">
                         <MessageSquare className="w-4 h-4" />
-                        <span className="text-[10px] font-black uppercase tracking-widest text-blue-700">Allgemeine Anfrage</span>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-emerald-700">Administrative Anfrage</span>
                     </div>
                     <h1 className="text-6xl font-black text-slate-900 tracking-tighter mb-4 uppercase">
-                        Vermieter <span className="text-blue-600">Kontaktieren</span>
+                        Vermieter <span className="text-emerald-600">Kontaktieren</span>
                     </h1>
                     <p className="text-slate-500 text-xl font-medium max-w-xl mx-auto italic">
-                        Haben Sie eine Frage oder ein administratives Anliegen? Wir helfen Ihnen gerne weiter.
+                        Haben Sie eine administrative Frage oder ein Anliegen zu Ihrem Mietverhältnis? Wir sind für Sie da.
                     </p>
                 </div>
 
@@ -121,7 +124,7 @@ export default function AllgemeinPage() {
                                 <select
                                     {...register('propertyId')}
                                     disabled={fetchingProps}
-                                    className="w-full h-14 bg-slate-50 border border-slate-100 rounded-2xl px-6 font-bold text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all appearance-none cursor-pointer disabled:opacity-50"
+                                    className="w-full h-14 bg-slate-50 border border-slate-100 rounded-2xl px-6 font-bold text-slate-900 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all appearance-none cursor-pointer disabled:opacity-50"
                                 >
                                     <option value="">Objekt auswählen...</option>
                                     {properties.map((p) => (
@@ -136,12 +139,21 @@ export default function AllgemeinPage() {
                         </div>
 
                         <div className="space-y-3">
-                            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Wohnung (Optional)</label>
-                            <input
-                                {...register('unitLabel')}
-                                placeholder="z.B. A-102"
-                                className="w-full h-14 bg-slate-50 border border-slate-100 rounded-2xl px-6 font-bold text-slate-900 placeholder:text-slate-300 focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all"
-                            />
+                            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Kategorie</label>
+                            <div className="relative">
+                                <select
+                                    {...register('category')}
+                                    className="w-full h-14 bg-slate-50 border border-slate-100 rounded-2xl px-6 font-bold text-slate-900 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all appearance-none cursor-pointer"
+                                >
+                                    <option value="ADMIN">Allgemeine Verwaltung</option>
+                                    <option value="RENT">Mietzins & Zahlungen</option>
+                                    <option value="KEYS">Schlüssel / Badge</option>
+                                    <option value="CONTRACT">Mietvertrag / Kündigung</option>
+                                    <option value="PARKING">Parkplatz / Einstellhalle</option>
+                                    <option value="OTHER">Sonstiges</option>
+                                </select>
+                                <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">▼</div>
+                            </div>
                         </div>
 
                         <div className="space-y-3">
@@ -149,7 +161,7 @@ export default function AllgemeinPage() {
                             <input
                                 {...register('tenantName')}
                                 placeholder="Vollständiger Name"
-                                className="w-full h-14 bg-slate-50 border border-slate-100 rounded-2xl px-6 font-bold text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all"
+                                className="w-full h-14 bg-slate-50 border border-slate-100 rounded-2xl px-6 font-bold text-slate-900 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all"
                             />
                             {errors.tenantName && <p className="text-red-500 text-[10px] font-black uppercase mt-2 ml-1">{errors.tenantName.message}</p>}
                         </div>
@@ -159,7 +171,7 @@ export default function AllgemeinPage() {
                             <input
                                 {...register('tenantEmail')}
                                 placeholder="beispiel@email.ch"
-                                className="w-full h-14 bg-slate-50 border border-slate-100 rounded-2xl px-6 font-bold text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all"
+                                className="w-full h-14 bg-slate-50 border border-slate-100 rounded-2xl px-6 font-bold text-slate-900 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all"
                             />
                             {errors.tenantEmail && <p className="text-red-500 text-[10px] font-black uppercase mt-2 ml-1">{errors.tenantEmail.message}</p>}
                         </div>
@@ -171,7 +183,7 @@ export default function AllgemeinPage() {
                             {...register('description')}
                             rows={5}
                             placeholder="Beschreiben Sie Ihr Anliegen so detailliert wie möglich..."
-                            className="w-full bg-slate-50 border border-slate-100 rounded-3xl p-8 font-bold text-slate-900 placeholder:text-slate-300 focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all text-lg leading-relaxed"
+                            className="w-full bg-slate-50 border border-slate-100 rounded-3xl p-8 font-bold text-slate-900 placeholder:text-slate-300 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all text-lg leading-relaxed"
                         />
                         {errors.description && <p className="text-red-500 text-[10px] font-black uppercase mt-2 ml-1">{errors.description.message}</p>}
                     </div>
@@ -179,18 +191,18 @@ export default function AllgemeinPage() {
                     <button
                         type="submit"
                         disabled={loading || fetchingProps}
-                        className="w-full h-20 bg-blue-600 hover:bg-blue-700 text-white rounded-[2rem] font-black uppercase tracking-[0.2em] text-[11px] shadow-2xl shadow-blue-600/30 flex items-center justify-center transition-all hover:scale-[1.01] active:translate-y-0.5 disabled:opacity-50"
+                        className="w-full h-20 bg-emerald-600 hover:bg-emerald-700 text-white rounded-[2rem] font-black uppercase tracking-[0.2em] text-[11px] shadow-2xl shadow-emerald-600/30 flex items-center justify-center transition-all hover:scale-[1.01] active:translate-y-0.5 disabled:opacity-50"
                     >
                         {loading ? (
                             <Loader2 className="w-6 h-6 animate-spin" />
                         ) : (
-                            'Nachricht absenden'
+                            'Anfrage absenden'
                         )}
                     </button>
 
                     <div className="flex flex-col items-center gap-4 text-[10px] font-black text-slate-300 uppercase tracking-widest">
                         <div className="flex items-center space-x-2">
-                            <ShieldCheck className="w-4 h-4 text-slate-200" />
+                            <ShieldCheck className="w-4 h-4 text-emerald-200" />
                             <span>Sicher übermittelt via PropCare SSL</span>
                         </div>
                     </div>

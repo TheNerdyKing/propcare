@@ -9,9 +9,9 @@ import { supabase } from '@/lib/supabaseClient';
 import { Loader2, CheckCircle2, AlertCircle, ShieldCheck, Upload, HelpCircle } from 'lucide-react';
 
 const ticketSchema = z.object({
-    type: z.enum(['DAMAGE_REPORT', 'GENERAL_INQUIRY']).default('DAMAGE_REPORT'),
     propertyId: z.string().uuid('Bitte wählen Sie ein Gebäude aus'),
     unitLabel: z.string().min(1, 'Wohnungs- oder Zimmernummer ist erforderlich'),
+    category: z.enum(['PLUMBING', 'ELECTRICAL', 'HEATING', 'WINDOWS', 'APPLIANCES', 'MOLD', 'OTHER']).default('OTHER'),
     urgency: z.enum(['EMERGENCY', 'URGENT', 'NORMAL', 'UNKNOWN']).default('NORMAL'),
     description: z.string().min(10, 'Bitte beschreiben Sie das Problem ausführlicher (mind. 10 Zeichen)'),
     tenantName: z.string().min(2, 'Name ist erforderlich'),
@@ -35,18 +35,15 @@ export default function SchadensmeldungPage() {
     const {
         register,
         handleSubmit,
-        watch,
         formState: { errors },
     } = useForm<TicketFormValues>({
         resolver: zodResolver(ticketSchema),
         defaultValues: {
-            type: 'DAMAGE_REPORT',
+            category: 'OTHER',
             urgency: 'NORMAL',
             permissionToEnter: false,
         },
     });
-
-    const selectedType = watch('type');
 
     useEffect(() => {
         async function fetchProperties() {
@@ -75,7 +72,10 @@ export default function SchadensmeldungPage() {
         setLoading(true);
         setError(null);
         try {
-            const response = await api.post('public/tickets', data);
+            const response = await api.post('public/tickets', {
+                ...data,
+                type: 'DAMAGE_REPORT'
+            });
             const ticketData = response.data;
             
             // Handle image uploads if any
@@ -176,18 +176,23 @@ export default function SchadensmeldungPage() {
                     )}
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-8">
-                        {/* Type selection */}
+                        {/* Category selection */}
                         <div className="md:col-span-2 space-y-4">
-                            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Anliegen-Typ</label>
-                            <div className="grid grid-cols-2 gap-4">
-                                <label className={`flex items-center justify-center h-16 rounded-2xl border-2 transition-all cursor-pointer font-bold text-sm ${selectedType === 'DAMAGE_REPORT' ? 'border-blue-600 bg-blue-50 text-blue-600 shadow-lg shadow-blue-600/5' : 'border-slate-50 bg-slate-50 text-slate-400 hover:border-blue-100 hover:text-blue-400'}`}>
-                                    <input {...register('type')} type="radio" value="DAMAGE_REPORT" className="sr-only" />
-                                    Schadensmeldung
-                                </label>
-                                <label className={`flex items-center justify-center h-16 rounded-2xl border-2 transition-all cursor-pointer font-bold text-sm ${selectedType === 'GENERAL_INQUIRY' ? 'border-blue-600 bg-blue-50 text-blue-600 shadow-lg shadow-blue-600/5' : 'border-slate-50 bg-slate-50 text-slate-400 hover:border-blue-100 hover:text-blue-400'}`}>
-                                    <input {...register('type')} type="radio" value="GENERAL_INQUIRY" className="sr-only" />
-                                    Vermieter kontaktieren
-                                </label>
+                            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Art des Schadens</label>
+                            <div className="relative">
+                                <select
+                                    {...register('category')}
+                                    className="w-full h-16 bg-slate-50 border border-slate-100 rounded-2xl px-6 font-bold text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all appearance-none cursor-pointer"
+                                >
+                                    <option value="PLUMBING">Sanitär / Wasser</option>
+                                    <option value="ELECTRICAL">Elektro / Licht</option>
+                                    <option value="HEATING">Heizung / Klima</option>
+                                    <option value="WINDOWS">Fenster / Türen / Schlösser</option>
+                                    <option value="APPLIANCES">Küchengeräte / Waschmaschine</option>
+                                    <option value="MOLD">Schimmel / Feuchtigkeit</option>
+                                    <option value="OTHER">Andere technische Störung</option>
+                                </select>
+                                <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">▼</div>
                             </div>
                         </div>
 
@@ -295,7 +300,6 @@ export default function SchadensmeldungPage() {
                         {errors.description && <p className="text-red-500 text-[10px] font-black uppercase mt-2 ml-1">{errors.description.message}</p>}
                     </div>
 
-                    {selectedType === 'DAMAGE_REPORT' && (
                         <div className="bg-blue-50/50 rounded-[2rem] p-8 border border-blue-100 flex items-start space-x-6 hover:bg-blue-50 transition-colors duration-500">
                             <div className="flex items-center h-6">
                                 <input
@@ -311,7 +315,6 @@ export default function SchadensmeldungPage() {
                                 </p>
                             </div>
                         </div>
-                    )}
 
                     <button
                         type="submit"

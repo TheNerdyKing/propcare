@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { processTicketAi } from '@/lib/ai-service';
+import { sendEmail } from '@/lib/email';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,7 +27,7 @@ export async function POST(request: NextRequest) {
         // 2. Fetch Property to get the correct Tenant ID
         const { data: property, error: pError } = await supabase
             .from('properties')
-            .select('tenant_id')
+            .select('tenant_id, name')
             .eq('id', body.propertyId)
             .single();
 
@@ -52,7 +53,8 @@ export async function POST(request: NextRequest) {
                 urgency: body.urgency || 'NORMAL',
                 reference_code: referenceCode,
                 status: 'NEW',
-                ai_status: 'NOT_REQUESTED'
+                ai_status: 'NOT_REQUESTED',
+                type: body.type || 'DAMAGE_REPORT'
             })
             .select()
             .single();
@@ -71,7 +73,34 @@ export async function POST(request: NextRequest) {
             }
         });
 
-        // 5. Trigger AI processing asynchronously
+        // 5. Send Confirmation Email (New)
+        if (body.tenantEmail) {
+            const isGeneral = body.type === 'GENERAL_INQUIRY';
+            const subject = isGeneral ? 'Eingangsbestätigung: Ihre Anfrage' : 'Eingangsbestätigung: Ihre Schadensmeldung';
+            const title = isGeneral ? 'Anfrage erhalten' : 'Meldung erhalten';
+            
+            await sendEmail({
+                to: body.tenantEmail,
+                subject: `${subject} (${referenceCode})`,
+                body: `Hallo ${body.tenantName},\n\nwir haben Ihr Anliegen für die Liegenschaft ${property.name} erhalten.\n\nReferenzcode: ${referenceCode}\nStatus: NEU\n\nWir werden uns umgehend mit Ihnen in Verbindung setzen.\n\nIhr PropCare Team`,
+                html: `
+                    <div style="font-family: sans-serif; padding: 20px;">
+                        <h2 style="color: #2563eb;">${title}</h2>
+                        <p>Hallo ${body.tenantName},</p>
+                        <p>vielen Dank für Ihre Nachricht bezüglich der Liegenschaft <b>${property.name}</b>.</p>
+                        <div style="background: #f8fafc; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                            <p style="margin: 0;"><b>Referenzcode:</b> ${referenceCode}</p>
+                            <p style="margin: 0;"><b>Status:</b> NEU</p>
+                        </div>
+                        <p>Wir haben Ihr Anliegen erfasst und werden es so schnell wie möglich bearbeiten.</p>
+                        <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
+                        <p style="color: #64748b; font-size: 12px;">Dies ist eine automatisch generierte Nachricht von PropCare.</p>
+                    </div>
+                `
+            });
+        }
+
+        // 6. Trigger AI processing asynchronously
         processTicketAi(ticket.id).catch(err => {
             console.error(`[BG AI] Failed for ${ticket.id}:`, err.message);
         });
