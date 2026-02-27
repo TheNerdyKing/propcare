@@ -294,7 +294,7 @@ export default function TicketsPage() {
                                                 </span>
                                             </td>
                                             <td className="px-8 py-6 text-[10px] font-black text-slate-300 uppercase tracking-widest">
-                                                {new Date(ticket.createdAt || ticket.created_at).toLocaleDateString('de-CH')}
+                                                {new Date(ticket.createdAt || ticket.created_at || Date.now()).toLocaleDateString('de-CH')}
                                             </td>
                                             <td className="px-8 py-6 text-right">
                                                 <Link

@@ -213,7 +213,7 @@ export default function DashboardPage() {
                                         <div className="text-right">
                                             <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest mb-1">Eingang</p>
                                             <p className="text-sm font-bold text-slate-900">
-                                                {new Date(ticket.createdAt || ticket.created_at || new Date()).toLocaleDateString('de-CH')}
+                                                {new Date(ticket.createdAt || ticket.created_at || Date.now()).toLocaleDateString('de-CH')}
                                             </p>
                                         </div>
                                         <div className="ml-8 w-12 h-12 rounded-2xl flex items-center justify-center text-slate-300 group-hover:bg-blue-600 group-hover:text-white group-hover:shadow-lg transition-all">
