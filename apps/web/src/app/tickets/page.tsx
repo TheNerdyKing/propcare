@@ -82,7 +82,7 @@ export default function TicketsPage() {
             const { data, error: fetchErr } = await query;
             if (fetchErr) throw fetchErr;
 
-            const sortedData = (data || []).sort((a, b) => {
+            const sortedData = (data || []).sort((a: any, b: any) => {
                 const dateA = new Date(a.createdAt || a.created_at || 0).getTime();
                 const dateB = new Date(b.createdAt || b.created_at || 0).getTime();
                 return dateB - dateA;

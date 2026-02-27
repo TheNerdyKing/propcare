@@ -88,7 +88,7 @@ export default function AnalyticsPage() {
         try {
             const { data: tickets, error: expErr } = await supabase
                 .from('tickets')
-                .select('reference_code, status, urgency, category, tenant_name, created_at')
+                .select('reference_code, status, urgency, category, tenant_name, createdAt')
                 .eq('tenant_id', tenantId);
 
             if (expErr) throw expErr;
@@ -98,12 +98,12 @@ export default function AnalyticsPage() {
             const csvContent = [
                 headers.join(','),
                 ...tickets.map(t => [
-                    t.reference_code,
+                    (t as any).reference_code,
                     t.status,
                     t.urgency,
                     t.category || '-',
                     `"${t.tenant_name}"`,
-                    new Date(t.created_at).toLocaleDateString('de-CH')
+                    new Date((t as any).createdAt || (t as any).created_at).toLocaleDateString('de-CH')
                 ].join(','))
             ].join('\n');
 

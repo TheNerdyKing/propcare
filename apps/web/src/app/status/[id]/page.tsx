@@ -154,7 +154,7 @@ export default function TenantStatusPage() {
                             </div>
                             <div>
                                 <h3 className="text-[10px] font-black text-slate-300 uppercase tracking-widest mb-1">Erfasst am</h3>
-                                <p className="font-bold text-slate-800">{new Date(ticket.createdAt || ticket.created_at).toLocaleDateString('de-CH', { day: '2-digit', month: 'long', year: 'numeric' })}</p>
+                                <p className="font-bold text-slate-800">{new Date((ticket as any).createdAt || (ticket as any).created_at || new Date()).toLocaleDateString('de-CH', { day: '2-digit', month: 'long', year: 'numeric' })}</p>
                             </div>
                         </div>
                     </div>

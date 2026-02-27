@@ -270,7 +270,7 @@ export default function TicketDetailPage() {
                                 </div>
                                 <div>
                                     <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-1.5 font-sans">Erstellt am</p>
-                                    <p className="font-black text-slate-700 text-xs uppercase tracking-tight">{new Date(ticket.created_at).toLocaleDateString()}</p>
+                                    <p className="font-black text-slate-700 text-xs uppercase tracking-tight">{new Date((ticket as any).createdAt || (ticket as any).created_at || new Date()).toLocaleDateString()}</p>
                                 </div>
                             </div>
 

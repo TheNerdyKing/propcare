@@ -36,14 +36,17 @@ export async function GET(request: NextRequest) {
         const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
         const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
 
-        const currentMonthTickets = tickets.filter(t => new Date(t.createdAt || t.created_at) >= thirtyDaysAgo);
-        const previousMonthTickets = tickets.filter(t => new Date(t.createdAt || t.created_at) >= sixtyDaysAgo && new Date(t.createdAt || t.created_at) < thirtyDaysAgo);
+        const currentMonthTickets = tickets.filter(t => new Date(t.createdAt).getTime() >= thirtyDaysAgo.getTime());
+        const previousMonthTickets = tickets.filter(t => {
+            const time = new Date(t.createdAt).getTime();
+            return time >= sixtyDaysAgo.getTime() && time < thirtyDaysAgo.getTime();
+        });
 
         // Resolution Time Calculation
         const closedTickets = tickets.filter(t => t.closed_at);
         const avgResolutionTimeMs = closedTickets.length > 0
             ? closedTickets.reduce((acc, t) => {
-                const start = new Date(t.createdAt || t.created_at).getTime();
+                const start = new Date(t.createdAt).getTime();
                 const end = new Date(t.closed_at).getTime();
                 return acc + (end - start);
             }, 0) / closedTickets.length
