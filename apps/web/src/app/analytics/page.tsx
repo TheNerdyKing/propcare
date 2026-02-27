@@ -103,7 +103,7 @@ export default function AnalyticsPage() {
                     t.urgency,
                     t.category || '-',
                     `"${t.tenant_name}"`,
-                    new Date((t as any).createdAt || (t as any).created_at).toLocaleDateString('de-CH')
+                    new Date((t as any).createdAt || (t as any).created_at || Date.now()).toLocaleDateString('de-CH')
                 ].join(','))
             ].join('\n');
 

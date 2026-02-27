@@ -114,7 +114,7 @@ export default function PublicStatusPage() {
                             <div className="space-y-6">
                                 <div>
                                     <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-1.5">Eingereicht am</p>
-                                    <p className="text-slate-900 font-bold text-sm">{new Date((ticket as any).createdAt || (ticket as any).created_at || new Date()).toLocaleDateString('de-CH', { dateStyle: 'long' })}</p>
+                                    <p className="text-slate-900 font-bold text-sm">{new Date((ticket as any).createdAt || (ticket as any).created_at || Date.now()).toLocaleDateString('de-CH', { dateStyle: 'long' })}</p>
                                 </div>
                                 <div>
                                     <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-1.5">Liegenschaft</p>
@@ -170,7 +170,7 @@ export default function PublicStatusPage() {
                                                             {msg.senderType === 'TENANT' ? 'Ihre Nachricht' : 'Hausverwaltung'}
                                                         </span>
                                                         <span className="text-[10px] font-bold text-slate-300">
-                                                            {new Date((msg as any).createdAt || (msg as any).created_at || new Date()).toLocaleString('de-CH', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' })}
+                                                            {new Date((msg as any).createdAt || (msg as any).created_at || Date.now()).toLocaleString('de-CH', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' })}
                                                         </span>
                                                     </div>
                                                     <p className="text-sm font-bold text-slate-700 leading-relaxed bg-slate-50/50 p-4 rounded-2xl rounded-tl-none border border-slate-100">{msg.content}</p>

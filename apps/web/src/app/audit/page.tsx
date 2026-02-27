@@ -111,10 +111,10 @@ export default function AuditPage() {
                                         <tr key={log.id} className="hover:bg-slate-50/50 transition-colors">
                                             <td className="px-10 py-6 whitespace-nowrap">
                                                 <div className="text-sm font-bold text-slate-900">
-                                                    {new Date(log.created_at).toLocaleDateString('de-CH')}
+                                                    {new Date(log.created_at || log.createdAt || Date.now()).toLocaleDateString('de-CH')}
                                                 </div>
                                                 <div className="text-[10px] font-black text-slate-300 uppercase tracking-widest">
-                                                    {new Date(log.created_at).toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' })}
+                                                    {new Date(log.created_at || log.createdAt || Date.now()).toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' })}
                                                 </div>
                                             </td>
                                             <td className="px-6 py-6">
