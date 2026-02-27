@@ -345,58 +345,42 @@ export default function TicketsPage() {
                     </div>
                 </div>
 
-                {/* Overhauled Modal */}
+                {/* Overhauled Compact Sexy Modal */}
                 {showModal && (
-                    <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-2xl flex items-center justify-center p-8 z-[100] animate-in fade-in duration-500">
-                        <div className="bg-white rounded-[4rem] shadow-[0_40px_120px_rgba(0,0,0,0.4)] max-w-4xl w-full border border-white/30 overflow-hidden animate-in zoom-in-95 duration-500 relative">
-                            {/* Decorative Backdrop for Modal Header */}
-                            <div className="absolute top-0 left-0 right-0 h-40 bg-blue-600 translate-y-[-70%] blur-[80px] opacity-10 pointer-events-none" />
-                            
-                            <div className="p-14 border-b border-slate-50 flex justify-between items-center relative z-10">
+                    <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-md flex items-center justify-center p-8 z-[100] animate-in fade-in duration-500">
+                        <div className="bg-white rounded-[3.5rem] shadow-[0_50px_100px_rgba(0,0,0,0.4)] max-w-xl w-full border border-white/20 overflow-hidden animate-in zoom-in-95 duration-500 relative">
+                            <div className="p-10 border-b border-slate-50 flex justify-between items-center relative z-10">
                                 <div>
                                     <div className="flex items-center space-x-3 mb-2">
                                         <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse" />
-                                        <p className="text-[11px] font-black text-blue-600 uppercase tracking-[0.3em]">Interne Erfassung</p>
+                                        <p className="text-[10px] font-black text-blue-600 uppercase tracking-[0.3em]">Manuelle Erfassung</p>
                                     </div>
-                                    <h2 className="text-5xl font-black text-slate-900 tracking-tighter uppercase leading-none">Neue Meldung</h2>
+                                    <h2 className="text-3xl font-black text-slate-900 tracking-tighter uppercase leading-none">MELDUNG AUFNEHMEN</h2>
                                 </div>
-                                <button onClick={() => setShowModal(false)} className="w-16 h-16 bg-slate-50 border border-slate-100 hover:bg-slate-900 hover:text-white rounded-3xl flex items-center justify-center transition-all duration-500 group">
-                                    <X className="w-8 h-8 group-hover:rotate-90 transition-transform" />
+                                <button onClick={() => setShowModal(false)} className="w-12 h-12 bg-slate-50 border border-slate-100 hover:bg-slate-900 hover:text-white rounded-2xl flex items-center justify-center transition-all duration-500 group">
+                                    <X className="w-6 h-6 group-hover:rotate-90 transition-transform" />
                                 </button>
                             </div>
 
-                            <form onSubmit={handleManualLog} className="p-14 space-y-10 bg-white overflow-y-auto max-h-[65vh] relative z-10 custom-scrollbar">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                                    <div className="space-y-4">
-                                        <div className="flex items-center space-x-3 px-2">
-                                            <Building2 className="w-4 h-4 text-blue-600" />
-                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Liegenschaft</label>
-                                        </div>
-                                        <div className="relative">
-                                            <select
-                                                required
-                                                className="w-full bg-slate-50/50 border border-slate-200/50 rounded-[2rem] px-8 py-6 text-sm font-bold text-slate-900 focus:ring-8 focus:ring-blue-600/5 outline-none transition-all appearance-none cursor-pointer"
-                                                value={formData.propertyId}
-                                                onChange={(e) => setFormData({ ...formData, propertyId: e.target.value })}
-                                            >
-                                                <option value="">Wählen Sie ein Gebäude...</option>
-                                                {properties.map(p => (
-                                                    <option key={p.id} value={p.id}>{p.name}</option>
-                                                ))}
-                                            </select>
-                                            <div className="absolute right-8 top-1/2 -translate-y-1/2 pointer-events-none text-slate-300">▼</div>
-                                        </div>
-                                    </div>
-                                    <div className="space-y-4">
-                                        <div className="flex items-center space-x-3 px-2">
-                                            <Home className="w-4 h-4 text-blue-600" />
-                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Einheit / Wohnung</label>
-                                        </div>
-                                        <input
-                                            type="text"
+                            <form onSubmit={handleManualLog} className="p-10 space-y-8 bg-white overflow-y-auto max-h-[70vh] relative z-10 custom-scrollbar">
+                                <div className="space-y-4">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1 text-[9px]">Liegenschaft & Einheit</label>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <select
                                             required
-                                            placeholder="z.B. 4. OG Links"
-                                            className="w-full bg-slate-50/50 border border-slate-200/50 rounded-[2rem] px-8 py-6 text-sm font-bold text-slate-900 focus:ring-8 focus:ring-blue-600/5 outline-none transition-all placeholder:text-slate-200"
+                                            className="w-full bg-slate-50/50 border border-slate-200/50 rounded-2xl px-6 py-5 text-sm font-bold text-slate-900 focus:ring-8 focus:ring-blue-600/5 outline-none transition-all cursor-pointer"
+                                            value={formData.propertyId}
+                                            onChange={(e) => setFormData({ ...formData, propertyId: e.target.value })}
+                                        >
+                                            <option value="">Objekt...</option>
+                                            {properties.map(p => (
+                                                <option key={p.id} value={p.id}>{p.name.toUpperCase()}</option>
+                                            ))}
+                                        </select>
+                                        <input
+                                            type="text" required
+                                            placeholder="z.B. TOP 14"
+                                            className="w-full bg-slate-50/50 border border-slate-200/50 rounded-2xl px-6 py-5 text-sm font-bold text-slate-900 focus:ring-8 focus:ring-blue-600/5 outline-none transition-all placeholder:text-slate-200"
                                             value={formData.unitLabel}
                                             onChange={(e) => setFormData({ ...formData, unitLabel: e.target.value })}
                                         />
@@ -404,77 +388,48 @@ export default function TicketsPage() {
                                 </div>
 
                                 <div className="space-y-4">
-                                    <div className="flex items-center space-x-3 px-2">
-                                        <Activity className="w-4 h-4 text-blue-600" />
-                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Schilderung des Sachverhalts</label>
-                                    </div>
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1 text-[9px]">Anliegen / Beschreibung</label>
                                     <textarea
                                         required
                                         rows={4}
-                                        placeholder="Beschreiben Sie das Anliegen so präzise wie möglich..."
-                                        className="w-full bg-slate-50/50 border border-slate-200/50 rounded-[2.5rem] p-10 text-sm font-bold text-slate-900 focus:ring-8 focus:ring-blue-600/5 outline-none transition-all placeholder:text-slate-200 leading-relaxed"
+                                        placeholder="Beschreiben Sie das Problem..."
+                                        className="w-full bg-slate-50/50 border border-slate-200/50 rounded-2xl px-6 py-5 text-sm font-bold text-slate-900 focus:ring-8 focus:ring-blue-600/5 outline-none transition-all placeholder:text-slate-200 min-h-[120px] resize-none"
                                         value={formData.description}
                                         onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                                     />
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                                    <div className="space-y-4">
-                                        <div className="flex items-center space-x-3 px-2">
-                                            <User className="w-4 h-4 text-blue-600" />
-                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Mieter Name</label>
-                                        </div>
+                                <div className="grid grid-cols-2 gap-6">
+                                    <div className="space-y-3">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1 text-[9px]">Mieter Name</label>
                                         <input
-                                            type="text"
-                                            required
-                                            className="w-full bg-slate-50/50 border border-slate-200/50 rounded-[1.5rem] px-6 py-5 text-sm font-bold text-slate-900 focus:ring-8 focus:ring-blue-600/5 outline-none transition-all"
+                                            type="text" required
+                                            className="w-full bg-slate-50 border border-slate-200/50 rounded-xl px-4 py-4 text-sm font-bold text-slate-900 focus:ring-4 focus:ring-blue-600/5 transition-all outline-none uppercase"
                                             value={formData.tenantName}
                                             onChange={(e) => setFormData({ ...formData, tenantName: e.target.value })}
                                         />
                                     </div>
-                                    <div className="space-y-4">
-                                        <div className="flex items-center space-x-3 px-2">
-                                            <Mail className="w-4 h-4 text-blue-600" />
-                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">E-Mail</label>
-                                        </div>
-                                        <input
-                                            type="email"
-                                            required
-                                            className="w-full bg-slate-50/50 border border-slate-200/50 rounded-[1.5rem] px-6 py-5 text-sm font-bold text-slate-900 focus:ring-8 focus:ring-blue-600/5 outline-none transition-all"
-                                            value={formData.tenantEmail}
-                                            onChange={(e) => setFormData({ ...formData, tenantEmail: e.target.value })}
-                                        />
-                                    </div>
-                                    <div className="space-y-4">
-                                        <div className="flex items-center space-x-3 px-2">
-                                            <Smartphone className="w-4 h-4 text-blue-600" />
-                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Dringlichkeit</label>
-                                        </div>
-                                        <div className="relative">
-                                            <select
-                                                className="w-full bg-slate-50/50 border border-slate-200/50 rounded-[1.5rem] px-6 py-5 text-[10px] font-black uppercase tracking-widest text-slate-900 focus:ring-8 focus:ring-blue-600/5 outline-none transition-all appearance-none cursor-pointer"
-                                                value={formData.urgency}
-                                                onChange={(e) => setFormData({ ...formData, urgency: e.target.value })}
-                                            >
-                                                <option value="NORMAL">Normal</option>
-                                                <option value="URGENT">Wichtig (Eilt)</option>
-                                                <option value="EMERGENCY">Notfall (Sofort)</option>
-                                            </select>
-                                            <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 text-xs">▼</div>
-                                        </div>
+                                    <div className="space-y-3">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1 text-[9px]">Dringlichkeit</label>
+                                        <select
+                                            className="w-full bg-slate-50 border border-slate-200/50 rounded-xl px-4 py-4 text-[10px] font-black uppercase tracking-widest text-slate-900 focus:ring-4 focus:ring-blue-600/5 outline-none"
+                                            value={formData.urgency}
+                                            onChange={(e) => setFormData({ ...formData, urgency: e.target.value })}
+                                        >
+                                            <option value="NORMAL">NORMAL</option>
+                                            <option value="URGENT">WICHTIG</option>
+                                            <option value="EMERGENCY">NOTFALL</option>
+                                        </select>
                                     </div>
                                 </div>
 
-                                <div className="pt-8">
-                                    <button
-                                        type="submit"
-                                        disabled={actionLoading}
-                                        className="w-full h-24 rounded-[2.5rem] font-black text-white bg-slate-900 hover:bg-blue-600 shadow-3xl shadow-slate-900/30 transition-all uppercase tracking-[0.3em] text-[12px] flex items-center justify-center disabled:opacity-50 group overflow-hidden"
-                                    >
-                                        {actionLoading ? <Loader2 className="w-6 h-6 animate-spin mr-6" /> : <Plus className="w-6 h-6 mr-6 group-hover:rotate-180 transition-transform duration-700" />}
-                                        Eintrag Finalisieren & Speichern
-                                    </button>
-                                </div>
+                                <button
+                                    type="submit"
+                                    disabled={actionLoading}
+                                    className="w-full h-20 rounded-[2rem] font-black text-white bg-slate-900 hover:bg-blue-600 shadow-3xl shadow-slate-900/20 transition-all uppercase tracking-[0.3em] text-[11px] flex items-center justify-center disabled:opacity-50 gap-4 group"
+                                >
+                                    {actionLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><CheckCircle2 className="w-5 h-5 group-hover:scale-110 transition-all" /> ÜBERMITTELN ➔</>}
+                                </button>
                             </form>
                         </div>
                     </div>
