@@ -18,7 +18,7 @@ import {
     Circle,
     UserCircle
 } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Logo from './Logo';
 import { useTranslation } from './LanguageProvider';
 
@@ -38,17 +38,6 @@ export default function Sidebar() {
         { name: t('sidebar_audit'), href: '/audit', icon: Shield },
         { name: t('sidebar_live_portal'), href: '/', icon: ExternalLink },
     ];
-
-    useEffect(() => {
-        const userStr = localStorage.getItem('user');
-        if (userStr) {
-            try {
-                setUserData(JSON.parse(userStr));
-            } catch (e) {
-                console.error('Failed to parse user data');
-            }
-        }
-    }, []);
 
     const toggleSidebar = () => setIsOpen(!isOpen);
 
