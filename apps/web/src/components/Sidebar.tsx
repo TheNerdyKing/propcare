@@ -25,8 +25,9 @@ import { useTranslation } from './LanguageProvider';
 export default function Sidebar() {
     const pathname = usePathname();
     const [isOpen, setIsOpen] = useState(false);
-    const [userData, setUserData] = useState<any>(null);
-    const { t } = useTranslation();
+    const userDataStr = typeof window !== 'undefined' ? localStorage.getItem('user') : null;
+    const userData = userDataStr ? JSON.parse(userDataStr) : null;
+    const { t, language } = useTranslation();
 
     const navigation = [
         { name: t('sidebar_dashboard'), href: '/dashboard', icon: LayoutDashboard },
@@ -63,7 +64,7 @@ export default function Sidebar() {
             <button
                 onClick={toggleSidebar}
                 className="lg:hidden fixed top-8 left-8 z-50 p-4 bg-white rounded-2xl shadow-2xl text-slate-900 border border-slate-100 hover:scale-110 active:scale-95 transition-all"
-                aria-label="Menü öffnen"
+                aria-label={language === 'de' ? 'Menü öffnen' : 'Open menu'}
             >
                 {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
@@ -135,8 +136,8 @@ export default function Sidebar() {
                                 <UserCircle className="w-7 h-7 text-white" />
                             </div>
                             <div className="min-w-0">
-                                <p className="text-[11px] font-black text-white uppercase tracking-tighter truncate">{userData?.name || 'Administrator'}</p>
-                                <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">{userData?.role === 'STAFF' ? 'Team' : 'Inhaber'}</p>
+                                <p className="text-[11px] font-black text-white uppercase tracking-tighter truncate">{userData?.name || (language === 'de' ? 'Administrator' : 'Admin')}</p>
+                                <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">{userData?.role === 'STAFF' ? t('sidebar_role_team') : t('sidebar_role_owner')}</p>
                             </div>
                         </div>
                         

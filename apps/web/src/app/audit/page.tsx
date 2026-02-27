@@ -26,6 +26,7 @@ export default function AuditPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [exporting, setExporting] = useState(false);
+    const { t, language } = useTranslation();
 
     useEffect(() => {
         fetchLogs();
@@ -78,7 +79,7 @@ export default function AuditPage() {
             setLogs(safeLogs);
         } catch (err: any) {
             console.error('Failed to fetch audit logs:', err);
-            setError('Systemprotokoll konnte nicht geladen werden.');
+            setError(language === 'de' ? 'Systemprotokoll konnte nicht geladen werden.' : 'System audit logs could not be loaded.');
         } finally {
             setLoading(false);
         }
@@ -86,12 +87,12 @@ export default function AuditPage() {
 
     const getActionConfig = (action: string) => {
         switch (action) {
-            case 'TICKET_CREATED': return { label: 'Neuzugang', icon: FileText, color: 'blue' };
-            case 'AI_CLASSIFIED': return { label: 'KI-Analyse', icon: Cpu, color: 'indigo' };
-            case 'STATUS_CHANGED': return { label: 'Bearbeitung', icon: RefreshCcw, color: 'amber' };
-            case 'EMAIL_SENT': return { label: 'Korrespondenz', icon: Mail, color: 'emerald' };
-            case 'EXTERNAL_SYNC_LOGGED': return { label: 'Datensynchronisation', icon: Activity, color: 'slate' };
-            case 'AI_START': return { label: 'KI-Start', icon: Cpu, color: 'indigo' };
+            case 'TICKET_CREATED': return { label: language === 'de' ? 'Neuzugang' : 'New Entry', icon: FileText, color: 'blue' };
+            case 'AI_CLASSIFIED': return { label: language === 'de' ? 'KI-Analyse' : 'AI Analysis', icon: Cpu, color: 'indigo' };
+            case 'STATUS_CHANGED': return { label: language === 'de' ? 'Bearbeitung' : 'Processing', icon: RefreshCcw, color: 'amber' };
+            case 'EMAIL_SENT': return { label: language === 'de' ? 'Korrespondenz' : 'Correspondence', icon: Mail, color: 'emerald' };
+            case 'EXTERNAL_SYNC_LOGGED': return { label: language === 'de' ? 'Datensynchronisation' : 'Data Sync', icon: Activity, color: 'slate' };
+            case 'AI_START': return { label: language === 'de' ? 'KI-Start' : 'AI Start', icon: Cpu, color: 'indigo' };
             default: return { label: action, icon: Activity, color: 'slate' };
         }
     };
@@ -101,24 +102,33 @@ export default function AuditPage() {
         const action = log.action;
 
         if (action === 'TICKET_CREATED') {
-            const source = meta.source === 'PUBLIC_PORTAL' ? 'Mieter-Portal' : 'Verwaltung';
-            return `Ein neues Ticket wurde über das ${source} erstellt.`;
+            const source = meta.source === 'PUBLIC_PORTAL' 
+                ? (language === 'de' ? 'Mieter-Portal' : 'Tenant Portal') 
+                : (language === 'de' ? 'Verwaltung' : 'Admin');
+            return language === 'de' 
+                ? `Ein neues Ticket wurde über das ${source} erstellt.` 
+                : `A new ticket was created via the ${source}.`;
         }
         if (action === 'AI_CLASSIFIED' || action === 'AI_START') {
             const model = meta.model || 'GPT-4';
-            return `KI-Modell (${model}) hat das Anliegen analysiert und kategorisiert.`;
+            return language === 'de'
+                ? `KI-Modell (${model}) hat das Anliegen analysiert und kategorisiert.`
+                : `AI Model (${model}) has analyzed and categorized the request.`;
         }
         if (action === 'STATUS_CHANGED') {
-            return `Der Status wurde von "${meta.from_status || 'Unbekannt'}" auf "${meta.to_status || 'Neu'}" geändert.`;
+            return language === 'de'
+                ? `Der Status wurde von "${meta.from_status || 'Unbekannt'}" auf "${meta.to_status || 'Neu'}" geändert.`
+                : `Status changed from "${meta.from_status || 'Unknown'}" to "${meta.to_status || 'New'}".`;
         }
         if (action === 'EMAIL_SENT') {
-            return `Benachrichtigung erfolgreich an ${meta.to_email || 'den Empfänger'} versendet.`;
+            return language === 'de'
+                ? `Benachrichtigung erfolgreich an ${meta.to_email || 'den Empfänger'} versendet.`
+                : `Notification successfully sent to ${meta.to_email || 'the recipient'}.`;
         }
         
-        // Dynamic fallback for any other text in metadata
         if (meta.details) return meta.details;
 
-        return 'Systemprozess erfolgreich ausgeführt.';
+        return language === 'de' ? 'Systemprozess erfolgreich ausgeführt.' : 'System process executed successfully.';
     };
 
     return (
@@ -128,10 +138,10 @@ export default function AuditPage() {
                     <div className="space-y-6">
                         <div className="inline-flex items-center space-x-3 bg-blue-600/10 backdrop-blur-md text-blue-600 px-5 py-2.5 rounded-2xl border border-blue-200/50 hover:scale-105 transition-transform">
                             <Shield className="w-5 h-5" />
-                            <span className="text-[11px] font-black uppercase tracking-[0.2em]">Sicherheit & Compliance</span>
+                            <span className="text-[11px] font-black uppercase tracking-[0.2em]">{t('audit_badge')}</span>
                         </div>
-                        <h1 className="text-6xl font-black text-slate-900 tracking-tighter uppercase leading-[0.9]">System<br/><span className="text-blue-600">Protokoll</span></h1>
-                        <p className="text-slate-500 font-medium text-xl max-w-xl italic leading-relaxed">Vollständige Transparenz über alle Backend-Aktivitäten, KI-Workflows und Datentransfers.</p>
+                        <h1 className="text-6xl font-black text-slate-900 tracking-tighter uppercase leading-[0.9]">{t('audit_title').includes(' ') ? t('audit_title').split(' ').map((word, i) => i === 1 ? <><br/><span key={i} className="text-blue-600">{word}</span></> : word) : t('audit_title')}</h1>
+                        <p className="text-slate-500 font-medium text-xl max-w-xl italic leading-relaxed">{t('audit_subtitle')}</p>
                     </div>
                     
                     <div className="flex gap-4">
@@ -140,10 +150,10 @@ export default function AuditPage() {
                                 <Activity className="w-7 h-7" />
                             </div>
                             <div>
-                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Live Status</p>
+                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">{t('audit_live_status')}</p>
                                 <div className="flex items-center space-x-2">
                                     <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
-                                    <p className="font-black text-slate-900 text-lg">System Aktiv</p>
+                                    <p className="font-black text-slate-900 text-lg">{t('audit_system_active')}</p>
                                 </div>
                             </div>
                         </div>
@@ -173,25 +183,25 @@ export default function AuditPage() {
                                 <div className="absolute inset-0 bg-blue-600/20 rounded-full blur-3xl animate-pulse" />
                                 <Loader2 className="animate-spin w-20 h-20 text-blue-600 relative z-10" />
                             </div>
-                            <p className="mt-10 text-slate-400 font-black uppercase tracking-[0.4em] text-[12px]">Lade Protokoll-Daten...</p>
+                            <p className="mt-10 text-slate-400 font-black uppercase tracking-[0.4em] text-[12px]">{language === 'de' ? 'Lade Protokoll-Daten...' : 'Loading audit data...'}</p>
                         </div>
                     ) : logs.length === 0 ? (
                         <div className="p-32 text-center text-slate-400">
                             <div className="w-32 h-32 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-10 border border-slate-100">
                                 <History className="w-16 h-16 opacity-20" />
                             </div>
-                            <p className="font-black uppercase tracking-[0.2em] text-sm text-slate-900 mb-2">Kein Verlauf gefunden</p>
-                            <p className="font-medium italic text-slate-400">Aktuell wurden noch keine Aktionen im System registriert.</p>
+                            <p className="font-black uppercase tracking-[0.2em] text-sm text-slate-900 mb-2">{language === 'de' ? 'Kein Verlauf gefunden' : 'No history found'}</p>
+                            <p className="font-medium italic text-slate-400">{language === 'de' ? 'Aktuell wurden noch keine Aktionen im System registriert.' : 'No actions have been registered in the system yet.'}</p>
                         </div>
                     ) : (
                         <div className="overflow-x-auto">
                             <table className="w-full text-left border-collapse">
                                 <thead>
                                     <tr className="bg-slate-50/70 border-b border-slate-100 group">
-                                        <th className="px-12 py-10 text-[11px] font-black text-slate-400 uppercase tracking-[0.3em]">Zeitstrahl</th>
-                                        <th className="px-8 py-10 text-[11px] font-black text-slate-400 uppercase tracking-[0.3em]">Prozess-Typ</th>
-                                        <th className="px-8 py-10 text-[11px] font-black text-slate-400 uppercase tracking-[0.3em]">Akteur</th>
-                                        <th className="px-12 py-10 text-[11px] font-black text-slate-400 uppercase tracking-[0.3em]">Details & Ausführung</th>
+                                        <th className="px-12 py-10 text-[11px] font-black text-slate-400 uppercase tracking-[0.3em]">{t('audit_header_timeline')}</th>
+                                        <th className="px-8 py-10 text-[11px] font-black text-slate-400 uppercase tracking-[0.3em]">{t('audit_header_type')}</th>
+                                        <th className="px-8 py-10 text-[11px] font-black text-slate-400 uppercase tracking-[0.3em]">{t('audit_header_actor')}</th>
+                                        <th className="px-12 py-10 text-[11px] font-black text-slate-400 uppercase tracking-[0.3em]">{t('audit_header_details')}</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-50">
@@ -212,11 +222,11 @@ export default function AuditPage() {
                                                         </div>
                                                         <div>
                                                             <div className="text-lg font-black text-slate-900 tracking-tight">
-                                                                {new Date(log.created_at || log.createdAt || Date.now()).toLocaleDateString('de-CH')}
+                                                                {new Date(log.created_at || log.createdAt || Date.now()).toLocaleDateString(language === 'de' ? 'de-CH' : 'en-GB')}
                                                             </div>
                                                             <div className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em] mt-1 flex items-center">
                                                                 <Clock className="w-3 h-3 mr-2" />
-                                                                {new Date(log.created_at || log.createdAt || Date.now()).toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' })}
+                                                                {new Date(log.created_at || log.createdAt || Date.now()).toLocaleTimeString(language === 'de' ? 'de-CH' : 'en-GB', { hour: '2-digit', minute: '2-digit' })}
                                                             </div>
                                                         </div>
                                                     </div>
@@ -232,8 +242,8 @@ export default function AuditPage() {
                                                             <User className="w-5 h-5" />
                                                         </div>
                                                         <div className="flex flex-col">
-                                                            <span className="text-sm font-black text-slate-900 uppercase tracking-tight">{log.user?.name || (log.actor_user_id ? 'System' : 'Gast')}</span>
-                                                            <span className="text-[9px] font-bold text-slate-400 tracking-widest uppercase">Identität</span>
+                                                            <span className="text-sm font-black text-slate-900 uppercase tracking-tight">{log.user?.name || (log.actor_user_id ? 'System' : (language === 'de' ? 'Gast' : 'Guest'))}</span>
+                                                            <span className="text-[9px] font-bold text-slate-400 tracking-widest uppercase">{t('audit_identity')}</span>
                                                         </div>
                                                     </div>
                                                 </td>
@@ -245,7 +255,7 @@ export default function AuditPage() {
                                                         {log.target_id && (
                                                             <div className="flex items-center mt-3 text-[10px] font-black text-blue-600/50 uppercase tracking-widest group-hover:text-blue-600 transition-colors">
                                                                 <Tag className="w-3 h-3 mr-2 shrink-0" />
-                                                                Referenz: {log.target_id.slice(0, 8)}...
+                                                                {t('audit_reference')}: {log.target_id.slice(0, 8)}...
                                                             </div>
                                                         )}
                                                     </div>
@@ -263,8 +273,8 @@ export default function AuditPage() {
                     <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-600/20 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/2" />
                     <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-12">
                         <div className="max-w-xl">
-                            <h2 className="text-4xl font-black tracking-tighter mb-6 uppercase">Audit Export benötigt?</h2>
-                            <p className="text-blue-100/60 text-lg font-medium leading-relaxed italic">Alle Systemaktivitäten werden unveränderlich gespeichert und können für Compliance-Zwecke als signierte Berichte exportiert werden.</p>
+                            <h2 className="text-4xl font-black tracking-tighter mb-6 uppercase">{t('audit_export_title')}</h2>
+                            <p className="text-blue-100/60 text-lg font-medium leading-relaxed italic">{t('audit_export_subtitle')}</p>
                         </div>
                         <button 
                             disabled={exporting}
@@ -272,9 +282,9 @@ export default function AuditPage() {
                             className="bg-white text-slate-900 px-12 py-6 rounded-2xl font-black uppercase tracking-[0.2em] text-xs hover:scale-105 active:scale-95 transition-all shadow-xl flex items-center gap-4 disabled:opacity-50"
                         >
                             {exporting ? (
-                                <><Loader2 className="w-5 h-5 animate-spin" /> GENERIERE PDF...</>
+                                t('audit_btn_generating')
                             ) : (
-                                "In PDF Exportieren"
+                                t('audit_btn_export')
                             )}
                         </button>
                     </div>

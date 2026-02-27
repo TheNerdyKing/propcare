@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import AuthenticatedLayout from '@/components/AuthenticatedLayout';
+import { useTranslation } from '@/components/LanguageProvider';
 import { 
     Users, 
     Plus, 
@@ -34,6 +35,7 @@ export default function ContractorsPage() {
         phone: '',
         tradeTypes: [] as string[],
     });
+    const { t, language } = useTranslation();
 
     useEffect(() => {
         fetchContractors();
@@ -77,7 +79,7 @@ export default function ContractorsPage() {
     };
 
     const handleDelete = async (id: string, name: string) => {
-        if (!confirm(`Möchten Sie "${name}" wirklich aus dem Netzwerk entfernen?`)) return;
+        if (!confirm(language === 'de' ? `Möchten Sie "${name}" wirklich aus dem Netzwerk entfernen?` : `Do you really want to remove "${name}" from the network?`)) return;
         const tenantId = getTenantId();
         if (!tenantId) return;
 
@@ -154,10 +156,10 @@ export default function ContractorsPage() {
                     <div className="space-y-6">
                         <div className="inline-flex items-center space-x-3 bg-blue-600/10 backdrop-blur-md text-blue-600 px-5 py-2.5 rounded-2xl border border-blue-200/50">
                             <Users className="w-5 h-5" />
-                            <span className="text-[11px] font-black uppercase tracking-[0.2em]">Service-Netzwerk</span>
+                            <span className="text-[11px] font-black uppercase tracking-[0.2em]">{t('sidebar_contractors')}</span>
                         </div>
-                        <h1 className="text-6xl font-black text-slate-900 tracking-tighter uppercase leading-[0.9]">Unsere<br/><span className="text-blue-600">Partner</span></h1>
-                        <p className="text-slate-500 font-medium text-xl max-w-xl italic leading-relaxed">Verifiziertes Netzwerk spezialisierter Handwerker und regionaler Fachpartner.</p>
+                        <h1 className="text-6xl font-black text-slate-900 tracking-tighter uppercase leading-[0.9]">{t('contractors_title').includes(' ') ? t('contractors_title').split(' ').map((word, i) => i === 1 ? <><br/><span key={i} className="text-blue-600">{word}</span></> : word) : t('contractors_title')}</h1>
+                        <p className="text-slate-500 font-medium text-xl max-w-xl italic leading-relaxed">{t('contractors_subtitle')}</p>
                     </div>
                     
                     <button
@@ -165,7 +167,7 @@ export default function ContractorsPage() {
                         className="bg-slate-900 text-white px-12 py-7 rounded-[2.5rem] font-black uppercase tracking-[0.2em] text-[11px] flex items-center shadow-3xl shadow-slate-900/40 hover:scale-105 active:scale-95 transition-all"
                     >
                         <Plus className="w-6 h-6 mr-4" />
-                        Handwerker Einladen
+                        {t('contractors_btn_add')}
                     </button>
                 </div>
 
@@ -175,7 +177,7 @@ export default function ContractorsPage() {
                         <Search className="absolute left-7 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
                         <input
                             type="text"
-                            placeholder="Suchen nach Unternehmen oder Ansprechpartner..."
+                            placeholder={language === 'de' ? 'Suchen nach Unternehmen oder Ansprechpartner...' : 'Search for company or contact...'}
                             className="w-full bg-slate-50/50 border border-slate-200/50 rounded-3xl pl-18 pr-6 py-5 text-sm font-bold text-slate-800 placeholder:text-slate-300 focus:ring-4 focus:ring-blue-600/5 transition-all outline-none"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
@@ -187,13 +189,13 @@ export default function ContractorsPage() {
                     {loading ? (
                         <div className="col-span-full py-48 text-center flex flex-col items-center">
                             <Loader2 className="animate-spin w-20 h-20 text-blue-600 mb-8" />
-                            <p className="text-slate-400 font-black uppercase tracking-[0.4em] text-[12px]">Netzwerk wird katalogisiert...</p>
+                            <p className="text-slate-400 font-black uppercase tracking-[0.4em] text-[12px]">{language === 'de' ? 'Netzwerk wird katalogisiert...' : 'Cataloging network...'}</p>
                         </div>
                     ) : filteredContractors.length === 0 ? (
                         <div className="col-span-full flex flex-col items-center justify-center py-48 bg-white/50 backdrop-blur-xl border border-slate-100 rounded-[4rem] shadow-3xl shadow-slate-200/20 text-slate-300 grayscale opacity-40">
                             <Users className="w-32 h-32 mb-10 stroke-[0.5]" />
-                            <h3 className="text-2xl font-black text-slate-900 mb-4 uppercase tracking-tighter">Keine Partner</h3>
-                            <p className="font-medium italic">Fügen Sie Ihre ersten Fachpartner hinzu.</p>
+                            <h3 className="text-2xl font-black text-slate-900 mb-4 uppercase tracking-tighter">{language === 'de' ? 'Keine Partner' : 'No Partners'}</h3>
+                            <p className="font-medium italic">{language === 'de' ? 'Fügen Sie Ihre ersten Fachpartner hinzu.' : 'Add your first service partners.'}</p>
                         </div>
                     ) : (
                         filteredContractors.map((c, index) => (
@@ -211,13 +213,13 @@ export default function ContractorsPage() {
                                         </button>
                                         <div className="h-10 px-4 flex items-center bg-emerald-50 text-emerald-600 text-[9px] font-black uppercase tracking-widest border border-emerald-100 rounded-xl shadow-sm">
                                             <ShieldCheck className="w-3.5 h-3.5 mr-2" />
-                                            Aktiv
+                                            {t('contractors_stat_active')}
                                         </div>
                                     </div>
                                 </div>
                                 
                                 <h3 className="text-3xl font-black text-slate-900 mb-2 uppercase tracking-tighter truncate leading-none group-hover:text-blue-600 transition-colors">{c.name}</h3>
-                                <p className="text-slate-300 text-[10px] font-black uppercase tracking-[0.2em] mb-10 italic">{c.contact_name || 'Hauptverwaltung'}</p>
+                                <p className="text-slate-300 text-[10px] font-black uppercase tracking-[0.2em] mb-10 italic">{c.contact_name || (language === 'de' ? 'Hauptverwaltung' : 'Headquarters')}</p>
                                 
                                 <div className="flex flex-wrap gap-2 mb-12 h-10 overflow-hidden">
                                     {(c.trade_types || []).map((trade: string) => (
@@ -234,7 +236,7 @@ export default function ContractorsPage() {
                                     </div>
                                     <div className="flex items-center text-slate-400 font-bold text-sm tracking-tight">
                                         <Phone className="w-4 h-4 mr-4 text-blue-500" />
-                                        {c.phone || 'KEINE NUMMER'}
+                                        {c.phone || (language === 'de' ? 'KEINE NUMMER' : 'NO NUMBER')}
                                     </div>
                                 </div>
                             </div>

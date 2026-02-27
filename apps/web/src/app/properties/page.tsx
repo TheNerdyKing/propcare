@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import AuthenticatedLayout from '@/components/AuthenticatedLayout';
+import { useTranslation } from '@/components/LanguageProvider';
 import { 
     Building2, 
     Plus, 
@@ -36,6 +37,7 @@ export default function PropertiesPage() {
         zip: '',
         city: '',
     });
+    const { t, language } = useTranslation();
 
     useEffect(() => {
         fetchProperties();
@@ -90,7 +92,7 @@ export default function PropertiesPage() {
     };
 
     const handleDelete = async (id: string, name: string) => {
-        if (!confirm(`Sind Sie sicher, dass Sie "${name}" löschen möchten? Alle Einheiten und Tickets werden ebenfalls gelöscht.`)) return;
+        if (!confirm(language === 'de' ? `Sind Sie sicher, dass Sie "${name}" löschen möchten? Alle Einheiten und Tickets werden ebenfalls gelöscht.` : `Are you sure you want to delete "${name}"? All units and tickets will also be deleted.`)) return;
         const tenantId = getTenantId();
         if (!tenantId) return;
 
@@ -160,10 +162,10 @@ export default function PropertiesPage() {
                     <div className="space-y-6">
                         <div className="inline-flex items-center space-x-3 bg-blue-600/10 backdrop-blur-md text-blue-600 px-5 py-2.5 rounded-2xl border border-blue-200/50">
                             <Building2 className="w-5 h-5" />
-                            <span className="text-[11px] font-black uppercase tracking-[0.2em]">Portfolio Manager</span>
+                            <span className="text-[11px] font-black uppercase tracking-[0.2em]">{t('sidebar_properties')}</span>
                         </div>
-                        <h1 className="text-6xl font-black text-slate-900 tracking-tighter uppercase leading-[0.9]">Ihre<br/><span className="text-blue-600">Objekte</span></h1>
-                        <p className="text-slate-500 font-medium text-xl max-w-xl italic leading-relaxed">Strategische Übersicht und Verwaltung Ihrer Liegenschaften und Wohneinheiten.</p>
+                        <h1 className="text-6xl font-black text-slate-900 tracking-tighter uppercase leading-[0.9]">{t('properties_title').includes(' ') ? t('properties_title').split(' ').map((word, i) => i === 1 ? <><br/><span key={i} className="text-blue-600">{word}</span></> : word) : t('properties_title')}</h1>
+                        <p className="text-slate-500 font-medium text-xl max-w-xl italic leading-relaxed">{t('properties_subtitle')}</p>
                     </div>
                     
                     <div className="flex gap-4">
@@ -172,7 +174,7 @@ export default function PropertiesPage() {
                             className="bg-white/70 backdrop-blur-xl text-slate-500 border border-slate-200/50 px-10 py-7 rounded-[2.5rem] font-black uppercase tracking-[0.2em] text-[11px] flex items-center hover:bg-slate-50 transition-all active:scale-95"
                         >
                             <Download className="w-6 h-6 mr-4 text-blue-600" />
-                            CSV Import
+                            {t('properties_btn_import')}
                         </button>
                         <button
                             onClick={() => {
@@ -183,7 +185,7 @@ export default function PropertiesPage() {
                             className="bg-slate-900 text-white px-12 py-7 rounded-[2.5rem] font-black uppercase tracking-[0.2em] text-[11px] flex items-center shadow-3xl shadow-slate-900/40 hover:scale-105 active:scale-95 transition-all"
                         >
                             <Plus className="w-6 h-6 mr-4" />
-                            Objekt Hinzufügen
+                            {t('properties_btn_add')}
                         </button>
                     </div>
                 </div>
@@ -194,7 +196,7 @@ export default function PropertiesPage() {
                         <Search className="absolute left-7 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
                         <input
                             type="text"
-                            placeholder="Suchen nach Name oder Adresse..."
+                            placeholder={language === 'de' ? 'Suchen nach Name oder Adresse...' : 'Search by name or address...'}
                             className="w-full bg-slate-50/50 border border-slate-200/50 rounded-3xl pl-18 pr-6 py-5 text-sm font-bold text-slate-800 placeholder:text-slate-300 focus:ring-4 focus:ring-blue-600/5 transition-all outline-none"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
@@ -207,7 +209,7 @@ export default function PropertiesPage() {
                         </div>
                         <div className="w-px h-10 bg-slate-100" />
                         <div className="text-center">
-                            <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest mb-1">Einheiten</p>
+                            <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest mb-1">{t('properties_table_units')}</p>
                             <p className="text-2xl font-black text-blue-600">{properties.reduce((acc, p) => acc + p._count.units, 0)}</p>
                         </div>
                     </div>
@@ -217,13 +219,13 @@ export default function PropertiesPage() {
                     {loading ? (
                         <div className="col-span-full py-48 text-center flex flex-col items-center">
                             <Loader2 className="animate-spin w-20 h-20 text-blue-600 mb-8" />
-                            <p className="text-slate-400 font-black uppercase tracking-[0.4em] text-[12px]">Portfolio wird katalogisiert...</p>
+                            <p className="text-slate-400 font-black uppercase tracking-[0.4em] text-[12px]">{language === 'de' ? 'Portfolio wird katalogisiert...' : 'Cataloging portfolio...'}</p>
                         </div>
                     ) : filteredProperties.length === 0 ? (
                         <div className="col-span-full flex flex-col items-center justify-center py-48 bg-white/50 backdrop-blur-xl border border-slate-100 rounded-[4rem] shadow-3xl shadow-slate-200/20 text-slate-300 grayscale opacity-40">
                             <Building2 className="w-32 h-32 mb-10 stroke-[0.5]" />
-                            <h3 className="text-2xl font-black text-slate-900 mb-4 uppercase tracking-tighter">Keine Ergebnisse</h3>
-                            <p className="font-medium italic">Erfassen Sie Ihr erstes Objekt oben rechts.</p>
+                            <h3 className="text-2xl font-black text-slate-900 mb-4 uppercase tracking-tighter">{language === 'de' ? 'Keine Ergebnisse' : 'No Results'}</h3>
+                            <p className="font-medium italic">{language === 'de' ? 'Erfassen Sie Ihr erstes Objekt oben rechts.' : 'Create your first building at the top right.'}</p>
                         </div>
                     ) : (
                         filteredProperties.map((p, index) => (
@@ -247,7 +249,7 @@ export default function PropertiesPage() {
                                             }} 
                                             className="h-12 px-6 flex items-center justify-center bg-slate-50 text-slate-900 text-[10px] font-black uppercase tracking-widest hover:bg-slate-900 hover:text-white rounded-2xl transition-all duration-500"
                                         >
-                                            Edit
+                                            {language === 'de' ? 'Editieren' : 'Edit'}
                                         </button>
                                     </div>
                                 </div>
@@ -267,11 +269,11 @@ export default function PropertiesPage() {
                                 <div className="pt-10 border-t border-slate-50 flex justify-between items-center">
                                     <div className="flex gap-10">
                                         <div>
-                                            <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest mb-1">Einheiten</p>
+                                            <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest mb-1">{t('properties_table_units')}</p>
                                             <p className="text-2xl font-black text-slate-900 tracking-tighter">{p._count?.units || 0}</p>
                                         </div>
                                         <div>
-                                            <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest mb-1">Offen</p>
+                                            <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest mb-1">{language === 'de' ? 'Offen' : 'Open'}</p>
                                             <p className="text-2xl font-black text-blue-600 tracking-tighter">{p._count?.tickets || 0}</p>
                                         </div>
                                     </div>
@@ -292,9 +294,9 @@ export default function PropertiesPage() {
                                 <div>
                                     <div className="flex items-center space-x-3 mb-2">
                                         <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse" />
-                                        <p className="text-[10px] font-black text-blue-600 uppercase tracking-[0.3em]">System-Eintrag</p>
+                                        <p className="text-[10px] font-black text-blue-600 uppercase tracking-[0.3em] font-sans">{language === 'de' ? 'System-Eintrag' : 'System Entry'}</p>
                                     </div>
-                                    <h2 className="text-4xl font-black text-slate-900 tracking-tighter uppercase leading-none">{editingProperty ? 'Objekt Editieren' : 'Neues Objekt'}</h2>
+                                    <h2 className="text-4xl font-black text-slate-900 tracking-tighter uppercase leading-none">{editingProperty ? (language === 'de' ? 'Objekt Editieren' : 'Edit Building') : (language === 'de' ? 'Neues Objekt' : 'New building')}</h2>
                                 </div>
                                 <button onClick={() => setShowModal(false)} className="w-14 h-14 bg-slate-50 border border-slate-100 hover:bg-slate-900 hover:text-white rounded-2xl flex items-center justify-center transition-all duration-500 group">
                                     <X className="w-7 h-7 group-hover:rotate-90 transition-transform" />

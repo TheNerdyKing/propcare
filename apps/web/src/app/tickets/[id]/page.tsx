@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import api from '@/lib/api';
 import AuthenticatedLayout from '@/components/AuthenticatedLayout';
+import { useTranslation } from '@/components/LanguageProvider';
 import {
     ChevronLeft,
     Clock,
@@ -37,6 +38,7 @@ export default function TicketDetailPage() {
     const [draftSubject, setDraftSubject] = useState('');
     const [reprocessing, setReprocessing] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const { t, language } = useTranslation();
 
     useEffect(() => {
         if (!id) return;
@@ -192,9 +194,9 @@ export default function TicketDetailPage() {
 
     const getStatusText = (status: string) => {
         switch (status) {
-            case 'NEW': return 'Neu';
-            case 'IN_PROGRESS': return 'In Bearbeitung';
-            case 'COMPLETED': return 'Abgeschlossen';
+            case 'NEW': return language === 'de' ? 'Neu' : 'New';
+            case 'IN_PROGRESS': return language === 'de' ? 'In Bearbeitung' : 'In Progress';
+            case 'COMPLETED': return language === 'de' ? 'Abgeschlossen' : 'Completed';
             default: return status;
         }
     };
@@ -211,7 +213,7 @@ export default function TicketDetailPage() {
         <AuthenticatedLayout>
             <div className="p-20 text-center">
                 <AlertTriangle className="w-16 h-16 text-red-500 mx-auto mb-6" />
-                <p className="text-slate-500 font-black uppercase tracking-widest text-xs">{error || 'Ticket nicht gefunden'}</p>
+                <p className="text-slate-500 font-black uppercase tracking-widest text-xs">{error || (language === 'de' ? 'Ticket nicht gefunden' : 'Ticket not found')}</p>
             </div>
         </AuthenticatedLayout>
     );
@@ -222,11 +224,11 @@ export default function TicketDetailPage() {
                 <div className="flex items-center justify-between mb-8">
                     <button onClick={() => router.back()} className="flex items-center text-slate-400 hover:text-blue-600 font-black text-[10px] uppercase tracking-widest transition-all hover:-translate-x-1">
                         <ChevronLeft className="w-4 h-4 mr-1.5" />
-                        Zurück
+                        {t('ticket_back')}
                     </button>
                     <div className="flex items-center gap-2">
                         <div className="w-2 h-2 rounded-full bg-blue-600 shadow-[0_0_8px_rgba(37,99,235,0.4)] animate-pulse" />
-                        <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Live Ansicht</span>
+                        <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">{t('ticket_live_view')}</span>
                     </div>
                 </div>
 
@@ -244,9 +246,9 @@ export default function TicketDetailPage() {
                                         value={ticket.status}
                                         onChange={(e) => updateStatus(e.target.value)}
                                     >
-                                        <option value="NEW">NEU ERFASST</option>
-                                        <option value="IN_PROGRESS">IN BEARBEITUNG</option>
-                                        <option value="COMPLETED">ABGESCHLOSSEN</option>
+                                        <option value="NEW">{t('ticket_status_new')}</option>
+                                        <option value="IN_PROGRESS">{t('ticket_status_in_progress')}</option>
+                                        <option value="COMPLETED">{t('ticket_status_completed')}</option>
                                     </select>
                                     <RefreshCw className="absolute right-4 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-300 pointer-events-none" />
                                 </div>
@@ -256,28 +258,28 @@ export default function TicketDetailPage() {
                                 {ticket.property?.name || 'Unbekannt'}
                             </h1>
                             <p className="text-blue-600 font-black text-xs uppercase tracking-[0.2em] mb-12">
-                                Einheit: {ticket.unit_label || 'Allgemein'}
+                                {t('ticket_unit')}: {ticket.unit_label || (language === 'de' ? 'Allgemein' : 'General')}
                             </p>
 
                             <div className="grid grid-cols-3 gap-8 py-10 border-y border-slate-50">
                                 <div>
-                                    <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-1.5 font-sans">Dringlichkeit</p>
+                                    <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-1.5 font-sans">{t('ticket_urgency')}</p>
                                     <p className={`font-black text-xs uppercase tracking-tight ${ticket.urgency === 'EMERGENCY' ? 'text-red-500' : 'text-slate-700'}`}>{ticket.urgency}</p>
                                 </div>
                                 <div>
-                                    <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-1.5 font-sans">Kategorie</p>
+                                    <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-1.5 font-sans">{t('ticket_category')}</p>
                                     <p className="font-black text-slate-700 text-xs uppercase tracking-tight">{ticket.category || 'Maintenance'}</p>
                                 </div>
                                 <div>
-                                    <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-1.5 font-sans">Erstellt am</p>
-                                    <p className="font-black text-slate-700 text-xs uppercase tracking-tight">{new Date((ticket as any).createdAt || (ticket as any).created_at || new Date()).toLocaleDateString()}</p>
+                                    <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-1.5 font-sans">{t('ticket_created_at')}</p>
+                                    <p className="font-black text-slate-700 text-xs uppercase tracking-tight">{new Date((ticket as any).createdAt || (ticket as any).created_at || new Date()).toLocaleDateString(language === 'de' ? 'de-CH' : 'en-GB')}</p>
                                 </div>
                             </div>
 
                             <div className="mt-12">
                                 <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6 flex items-center">
                                     <span className="w-8 h-[1px] bg-slate-100 mr-4" />
-                                    Beschreibung
+                                    {t('ticket_description')}
                                     <span className="w-full h-[1px] bg-slate-100 ml-4" />
                                 </h3>
                                 <div className="bg-slate-50 rounded-[2rem] p-8 italic text-slate-600 leading-relaxed font-medium text-lg border border-slate-100 shadow-inner">
@@ -289,10 +291,10 @@ export default function TicketDetailPage() {
                         {/* Tabs */}
                         <div className="flex space-x-12 px-8 border-b border-slate-100">
                             <button onClick={() => setActiveTab('details')} className={`py-6 text-[10px] font-black uppercase tracking-[0.2em] border-b-2 transition-all ${activeTab === 'details' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-300 hover:text-slate-500'}`}>
-                                KI-Assistent & Analyse
+                                {t('ticket_tab_ai')}
                             </button>
                             <button onClick={() => setActiveTab('audit')} className={`py-6 text-[10px] font-black uppercase tracking-[0.2em] border-b-2 transition-all ${activeTab === 'audit' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-300 hover:text-slate-500'}`}>
-                                Versionsverlauf
+                                {t('ticket_tab_history')}
                             </button>
                         </div>
 
@@ -303,29 +305,29 @@ export default function TicketDetailPage() {
                                     <div className="flex items-center justify-between mb-2">
                                         <div className="flex items-center text-blue-600">
                                             <Sparkles className="w-5 h-5 mr-3" />
-                                            <h2 className="text-2xl font-black uppercase tracking-tighter">KI Intelligenz</h2>
+                                            <h2 className="text-2xl font-black uppercase tracking-tighter">{t('ticket_ai_intelligence')}</h2>
                                         </div>
                                         <button onClick={reprocessAi} disabled={reprocessing} className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center hover:text-blue-600 transition-all group">
                                             <RefreshCw className={`w-3.5 h-3.5 mr-2 group-hover:rotate-180 transition-transform duration-500 ${reprocessing ? 'animate-spin' : ''}`} />
-                                            Neu Analysieren
+                                            {t('ticket_ai_reprocess')}
                                         </button>
                                     </div>
 
                                     {ticket.aiStatus === 'PROCESSING' || reprocessing ? (
                                         <div className="py-24 text-center">
                                             <Loader2 className="animate-spin w-12 h-12 text-blue-600 mx-auto mb-6" />
-                                            <p className="text-slate-400 font-black uppercase tracking-[0.3em] text-[10px]">Verarbeite Daten...</p>
+                                            <p className="text-slate-400 font-black uppercase tracking-[0.3em] text-[10px]">{t('ticket_ai_processing')}</p>
                                         </div>
                                     ) : (
                                         <>
                                             <div className="grid grid-cols-2 gap-8">
                                                 <div className="p-8 bg-slate-50 rounded-[2rem] border border-slate-100 shadow-sm transition-all hover:bg-white hover:shadow-xl hover:scale-[1.02]">
-                                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Vorgeschlagene Kategorie</p>
-                                                    <p className="text-xl font-black uppercase tracking-tight text-slate-900">{ticket.aiClassification || 'Unbekannt'}</p>
+                                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">{t('ticket_ai_suggested_category')}</p>
+                                                    <p className="text-xl font-black uppercase tracking-tight text-slate-900">{ticket.aiClassification || (language === 'de' ? 'Unbekannt' : 'Unknown')}</p>
                                                 </div>
                                                 <div className="p-8 bg-slate-50 rounded-[2rem] border border-slate-100 shadow-sm transition-all hover:bg-white hover:shadow-xl hover:scale-[1.02]">
-                                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">KI-Dringlichkeit</p>
-                                                    <p className="text-xl font-black uppercase tracking-tight text-blue-600">{ticket.aiUrgency || 'Unbekannt'}</p>
+                                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">{t('ticket_ai_suggested_urgency')}</p>
+                                                    <p className="text-xl font-black uppercase tracking-tight text-blue-600">{ticket.aiUrgency || (language === 'de' ? 'Unbekannt' : 'Unknown')}</p>
                                                 </div>
                                             </div>
 
@@ -333,7 +335,7 @@ export default function TicketDetailPage() {
                                                 <div className="p-8 bg-amber-50 border border-amber-100 rounded-[2rem] shadow-sm">
                                                     <div className="flex items-center gap-3 mb-6">
                                                         <AlertTriangle className="w-5 h-5 text-amber-500" />
-                                                        <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest">Kritische Lücken in der Meldung</p>
+                                                        <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest">{t('ticket_ai_missing_info')}</p>
                                                     </div>
                                                     <ul className="space-y-3">
                                                         {ticket.aiMissingInfo.map((info: string, i: number) => (
@@ -348,7 +350,7 @@ export default function TicketDetailPage() {
 
                                             {ticket.aiContractors?.length > 0 && (
                                                 <div className="space-y-4">
-                                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Vorgeschlagene Fachpartner</p>
+                                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">{t('ticket_ai_suggested_contractors')}</p>
                                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                         {ticket.aiContractors.map((c: any, i: number) => (
                                                             <div key={i} className={`p-6 rounded-2xl border ${c.source === 'INTERNAL' ? 'bg-blue-50/50 border-blue-100' : 'bg-slate-50 border-slate-100'}`}>
@@ -379,15 +381,15 @@ export default function TicketDetailPage() {
                                                 <div className="space-y-8 pt-12 border-t border-slate-100">
                                                     <div className="flex items-center justify-between mb-4">
                                                         <div className="space-y-1">
-                                                            <h3 className="text-xl font-black uppercase tracking-tight">E-Mail Entwurf</h3>
-                                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Für Handwerker-Beauftragung</p>
+                                                            <h3 className="text-xl font-black uppercase tracking-tight">{t('ticket_ai_email_draft')}</h3>
+                                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('ticket_ai_email_purpose')}</p>
                                                         </div>
                                                         <button
                                                             onClick={sendContractorEmail}
                                                             disabled={sendingEmail}
                                                             className="bg-blue-600 text-white px-8 py-4 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-2xl shadow-blue-600/30 hover:bg-blue-700 transition-all hover:-translate-y-1 disabled:opacity-50"
                                                         >
-                                                            {sendingEmail ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Senden an Handwerker'}
+                                                            {sendingEmail ? <Loader2 className="w-4 h-4 animate-spin" /> : t('ticket_ai_send_to_contractor')}
                                                         </button>
                                                     </div>
                                                     <div className="space-y-4">
@@ -417,7 +419,7 @@ export default function TicketDetailPage() {
                                 <div className="space-y-10">
                                     <h2 className="text-2xl font-black uppercase tracking-tighter mb-10 flex items-center">
                                         <History className="w-6 h-6 mr-3 text-blue-600" />
-                                        Systemprotokoll
+                                        {t('ticket_system_log')}
                                     </h2>
                                     <div className="space-y-8 relative before:absolute before:left-3 before:top-2 before:bottom-2 before:w-[1px] before:bg-slate-100">
                                         {(ticket.auditLogs || []).map((log: any) => (
@@ -426,7 +428,7 @@ export default function TicketDetailPage() {
                                                     <div className="w-2 h-2 bg-blue-600 rounded-full" />
                                                 </div>
                                                 <div className="flex-1 bg-slate-50 rounded-2xl p-6 border border-slate-100 hover:bg-white hover:shadow-xl transition-all group">
-                                                    <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest group-hover:text-blue-600 transition-colors mb-2">{new Date(log.createdAt || log.created_at).toLocaleString('de-CH')}</p>
+                                                    <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest group-hover:text-blue-600 transition-colors mb-2">{new Date(log.createdAt || log.created_at).toLocaleString((language === 'de' ? 'de-CH' : 'en-GB'))}</p>
                                                     <p className="font-bold text-sm text-slate-700 leading-snug">{log.metadata_json?.details || log.details || log.action}</p>
                                                 </div>
                                             </div>
@@ -442,7 +444,7 @@ export default function TicketDetailPage() {
                         <div className="bg-white rounded-[2.5rem] shadow-2xl shadow-slate-200/40 border border-slate-100 p-10">
                             <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-10 text-center flex items-center">
                                 <span className="w-full h-[1px] bg-slate-50 mr-4" />
-                                Mieterprofil
+                                {t('ticket_sidebar_tenant')}
                                 <span className="w-full h-[1px] bg-slate-50 ml-4" />
                             </h3>
                             <div className="space-y-8">
@@ -460,7 +462,7 @@ export default function TicketDetailPage() {
                                         <Mail className="w-6 h-6" />
                                     </div>
                                     <div className="flex-1 border-b border-slate-50 pb-4">
-                                        <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-1 font-sans">E-Mail Adresse</p>
+                                        <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-1 font-sans">{language === 'de' ? 'E-Mail Adresse' : 'Email Address'}</p>
                                         <p className="font-black text-xs break-all text-slate-900">{ticket.tenant_email}</p>
                                     </div>
                                 </div>
@@ -470,7 +472,7 @@ export default function TicketDetailPage() {
                                             <HelpCircle className="w-6 h-6" />
                                         </div>
                                         <div className="flex-1 pb-4">
-                                            <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-1 font-sans">Telefon</p>
+                                            <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-1 font-sans">{t('ticket_sidebar_phone')}</p>
                                             <p className="font-black text-sm uppercase tracking-tight text-slate-900">{ticket.tenant_phone}</p>
                                         </div>
                                     </div>
@@ -480,9 +482,9 @@ export default function TicketDetailPage() {
 
                         <div className="bg-gradient-to-br from-blue-600 to-blue-800 rounded-[2.5rem] p-10 text-white shadow-2xl shadow-blue-600/30">
                             <Sparkles className="w-10 h-10 text-white/30 mb-6" />
-                            <h3 className="font-black mb-4 text-xl uppercase tracking-tighter">Automatisierung</h3>
+                            <h3 className="font-black mb-4 text-xl uppercase tracking-tighter">{t('ticket_sidebar_automation_title')}</h3>
                             <p className="text-sm font-medium leading-relaxed text-blue-100 opacity-90 italic">
-                                "Die KI analysiert jede Meldung automatisch und schlägt Handwerker sowie E-Mail-Entwürfe vor, um Ihre Bearbeitungszeit zu minimieren."
+                                {t('ticket_sidebar_automation_desc')}
                             </p>
                         </div>
                     </div>

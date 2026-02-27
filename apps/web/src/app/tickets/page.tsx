@@ -35,6 +35,7 @@ export default function TicketsPage() {
     const [search, setSearch] = useState('');
     const [properties, setProperties] = useState<any[]>([]);
     const [error, setError] = useState<string | null>(null);
+    const { t, language } = useTranslation();
 
     const [formData, setFormData] = useState({
         propertyId: '',
@@ -97,7 +98,7 @@ export default function TicketsPage() {
             setTickets(sortedData);
         } catch (err: any) {
             console.error('Failed to fetch tickets:', err);
-            setError('Meldungen konnten nicht geladen werden.');
+            setError(language === 'de' ? 'Meldungen konnten nicht geladen werden.' : 'Tickets could not be loaded.');
         } finally {
             setLoading(false);
         }
@@ -186,10 +187,10 @@ export default function TicketsPage() {
                     <div className="space-y-6">
                         <div className="inline-flex items-center space-x-3 bg-blue-600/10 backdrop-blur-md text-blue-600 px-5 py-2.5 rounded-2xl border border-blue-200/50">
                             <ClipboardList className="w-5 h-5" />
-                            <span className="text-[11px] font-black uppercase tracking-[0.2em]">Service Center</span>
+                            <span className="text-[11px] font-black uppercase tracking-[0.2em]">{t('sidebar_tickets')}</span>
                         </div>
-                        <h1 className="text-6xl font-black text-slate-900 tracking-tighter uppercase leading-[0.9]">Alle<br/><span className="text-blue-600">Meldungen</span></h1>
-                        <p className="text-slate-500 font-medium text-xl max-w-xl italic leading-relaxed">Zentrale Verwaltung aller Mieteranliegen, Reparaturaufträge und Schadensmeldungen.</p>
+                        <h1 className="text-6xl font-black text-slate-900 tracking-tighter uppercase leading-[0.9]">{t('tickets_title').includes(' ') ? t('tickets_title').split(' ').map((word, i) => i === 1 ? <><br/><span key={i} className="text-blue-600">{word}</span></> : word) : t('tickets_title')}</h1>
+                        <p className="text-slate-500 font-medium text-xl max-w-xl italic leading-relaxed">{t('tickets_subtitle')}</p>
                     </div>
                     
                     <button
@@ -197,16 +198,16 @@ export default function TicketsPage() {
                         className="bg-slate-900 text-white px-12 py-7 rounded-[2.5rem] font-black uppercase tracking-[0.2em] text-[11px] flex items-center shadow-3xl shadow-slate-900/40 hover:scale-105 active:scale-95 transition-all"
                     >
                         <Plus className="w-6 h-6 mr-4" />
-                        Meldung Erfassen
+                        {t('tickets_btn_create')}
                     </button>
                 </div>
 
                 {/* Quick Stats Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
-                    <StatCard label="Gesamt" count={statsOverview.total} color="slate" icon={ClipboardList} />
-                    <StatCard label="Neu" count={statsOverview.new} color="blue" icon={Clock} />
-                    <StatCard label="Aktiv" count={statsOverview.active} color="amber" icon={Navigation} />
-                    <StatCard label="Erledigt" count={statsOverview.done} color="emerald" icon={CheckCircle2} />
+                    <StatCard label={t('tickets_stat_total')} count={tickets.length} color="slate" icon={ClipboardList} />
+                    <StatCard label={t('tickets_stat_new')} count={tickets.filter(t => t.status === 'NEW').length} color="blue" icon={Clock} />
+                    <StatCard label={t('tickets_stat_active')} count={tickets.filter(t => t.status === 'IN_PROGRESS').length} color="amber" icon={Navigation} />
+                    <StatCard label={t('tickets_stat_done')} count={tickets.filter(t => ['COMPLETED', 'RESOLVED'].includes(t.status)).length} color="emerald" icon={CheckCircle2} />
                 </div>
 
                 {/* Filters Ribbon */}
@@ -215,7 +216,7 @@ export default function TicketsPage() {
                         <Search className="absolute left-7 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
                         <input
                             type="text"
-                            placeholder="Suchen nach Referenz, Gebäude oder Mieter..."
+                            placeholder={t('tickets_filter_search')}
                             className="w-full bg-slate-50/50 border border-slate-200/50 rounded-3xl pl-18 pr-6 py-5 text-sm font-bold text-slate-800 placeholder:text-slate-300 focus:ring-4 focus:ring-blue-600/5 transition-all outline-none"
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
@@ -230,10 +231,10 @@ export default function TicketsPage() {
                                 value={statusFilter}
                                 onChange={(e) => setStatusFilter(e.target.value)}
                             >
-                                <option value="">Filter: Alle Status</option>
-                                <option value="NEW">Neu erfasst</option>
-                                <option value="IN_PROGRESS">In Bearbeitung</option>
-                                <option value="COMPLETED">Erledigt</option>
+                                <option value="">{t('tickets_filter_all')}</option>
+                                <option value="NEW">{language === 'de' ? 'Neu erfasst' : 'Newly created'}</option>
+                                <option value="IN_PROGRESS">{language === 'de' ? 'In Bearbeitung' : 'In progress'}</option>
+                                <option value="COMPLETED">{language === 'de' ? 'Erledigt' : 'Done'}</option>
                             </select>
                         </div>
                     </div>
@@ -251,24 +252,24 @@ export default function TicketsPage() {
                     {loading ? (
                         <div className="p-40 text-center flex flex-col items-center">
                             <Loader2 className="animate-spin w-20 h-20 text-blue-600" />
-                            <p className="mt-10 text-slate-300 font-black uppercase tracking-[0.4em] text-[12px]">Service-Datenbank wird synchronisiert...</p>
+                            <p className="mt-10 text-slate-300 font-black uppercase tracking-[0.4em] text-[12px]">{language === 'de' ? 'Service-Datenbank wird synchronisiert...' : 'Syncing service records...'}</p>
                         </div>
                     ) : tickets.length === 0 ? (
                         <div className="p-40 text-center text-slate-400 grayscale opacity-40">
                             <ClipboardList className="w-32 h-32 mx-auto mb-10 stroke-[0.5]" />
-                            <p className="font-black uppercase tracking-[0.3em] text-sm text-slate-900 mb-2">Kein Suchergebnis</p>
-                            <p className="font-medium italic">Versuchen Sie es mit einem anderen Begriff oder Filter.</p>
+                            <p className="font-black uppercase tracking-[0.3em] text-sm text-slate-900 mb-2">{language === 'de' ? 'Kein Suchergebnis' : 'No results found'}</p>
+                            <p className="font-medium italic">{language === 'de' ? 'Versuchen Sie es mit einem anderen Begriff oder Filter.' : 'Try a different search term or filter.'}</p>
                         </div>
                     ) : (
                         <div className="overflow-x-auto">
                             <table className="w-full text-left border-collapse table-auto">
                                 <thead>
                                     <tr className="bg-slate-50/70 border-b border-slate-100">
-                                        <th className="px-12 py-10 text-[11px] font-black text-slate-400 uppercase tracking-[0.3em]">Referenz</th>
-                                        <th className="px-8 py-10 text-[11px] font-black text-slate-400 uppercase tracking-[0.3em]">Objekt & Einheit</th>
-                                        <th className="px-8 py-10 text-[11px] font-black text-slate-400 uppercase tracking-[0.3em]">Priorität</th>
-                                        <th className="px-8 py-10 text-[11px] font-black text-slate-400 uppercase tracking-[0.3em]">Status</th>
-                                        <th className="px-12 py-10 text-[11px] font-black text-slate-400 uppercase tracking-[0.3em] text-right">Details</th>
+                                        <th className="px-12 py-10 text-[11px] font-black text-slate-400 uppercase tracking-[0.3em]">{t('tickets_table_ref')}</th>
+                                        <th className="px-8 py-10 text-[11px] font-black text-slate-400 uppercase tracking-[0.3em]">{t('tickets_table_object')}</th>
+                                        <th className="px-8 py-10 text-[11px] font-black text-slate-400 uppercase tracking-[0.3em]">{t('tickets_table_priority')}</th>
+                                        <th className="px-8 py-10 text-[11px] font-black text-slate-400 uppercase tracking-[0.3em]">{t('tickets_table_status')}</th>
+                                        <th className="px-12 py-10 text-[11px] font-black text-slate-400 uppercase tracking-[0.3em] text-right">{t('tickets_table_details')}</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-50">
@@ -303,7 +304,7 @@ export default function TicketsPage() {
                                                         ticket.urgency === 'URGENT' ? 'bg-amber-50 text-amber-600 border border-amber-100' : 'bg-slate-50 text-slate-400 border border-slate-100'
                                                     }`}>
                                                         {ticket.urgency === 'EMERGENCY' ? <AlertTriangle className="w-4 h-4" /> : <div className="w-1.5 h-1.5 rounded-full bg-current opacity-40" />}
-                                                        {ticket.urgency === 'EMERGENCY' ? 'Notfall' : ticket.urgency === 'URGENT' ? 'Wichtig' : 'Normal'}
+                                                        {ticket.urgency === 'EMERGENCY' ? (language === 'de' ? 'Notfall' : 'Emergency') : ticket.urgency === 'URGENT' ? (language === 'de' ? 'Wichtig' : 'Urgent') : (language === 'de' ? 'Normal' : 'Normal')}
                                                     </div>
                                                 </td>
                                                 <td className="px-8 py-10">
@@ -334,8 +335,8 @@ export default function TicketsPage() {
                     <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10" />
                     <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-12 text-center md:text-left">
                         <div className="max-w-2xl">
-                            <h2 className="text-4xl font-black tracking-tighter mb-6 uppercase leading-[0.9]">Support & Dokumentation</h2>
-                            <p className="text-blue-100/60 text-lg font-medium leading-relaxed italic">Alle Meldungen werden automatisch mit der Mieter-Historie verknüpft und archiviert. Für technische Hilfe kontaktieren Sie unser Support-Team.</p>
+                            <h2 className="text-4xl font-black tracking-tighter mb-6 uppercase leading-[0.9]">{language === 'de' ? 'Support & Dokumentation' : 'Support & Documentation'}</h2>
+                            <p className="text-blue-100/60 text-lg font-medium leading-relaxed italic">{language === 'de' ? 'Alle Meldungen werden automatisch mit der Mieter-Historie verknüpft und archiviert. Für technische Hilfe kontaktieren Sie unser Support-Team.' : 'All tickets are automatically linked with tenant history and archived. Contact our support team for technical help.'}</p>
                         </div>
                         <div className="flex gap-6">
                             <div className="w-20 h-20 bg-white/10 backdrop-blur-2xl rounded-3xl flex items-center justify-center border border-white/20">
