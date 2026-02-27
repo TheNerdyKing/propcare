@@ -25,6 +25,7 @@ import {
     Activity
 } from 'lucide-react';
 import AuthenticatedLayout from '@/components/AuthenticatedLayout';
+import { useTranslation } from '@/components/LanguageProvider';
 
 export default function TicketsPage() {
     const [tickets, setTickets] = useState<any[]>([]);

@@ -20,6 +20,7 @@ import {
     Activity
 } from 'lucide-react';
 import AuthenticatedLayout from '@/components/AuthenticatedLayout';
+import { useTranslation } from '@/components/LanguageProvider';
 
 export default function AuditPage() {
     const [logs, setLogs] = useState<any[]>([]);
