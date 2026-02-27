@@ -3,7 +3,27 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import Link from 'next/link';
-import { ClipboardList, Search, Filter, ChevronRight, Plus, X, Loader2, AlertCircle } from 'lucide-react';
+import { 
+    ClipboardList, 
+    Search, 
+    Filter, 
+    ChevronRight, 
+    Plus, 
+    X, 
+    Loader2, 
+    AlertCircle, 
+    Building2, 
+    Clock, 
+    CheckCircle2, 
+    AlertTriangle,
+    Navigation,
+    Home,
+    Smartphone,
+    Mail,
+    User,
+    ArrowRight,
+    Activity
+} from 'lucide-react';
 import AuthenticatedLayout from '@/components/AuthenticatedLayout';
 
 export default function TicketsPage() {
@@ -48,7 +68,6 @@ export default function TicketsPage() {
     const fetchTickets = async () => {
         const tenantId = getTenantId();
         if (!tenantId) {
-            console.warn('No tenantId found for staff tickets');
             setLoading(false);
             return;
         }
@@ -61,10 +80,7 @@ export default function TicketsPage() {
                 .select('*, property:properties(name)')
                 .eq('tenant_id', tenantId);
 
-            if (statusFilter) {
-                query = query.eq('status', statusFilter);
-            }
-
+            if (statusFilter) query = query.eq('status', statusFilter);
             if (search) {
                 query = query.or(`reference_code.ilike.%${search}%,description.ilike.%${search}%,tenant_name.ilike.%${search}%,unit_label.ilike.%${search}%`);
             }
@@ -81,7 +97,7 @@ export default function TicketsPage() {
             setTickets(sortedData);
         } catch (err: any) {
             console.error('Failed to fetch tickets:', err);
-            setError('Fehler beim Laden der Tickets.');
+            setError('Meldungen konnten nicht geladen werden.');
         } finally {
             setLoading(false);
         }
@@ -117,7 +133,7 @@ export default function TicketsPage() {
                 .insert([{
                     tenant_id: tenantId,
                     property_id: formData.propertyId,
-                    unit_label: formData.unitLabel, // Ensure correct mapping
+                    unit_label: formData.unitLabel,
                     description: formData.description,
                     tenant_name: formData.tenantName,
                     tenant_email: formData.tenantEmail,
@@ -147,200 +163,240 @@ export default function TicketsPage() {
         }
     };
 
-    const getStatusText = (status: string) => {
-        switch (status) {
-            case 'NEW': return 'Neu erfasst';
-            case 'IN_PROGRESS': return 'In Bearbeitung';
-            case 'COMPLETED': return 'Erledigt';
-            default: return status;
-        }
+    const statsOverview = {
+        total: tickets.length,
+        new: tickets.filter(t => t.status === 'NEW').length,
+        active: tickets.filter(t => t.status === 'IN_PROGRESS').length,
+        done: tickets.filter(t => t.status === 'COMPLETED').length
     };
 
-    const getStatusColor = (status: string) => {
+    const getStatusConfig = (status: string) => {
         switch (status) {
-            case 'NEW': return 'bg-blue-50 text-blue-600 border-blue-100';
-            case 'IN_PROGRESS': return 'bg-amber-50 text-amber-600 border-amber-100';
-            case 'COMPLETED': return 'bg-emerald-50 text-emerald-600 border-emerald-100';
-            default: return 'bg-slate-50 text-slate-600 border-slate-100';
+            case 'NEW': return { label: 'Neu erfasst', color: 'blue', icon: Clock };
+            case 'IN_PROGRESS': return { label: 'In Bearbeitung', color: 'amber', icon: Navigation };
+            case 'COMPLETED': return { label: 'Erledigt', color: 'emerald', icon: CheckCircle2 };
+            default: return { label: status, color: 'slate', icon: Clock };
         }
     };
 
     return (
         <AuthenticatedLayout>
-            <div className="p-10 max-w-7xl mx-auto font-sans text-slate-900">
-                <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-12">
-                    <div>
-                        <div className="inline-flex items-center space-x-2 bg-blue-50 text-blue-600 px-4 py-2 rounded-full mb-6">
-                            <ClipboardList className="w-4 h-4" />
-                            <span className="text-[10px] font-black uppercase tracking-widest text-blue-700">Service Center</span>
+            <div className="p-12 max-w-7xl mx-auto font-sans text-slate-900 animate-in fade-in slide-in-from-bottom-4 duration-1000">
+                <div className="flex flex-col md:flex-row md:items-end justify-between gap-10 mb-16">
+                    <div className="space-y-6">
+                        <div className="inline-flex items-center space-x-3 bg-blue-600/10 backdrop-blur-md text-blue-600 px-5 py-2.5 rounded-2xl border border-blue-200/50">
+                            <ClipboardList className="w-5 h-5" />
+                            <span className="text-[11px] font-black uppercase tracking-[0.2em]">Service Center</span>
                         </div>
-                        <h1 className="text-5xl font-black text-slate-900 tracking-tighter mb-2 uppercase">Meldungen</h1>
-                        <p className="text-slate-500 font-medium text-xl max-w-2xl italic">Echtzeit-Verwaltung aller Anliegen und Tickets.</p>
+                        <h1 className="text-6xl font-black text-slate-900 tracking-tighter uppercase leading-[0.9]">Alle<br/><span className="text-blue-600">Meldungen</span></h1>
+                        <p className="text-slate-500 font-medium text-xl max-w-xl italic leading-relaxed">Zentrale Verwaltung aller Mieteranliegen, Reparaturaufträge und Schadensmeldungen.</p>
                     </div>
+                    
                     <button
                         onClick={() => setShowModal(true)}
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4.5 rounded-[1.25rem] font-black uppercase tracking-widest text-[10px] flex items-center shadow-2xl shadow-blue-600/30 transition-all hover:-translate-y-1"
+                        className="bg-slate-900 text-white px-12 py-7 rounded-[2.5rem] font-black uppercase tracking-[0.2em] text-[11px] flex items-center shadow-3xl shadow-slate-900/40 hover:scale-105 active:scale-95 transition-all"
                     >
-                        <Plus className="w-5 h-5 mr-3" />
-                        Meldung erfassen
+                        <Plus className="w-6 h-6 mr-4" />
+                        Meldung Erfassen
                     </button>
                 </div>
 
-                {/* Filters */}
-                <div className="bg-white p-8 rounded-[2.5rem] shadow-2xl shadow-slate-200/40 border border-slate-100 mb-10 flex flex-col lg:flex-row gap-6 items-center justify-between">
-                    <div className="relative w-full lg:w-[32rem]">
-                        <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
+                {/* Quick Stats Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
+                    <StatCard label="Gesamt" count={statsOverview.total} color="slate" icon={ClipboardList} />
+                    <StatCard label="Neu" count={statsOverview.new} color="blue" icon={Clock} />
+                    <StatCard label="Aktiv" count={statsOverview.active} color="amber" icon={Navigation} />
+                    <StatCard label="Erledigt" count={statsOverview.done} color="emerald" icon={CheckCircle2} />
+                </div>
+
+                {/* Filters Ribbon */}
+                <div className="bg-white/70 backdrop-blur-3xl p-6 rounded-[3rem] shadow-3xl shadow-slate-200/40 border border-slate-100 mb-10 flex flex-col lg:flex-row gap-6 items-center justify-between">
+                    <div className="relative w-full lg:w-[36rem]">
+                        <Search className="absolute left-7 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
                         <input
                             type="text"
                             placeholder="Suchen nach Referenz, Gebäude oder Mieter..."
-                            className="w-full bg-slate-50 border border-slate-100 rounded-2xl pl-16 pr-6 py-4.5 text-xs font-bold text-slate-700 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-inner outline-none"
+                            className="w-full bg-slate-50/50 border border-slate-200/50 rounded-3xl pl-18 pr-6 py-5 text-sm font-bold text-slate-800 placeholder:text-slate-300 focus:ring-4 focus:ring-blue-600/5 transition-all outline-none"
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                         />
                     </div>
 
                     <div className="flex items-center gap-4 w-full lg:w-auto">
-                        <div className="relative flex-1 lg:flex-none min-w-[200px]">
-                            <Filter className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
+                        <div className="relative w-full lg:w-64">
+                            <Filter className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
                             <select
-                                className="w-full bg-slate-50 border border-slate-100 rounded-2xl pl-14 pr-10 py-4.5 text-[10px] font-black uppercase tracking-widest text-slate-500 appearance-none cursor-pointer focus:ring-4 focus:ring-blue-500/10 transition-all outline-none"
+                                className="w-full bg-slate-50/50 border border-slate-200/50 rounded-2xl pl-14 pr-10 py-5 text-[11px] font-black uppercase tracking-[0.1em] text-slate-500 appearance-none cursor-pointer focus:ring-4 focus:ring-blue-600/5 transition-all outline-none"
                                 value={statusFilter}
                                 onChange={(e) => setStatusFilter(e.target.value)}
                             >
-                                <option value="">Alle Status</option>
+                                <option value="">Filter: Alle Status</option>
                                 <option value="NEW">Neu erfasst</option>
                                 <option value="IN_PROGRESS">In Bearbeitung</option>
                                 <option value="COMPLETED">Erledigt</option>
                             </select>
-                            <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-slate-300">▼</div>
                         </div>
                     </div>
                 </div>
 
-                <div className="bg-white shadow-2xl shadow-slate-200/40 border border-slate-100 overflow-hidden rounded-[3rem]">
+                <div className="bg-white/80 backdrop-blur-2xl shadow-3xl shadow-slate-200/50 border border-slate-100 overflow-hidden rounded-[4rem]">
                     {error && (
-                        <div className="p-8 bg-red-50 text-red-600 flex items-center gap-4 border-b border-red-100">
-                            <AlertCircle className="w-6 h-6" />
-                            <p className="font-black text-sm uppercase tracking-tight">{error}</p>
-                            <button onClick={fetchTickets} className="ml-auto underline font-black text-[10px] uppercase tracking-widest hover:text-red-700">Wiederholen</button>
+                        <div className="p-10 bg-red-50 text-red-600 flex items-center gap-6 border-b border-red-100">
+                            <AlertCircle className="w-8 h-8 text-red-500" />
+                            <p className="font-black text-lg uppercase tracking-tight">{error}</p>
+                            <button onClick={fetchTickets} className="ml-auto bg-red-600 text-white px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all">Erneut versuchen</button>
                         </div>
                     )}
 
                     {loading ? (
-                        <div className="p-32 text-center">
-                            <Loader2 className="animate-spin w-12 h-12 text-blue-600 mx-auto mb-8" />
-                            <p className="text-slate-400 font-black uppercase tracking-[0.4em] text-[10px]">Datenbank wird abgefragt...</p>
+                        <div className="p-40 text-center flex flex-col items-center">
+                            <Loader2 className="animate-spin w-20 h-20 text-blue-600" />
+                            <p className="mt-10 text-slate-300 font-black uppercase tracking-[0.4em] text-[12px]">Service-Datenbank wird synchronisiert...</p>
                         </div>
                     ) : tickets.length === 0 ? (
-                        <div className="p-32 text-center text-slate-400 grayscale opacity-40">
-                            <ClipboardList className="w-20 h-20 mx-auto mb-8 stroke-1" />
-                            <p className="font-black uppercase tracking-[0.3em] text-xs">Aktuell keine Meldungen vorhanden</p>
+                        <div className="p-40 text-center text-slate-400 grayscale opacity-40">
+                            <ClipboardList className="w-32 h-32 mx-auto mb-10 stroke-[0.5]" />
+                            <p className="font-black uppercase tracking-[0.3em] text-sm text-slate-900 mb-2">Kein Suchergebnis</p>
+                            <p className="font-medium italic">Versuchen Sie es mit einem anderen Begriff oder Filter.</p>
                         </div>
                     ) : (
                         <div className="overflow-x-auto">
                             <table className="w-full text-left border-collapse table-auto">
                                 <thead>
-                                    <tr className="bg-slate-50/50 border-b border-slate-100">
-                                        <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Referenz</th>
-                                        <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Liegenschaft / Einheit</th>
-                                        <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Typ</th>
-                                        <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Priorität</th>
-                                        <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Status</th>
-                                        <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Datum</th>
-                                        <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] text-right">Fokus</th>
+                                    <tr className="bg-slate-50/70 border-b border-slate-100">
+                                        <th className="px-12 py-10 text-[11px] font-black text-slate-400 uppercase tracking-[0.3em]">Referenz</th>
+                                        <th className="px-8 py-10 text-[11px] font-black text-slate-400 uppercase tracking-[0.3em]">Objekt & Einheit</th>
+                                        <th className="px-8 py-10 text-[11px] font-black text-slate-400 uppercase tracking-[0.3em]">Priorität</th>
+                                        <th className="px-8 py-10 text-[11px] font-black text-slate-400 uppercase tracking-[0.3em]">Status</th>
+                                        <th className="px-12 py-10 text-[11px] font-black text-slate-400 uppercase tracking-[0.3em] text-right">Details</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-slate-50/50">
-                                    {tickets.map((ticket) => (
-                                        <tr key={ticket.id} className="group hover:bg-slate-50/80 transition-all duration-300">
-                                            <td className="px-8 py-6">
-                                                <span className="font-mono font-black text-blue-600 text-[10px] bg-blue-50 px-3 py-1.5 rounded-xl border border-blue-100 shadow-sm">
-                                                    {ticket.reference_code}
-                                                </span>
-                                            </td>
-                                            <td className="px-8 py-6">
-                                                <div className="font-black text-slate-900 text-sm truncate uppercase tracking-tighter mb-1">{ticket.property?.name || '---'}</div>
-                                                <div className="text-slate-400 font-bold text-[10px] uppercase tracking-widest">{ticket.unit_label || 'Liegenschaft allgemein'}</div>
-                                            </td>
-                                            <td className="px-8 py-6">
-                                                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                                                    <div className={`w-1.5 h-1.5 rounded-full ${ticket.type === 'DAMAGE_REPORT' ? 'bg-red-400' : 'bg-blue-400'}`} />
-                                                    {ticket.type === 'DAMAGE_REPORT' ? 'Schaden' : 'Anfrage'}
-                                                </span>
-                                            </td>
-                                            <td className="px-8 py-6">
-                                                <span className={`text-[10px] font-black uppercase tracking-widest flex items-center gap-2 ${
-                                                    ticket.urgency === 'EMERGENCY' ? 'text-red-500' : 
-                                                    ticket.urgency === 'URGENT' ? 'text-amber-500' : 'text-slate-400 font-bold'
-                                                }`}>
-                                                    {ticket.urgency === 'EMERGENCY' && <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />}
-                                                    {ticket.urgency === 'EMERGENCY' ? 'NOTFALL' : 
-                                                     ticket.urgency === 'URGENT' ? 'WICHTIG' : 'NORMAL'}
-                                                </span>
-                                            </td>
-                                            <td className="px-8 py-6">
-                                                <span className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border shadow-sm ${getStatusColor(ticket.status)}`}>
-                                                    {getStatusText(ticket.status)}
-                                                </span>
-                                            </td>
-                                            <td className="px-8 py-6 text-[10px] font-black text-slate-300 uppercase tracking-widest">
-                                                {new Date(ticket.createdAt || ticket.created_at || Date.now()).toLocaleDateString('de-CH')}
-                                            </td>
-                                            <td className="px-8 py-6 text-right">
-                                                <Link
-                                                    href={`/tickets/${ticket.id}`}
-                                                    className="inline-flex items-center justify-center w-10 h-10 bg-white border border-slate-100 rounded-xl text-slate-300 group-hover:bg-blue-600 group-hover:text-white group-hover:border-blue-600 group-hover:shadow-lg group-hover:shadow-blue-600/20 group-hover:-translate-x-1 transition-all"
-                                                >
-                                                    <ChevronRight className="w-5 h-5" />
-                                                </Link>
-                                            </td>
-                                        </tr>
-                                    ))}
+                                <tbody className="divide-y divide-slate-50">
+                                    {tickets.map((ticket, index) => {
+                                        const status = getStatusConfig(ticket.status);
+                                        const StatusIcon = status.icon;
+
+                                        return (
+                                            <tr key={ticket.id} className="group hover:bg-blue-50/30 transition-all duration-500 animate-in fade-in slide-in-from-left-4 duration-700" style={{ animationDelay: `${index * 40}ms` }}>
+                                                <td className="px-12 py-10">
+                                                    <span className="font-mono font-black text-blue-600 text-[11px] bg-blue-100/50 px-4 py-2 rounded-2xl border border-blue-200/50 shadow-sm group-hover:bg-blue-600 group-hover:text-white transition-all">
+                                                        {ticket.reference_code}
+                                                    </span>
+                                                </td>
+                                                <td className="px-8 py-10">
+                                                    <div className="flex items-center space-x-6">
+                                                        <div className="w-14 h-14 bg-slate-50 text-slate-400 rounded-[1.5rem] flex items-center justify-center border border-slate-100 group-hover:bg-white group-hover:scale-110 transition-all duration-500">
+                                                            <Building2 className="w-7 h-7" />
+                                                        </div>
+                                                        <div>
+                                                            <div className="font-black text-slate-900 text-lg uppercase tracking-tighter mb-1 line-clamp-1">{ticket.property?.name || '---'}</div>
+                                                            <div className="text-slate-400 font-black text-[9px] uppercase tracking-widest flex items-center">
+                                                                <Home className="w-3 h-3 mr-2" />
+                                                                {ticket.unit_label || 'Allgemein'}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td className="px-8 py-10">
+                                                    <div className={`inline-flex items-center px-5 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest gap-3 ${
+                                                        ticket.urgency === 'EMERGENCY' ? 'bg-red-50 text-red-600 border border-red-100' : 
+                                                        ticket.urgency === 'URGENT' ? 'bg-amber-50 text-amber-600 border border-amber-100' : 'bg-slate-50 text-slate-400 border border-slate-100'
+                                                    }`}>
+                                                        {ticket.urgency === 'EMERGENCY' ? <AlertTriangle className="w-4 h-4" /> : <div className="w-1.5 h-1.5 rounded-full bg-current opacity-40" />}
+                                                        {ticket.urgency === 'EMERGENCY' ? 'Notfall' : ticket.urgency === 'URGENT' ? 'Wichtig' : 'Normal'}
+                                                    </div>
+                                                </td>
+                                                <td className="px-8 py-10">
+                                                    <div className={`inline-flex items-center px-5 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest gap-3 bg-${status.color}-50 text-${status.color}-700 border border-${status.color}-100 shadow-sm`}>
+                                                        <StatusIcon className="w-4 h-4" />
+                                                        {status.label}
+                                                    </div>
+                                                </td>
+                                                <td className="px-12 py-10 text-right">
+                                                    <Link
+                                                        href={`/tickets/${ticket.id}`}
+                                                        className="inline-flex items-center justify-center w-14 h-14 bg-white border border-slate-100 rounded-[1.5rem] text-slate-300 group-hover:bg-slate-900 group-hover:text-white group-hover:border-slate-800 group-hover:shadow-2xl group-hover:scale-110 group-hover:-translate-x-3 transition-all duration-500 shadow-sm"
+                                                    >
+                                                        <ArrowRight className="w-7 h-7" />
+                                                    </Link>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
                                 </tbody>
                             </table>
                         </div>
                     )}
                 </div>
+                
+                {/* Footer Insight Buffer */}
+                <div className="mt-16 bg-gradient-to-br from-blue-700 to-indigo-900 rounded-[4rem] p-16 text-white relative overflow-hidden shadow-3xl shadow-indigo-900/40">
+                    <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10" />
+                    <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-12 text-center md:text-left">
+                        <div className="max-w-2xl">
+                            <h2 className="text-4xl font-black tracking-tighter mb-6 uppercase leading-[0.9]">Support & Dokumentation</h2>
+                            <p className="text-blue-100/60 text-lg font-medium leading-relaxed italic">Alle Meldungen werden automatisch mit der Mieter-Historie verknüpft und archiviert. Für technische Hilfe kontaktieren Sie unser Support-Team.</p>
+                        </div>
+                        <div className="flex gap-6">
+                            <div className="w-20 h-20 bg-white/10 backdrop-blur-2xl rounded-3xl flex items-center justify-center border border-white/20">
+                                <Activity className="w-8 h-8 text-blue-200" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
+                {/* Overhauled Modal */}
                 {showModal && (
-                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xl flex items-center justify-center p-6 z-[100] animate-in fade-in duration-300">
-                        <div className="bg-white rounded-[3rem] shadow-[0_30px_100px_rgba(0,0,0,0.2)] max-w-2xl w-full border border-white/20 overflow-hidden animate-in zoom-in-95 duration-500">
-                            <div className="p-10 border-b border-slate-50 bg-slate-50/30 flex justify-between items-center">
+                    <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-2xl flex items-center justify-center p-8 z-[100] animate-in fade-in duration-500">
+                        <div className="bg-white rounded-[4rem] shadow-[0_40px_120px_rgba(0,0,0,0.4)] max-w-4xl w-full border border-white/30 overflow-hidden animate-in zoom-in-95 duration-500 relative">
+                            {/* Decorative Backdrop for Modal Header */}
+                            <div className="absolute top-0 left-0 right-0 h-40 bg-blue-600 translate-y-[-70%] blur-[80px] opacity-10 pointer-events-none" />
+                            
+                            <div className="p-14 border-b border-slate-50 flex justify-between items-center relative z-10">
                                 <div>
-                                    <h2 className="text-3xl font-black text-slate-900 tracking-tighter uppercase leading-none mb-1">Neue Meldung</h2>
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Manuelle Erfassung eines Anliegens</p>
+                                    <div className="flex items-center space-x-3 mb-2">
+                                        <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse" />
+                                        <p className="text-[11px] font-black text-blue-600 uppercase tracking-[0.3em]">Interne Erfassung</p>
+                                    </div>
+                                    <h2 className="text-5xl font-black text-slate-900 tracking-tighter uppercase leading-none">Neue Meldung</h2>
                                 </div>
-                                <button onClick={() => setShowModal(false)} className="w-12 h-12 bg-white border border-slate-100 hover:bg-slate-50 rounded-2xl flex items-center justify-center transition-all">
-                                    <X className="w-6 h-6 text-slate-400" />
+                                <button onClick={() => setShowModal(false)} className="w-16 h-16 bg-slate-50 border border-slate-100 hover:bg-slate-900 hover:text-white rounded-3xl flex items-center justify-center transition-all duration-500 group">
+                                    <X className="w-8 h-8 group-hover:rotate-90 transition-transform" />
                                 </button>
                             </div>
 
-                            <form onSubmit={handleManualLog} className="p-10 space-y-8 bg-white overflow-y-auto max-h-[70vh]">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <form onSubmit={handleManualLog} className="p-14 space-y-10 bg-white overflow-y-auto max-h-[65vh] relative z-10 custom-scrollbar">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                                     <div className="space-y-4">
-                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.26em] px-1">Gebäude</label>
+                                        <div className="flex items-center space-x-3 px-2">
+                                            <Building2 className="w-4 h-4 text-blue-600" />
+                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Liegenschaft</label>
+                                        </div>
                                         <div className="relative">
                                             <select
                                                 required
-                                                className="w-full bg-slate-50 border border-slate-100 rounded-[1.25rem] px-6 py-4.5 text-sm font-bold text-slate-900 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all appearance-none cursor-pointer"
+                                                className="w-full bg-slate-50/50 border border-slate-200/50 rounded-[2rem] px-8 py-6 text-sm font-bold text-slate-900 focus:ring-8 focus:ring-blue-600/5 outline-none transition-all appearance-none cursor-pointer"
                                                 value={formData.propertyId}
                                                 onChange={(e) => setFormData({ ...formData, propertyId: e.target.value })}
                                             >
-                                                <option value="">Objekt auswählen...</option>
+                                                <option value="">Wählen Sie ein Gebäude...</option>
                                                 {properties.map(p => (
                                                     <option key={p.id} value={p.id}>{p.name}</option>
                                                 ))}
                                             </select>
-                                            <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">▼</div>
+                                            <div className="absolute right-8 top-1/2 -translate-y-1/2 pointer-events-none text-slate-300">▼</div>
                                         </div>
                                     </div>
                                     <div className="space-y-4">
-                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.26em] px-1">Einheit / Wohnung</label>
+                                        <div className="flex items-center space-x-3 px-2">
+                                            <Home className="w-4 h-4 text-blue-600" />
+                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Einheit / Wohnung</label>
+                                        </div>
                                         <input
                                             type="text"
                                             required
-                                            placeholder="z.B. App. 402"
-                                            className="w-full bg-slate-50 border border-slate-100 rounded-[1.25rem] px-6 py-4.5 text-sm font-bold text-slate-900 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all placeholder:text-slate-300"
+                                            placeholder="z.B. 4. OG Links"
+                                            className="w-full bg-slate-50/50 border border-slate-200/50 rounded-[2rem] px-8 py-6 text-sm font-bold text-slate-900 focus:ring-8 focus:ring-blue-600/5 outline-none transition-all placeholder:text-slate-200"
                                             value={formData.unitLabel}
                                             onChange={(e) => setFormData({ ...formData, unitLabel: e.target.value })}
                                         />
@@ -348,58 +404,103 @@ export default function TicketsPage() {
                                 </div>
 
                                 <div className="space-y-4">
-                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.26em] px-1">Schilderung</label>
+                                    <div className="flex items-center space-x-3 px-2">
+                                        <Activity className="w-4 h-4 text-blue-600" />
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Schilderung des Sachverhalts</label>
+                                    </div>
                                     <textarea
                                         required
-                                        rows={3}
-                                        placeholder="Genaue Fehlerbeschreibung oder Anfrage des Mieters..."
-                                        className="w-full bg-slate-50 border border-slate-100 rounded-[1.5rem] p-6 text-sm font-bold text-slate-900 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all placeholder:text-slate-300"
+                                        rows={4}
+                                        placeholder="Beschreiben Sie das Anliegen so präzise wie möglich..."
+                                        className="w-full bg-slate-50/50 border border-slate-200/50 rounded-[2.5rem] p-10 text-sm font-bold text-slate-900 focus:ring-8 focus:ring-blue-600/5 outline-none transition-all placeholder:text-slate-200 leading-relaxed"
                                         value={formData.description}
                                         onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                                     />
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                                     <div className="space-y-4">
-                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.26em] px-1">Name des Mieters</label>
+                                        <div className="flex items-center space-x-3 px-2">
+                                            <User className="w-4 h-4 text-blue-600" />
+                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Mieter Name</label>
+                                        </div>
                                         <input
                                             type="text"
                                             required
-                                            className="w-full bg-slate-50 border border-slate-100 rounded-[1.25rem] px-6 py-4.5 text-sm font-bold text-slate-900 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all"
+                                            className="w-full bg-slate-50/50 border border-slate-200/50 rounded-[1.5rem] px-6 py-5 text-sm font-bold text-slate-900 focus:ring-8 focus:ring-blue-600/5 outline-none transition-all"
                                             value={formData.tenantName}
                                             onChange={(e) => setFormData({ ...formData, tenantName: e.target.value })}
                                         />
                                     </div>
                                     <div className="space-y-4">
-                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.26em] px-1">Dringlichkeit</label>
+                                        <div className="flex items-center space-x-3 px-2">
+                                            <Mail className="w-4 h-4 text-blue-600" />
+                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">E-Mail</label>
+                                        </div>
+                                        <input
+                                            type="email"
+                                            required
+                                            className="w-full bg-slate-50/50 border border-slate-200/50 rounded-[1.5rem] px-6 py-5 text-sm font-bold text-slate-900 focus:ring-8 focus:ring-blue-600/5 outline-none transition-all"
+                                            value={formData.tenantEmail}
+                                            onChange={(e) => setFormData({ ...formData, tenantEmail: e.target.value })}
+                                        />
+                                    </div>
+                                    <div className="space-y-4">
+                                        <div className="flex items-center space-x-3 px-2">
+                                            <Smartphone className="w-4 h-4 text-blue-600" />
+                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Dringlichkeit</label>
+                                        </div>
                                         <div className="relative">
                                             <select
-                                                className="w-full bg-slate-50 border border-slate-100 rounded-[1.25rem] px-6 py-4.5 text-sm font-bold text-slate-900 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all appearance-none cursor-pointer"
+                                                className="w-full bg-slate-50/50 border border-slate-200/50 rounded-[1.5rem] px-6 py-5 text-[10px] font-black uppercase tracking-widest text-slate-900 focus:ring-8 focus:ring-blue-600/5 outline-none transition-all appearance-none cursor-pointer"
                                                 value={formData.urgency}
                                                 onChange={(e) => setFormData({ ...formData, urgency: e.target.value })}
                                             >
-                                                <option value="NORMAL">Standard</option>
+                                                <option value="NORMAL">Normal</option>
                                                 <option value="URGENT">Wichtig (Eilt)</option>
                                                 <option value="EMERGENCY">Notfall (Sofort)</option>
                                             </select>
-                                            <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">▼</div>
+                                            <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 text-xs">▼</div>
                                         </div>
                                     </div>
                                 </div>
 
-                                <button
-                                    type="submit"
-                                    disabled={actionLoading}
-                                    className="w-full h-18 rounded-2xl font-black text-white bg-blue-600 hover:bg-blue-700 shadow-2xl shadow-blue-600/30 transition-all uppercase tracking-[0.2em] text-[10px] flex items-center justify-center disabled:opacity-50 mt-12 mb-4"
-                                >
-                                    {actionLoading ? <Loader2 className="w-5 h-5 animate-spin mr-4" /> : null}
-                                    Eintrag erstellen ➔
-                                </button>
+                                <div className="pt-8">
+                                    <button
+                                        type="submit"
+                                        disabled={actionLoading}
+                                        className="w-full h-24 rounded-[2.5rem] font-black text-white bg-slate-900 hover:bg-blue-600 shadow-3xl shadow-slate-900/30 transition-all uppercase tracking-[0.3em] text-[12px] flex items-center justify-center disabled:opacity-50 group overflow-hidden"
+                                    >
+                                        {actionLoading ? <Loader2 className="w-6 h-6 animate-spin mr-6" /> : <Plus className="w-6 h-6 mr-6 group-hover:rotate-180 transition-transform duration-700" />}
+                                        Eintrag Finalisieren & Speichern
+                                    </button>
+                                </div>
                             </form>
                         </div>
                     </div>
                 )}
             </div>
         </AuthenticatedLayout>
+    );
+}
+
+function StatCard({ label, count, color, icon: Icon }: any) {
+    const colors: any = {
+        slate: 'bg-slate-50 text-slate-900 border-slate-100',
+        blue: 'bg-blue-50 text-blue-600 border-blue-100',
+        amber: 'bg-amber-50 text-amber-600 border-amber-100',
+        emerald: 'bg-emerald-50 text-emerald-600 border-emerald-100'
+    };
+    
+    return (
+        <div className={`p-8 rounded-[2.5rem] border ${colors[color]} shadow-xl shadow-slate-200/20 group hover:shadow-2xl hover:-translate-y-2 transition-all duration-500`}>
+            <div className="flex justify-between items-start mb-6">
+                <div className="w-12 h-12 rounded-2xl bg-white/50 backdrop-blur-md flex items-center justify-center shadow-sm">
+                    <Icon className="w-6 h-6" />
+                </div>
+                <div className="text-3xl font-black tracking-tighter">{count}</div>
+            </div>
+            <p className="text-[10px] font-black uppercase tracking-widest opacity-60 px-1">{label}</p>
+        </div>
     );
 }

@@ -13,9 +13,12 @@ import {
     ClipboardList,
     ExternalLink,
     BarChart3,
-    Shield
+    Shield,
+    ChevronRight,
+    Circle,
+    UserCircle
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Logo from './Logo';
 
 const navigation = [
@@ -24,13 +27,25 @@ const navigation = [
     { name: 'Liegenschaften', href: '/properties', icon: Building2 },
     { name: 'Handwerker', href: '/contractors', icon: Users },
     { name: 'Reporting', href: '/analytics', icon: BarChart3 },
-    { name: 'Systemprotokoll', href: '/audit', icon: Shield },
-    { name: 'Öffentliches Portal', href: '/', icon: ExternalLink },
+    { name: 'Protokoll', href: '/audit', icon: Shield },
+    { name: 'Live Portal', href: '/', icon: ExternalLink },
 ];
 
 export default function Sidebar() {
     const pathname = usePathname();
     const [isOpen, setIsOpen] = useState(false);
+    const [userData, setUserData] = useState<any>(null);
+
+    useEffect(() => {
+        const userStr = localStorage.getItem('user');
+        if (userStr) {
+            try {
+                setUserData(JSON.parse(userStr));
+            } catch (e) {
+                console.error('Failed to parse user data');
+            }
+        }
+    }, []);
 
     const toggleSidebar = () => setIsOpen(!isOpen);
 
@@ -45,7 +60,7 @@ export default function Sidebar() {
             {/* Mobile Menu Button */}
             <button
                 onClick={toggleSidebar}
-                className="lg:hidden fixed top-6 left-6 z-50 p-3 bg-white rounded-xl shadow-xl text-blue-600 border border-slate-100"
+                className="lg:hidden fixed top-8 left-8 z-50 p-4 bg-white rounded-2xl shadow-2xl text-slate-900 border border-slate-100 hover:scale-110 active:scale-95 transition-all"
                 aria-label="Menü öffnen"
             >
                 {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -54,22 +69,26 @@ export default function Sidebar() {
             {/* Backdrop */}
             {isOpen && (
                 <div
-                    className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40 lg:hidden"
+                    className="fixed inset-0 bg-slate-950/60 backdrop-blur-md z-40 lg:hidden"
                     onClick={toggleSidebar}
                 />
             )}
 
             {/* Sidebar */}
             <aside className={`
-                fixed top-0 left-0 h-full bg-white w-72 z-40 transition-all duration-500 ease-in-out transform border-r border-slate-200/60
+                fixed top-0 left-0 h-full bg-slate-950 w-80 z-40 transition-all duration-700 ease-in-out transform border-r border-white/5
                 ${isOpen ? 'translate-x-0' : '-translate-x-full'}
-                lg:translate-x-0 lg:static flex flex-col shadow-[10px_0_30px_rgba(0,0,0,0.02)]
+                lg:translate-x-0 lg:static flex flex-col shadow-[20px_0_60px_rgba(0,0,0,0.3)]
             `}>
-                <div className="p-8">
-                    <Logo />
+                <div className="p-10 mb-8">
+                    <Logo light />
+                    <div className="mt-4 flex items-center space-x-2">
+                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+                        <p className="text-[10px] font-black text-blue-400 uppercase tracking-[0.3em]">System Online</p>
+                    </div>
                 </div>
 
-                <nav className="flex-1 px-6 space-y-2 mt-6">
+                <nav className="flex-1 px-6 space-y-1.5">
                     {navigation.map((item) => {
                         const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href) && item.href !== '/');
                         const isExternal = item.href === '/';
@@ -81,36 +100,52 @@ export default function Sidebar() {
                                 onClick={() => setIsOpen(false)}
                                 target={isExternal ? "_blank" : undefined}
                                 className={`
-                                    flex items-center px-5 py-4 text-sm font-bold rounded-2xl transition-all duration-300 group relative
+                                    flex items-center px-6 py-4.5 text-[11px] font-black uppercase tracking-[0.15em] rounded-[1.75rem] transition-all duration-500 group relative
                                     ${isActive
-                                        ? 'bg-blue-50 text-blue-700'
-                                        : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}
+                                        ? 'bg-white text-slate-950 shadow-2xl shadow-white/10 scale-[1.02]'
+                                        : 'text-slate-400 hover:bg-white/5 hover:text-white'}
                                 `}
                             >
                                 <item.icon className={`
-                                    w-5 h-5 mr-4 transition-all duration-300
-                                    ${isActive ? 'text-blue-600 scale-110' : 'text-slate-400 group-hover:text-blue-500'}
+                                    w-5 h-5 mr-5 transition-all duration-500
+                                    ${isActive ? 'text-blue-600' : 'text-slate-500 group-hover:text-white group-hover:rotate-6'}
                                 `} />
                                 {item.name}
-                                {isActive && !isExternal && (
-                                    <div className="ml-auto w-1.5 h-1.5 rounded-full bg-blue-600 shadow-[0_0_8px_rgba(37,99,235,0.4)]" />
+                                
+                                {isActive && (
+                                    <div className="ml-auto flex items-center">
+                                        <div className="w-1 h-3 rounded-full bg-blue-600" />
+                                    </div>
                                 )}
+                                
                                 {isExternal && (
-                                    <ExternalLink className="ml-auto w-3 h-3 text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                    <ExternalLink className="ml-auto w-3 h-3 text-slate-600 group-hover:text-blue-400" />
                                 )}
                             </Link>
                         );
                     })}
                 </nav>
 
-                <div className="p-6 mt-auto border-t border-slate-50 bg-slate-50/30">
-                    <button
-                        className="flex items-center w-full px-5 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest rounded-2xl hover:bg-red-50 hover:text-red-500 transition-all duration-300 group"
-                        onClick={handleLogout}
-                    >
-                        <LogOut className="w-4 h-4 mr-4 group-hover:rotate-12 transition-transform" />
-                        Sitzung Beenden
-                    </button>
+                <div className="p-8 mt-auto">
+                    <div className="bg-white/5 rounded-[2.5rem] p-6 border border-white/5 group hover:bg-white/10 transition-all duration-500">
+                        <div className="flex items-center space-x-4 mb-6">
+                            <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center border border-blue-500 shadow-xl shadow-blue-600/20">
+                                <UserCircle className="w-7 h-7 text-white" />
+                            </div>
+                            <div className="min-w-0">
+                                <p className="text-[11px] font-black text-white uppercase tracking-tighter truncate">{userData?.name || 'Administrator'}</p>
+                                <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">{userData?.role === 'STAFF' ? 'Team' : 'Inhaber'}</p>
+                            </div>
+                        </div>
+                        
+                        <button
+                            className="flex items-center justify-center w-full px-5 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest rounded-2xl bg-white/5 hover:bg-red-500 hover:text-white transition-all duration-500 group"
+                            onClick={handleLogout}
+                        >
+                            <LogOut className="w-4 h-4 mr-3 group-hover:-translate-x-1 transition-transform" />
+                            Session Abmelden
+                        </button>
+                    </div>
                 </div>
             </aside>
         </>
