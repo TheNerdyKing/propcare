@@ -3,12 +3,12 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import AuthenticatedLayout from '@/components/AuthenticatedLayout';
-import { 
-    BarChart3, 
-    TrendingUp, 
-    AlertTriangle, 
-    CheckCircle2, 
-    Clock, 
+import {
+    BarChart3,
+    TrendingUp,
+    AlertTriangle,
+    CheckCircle2,
+    Clock,
     Download,
     Calendar,
     ChevronDown,
@@ -35,10 +35,10 @@ export default function AnalyticsPage() {
             const userStr = localStorage.getItem('user');
             if (!userStr) return null;
             const user = JSON.parse(userStr);
-            return user.tenantId || 
-                   user.tenant_id || 
-                   (user.tenants?.id) || 
-                   (Array.isArray(user.tenants) ? user.tenants[0]?.id : user.tenants?.id);
+            return user.tenantId ||
+                user.tenant_id ||
+                (user.tenants?.id) ||
+                (Array.isArray(user.tenants) ? user.tenants[0]?.id : user.tenants?.id);
         } catch (e) {
             return null;
         }
@@ -52,23 +52,28 @@ export default function AnalyticsPage() {
         }
 
         try {
-            const { data: tickets, error: fetchErr } = await supabase
-                .from('tickets')
-                .select('status, urgency, created_at, category')
-                .eq('tenant_id', tenantId);
+            const res = await fetch(`/api/reporting/metrics?tenantId=${tenantId}`);
+            if (!res.ok) throw new Error('API request failed');
+            const data = await res.json();
 
-            if (fetchErr) throw fetchErr;
+            setStats({
+                total: data.total,
+                new: data.new,
+                inProgress: data.inProgress,
+                completed: data.completed,
+                emergency: data.emergency,
+                avgResolutionTime: data.avgResolutionTime,
+                // We'll extend stats with trend and cost if needed in the UI
+            });
 
-            if (tickets) {
-                setStats({
-                    total: tickets.length,
-                    new: tickets.filter(t => t.status === 'NEW').length,
-                    inProgress: tickets.filter(t => t.status === 'IN_PROGRESS').length,
-                    completed: tickets.filter(t => t.status === 'COMPLETED').length,
-                    emergency: tickets.filter(t => t.urgency === 'EMERGENCY').length,
-                    avgResolutionTime: '2.4 Tage' // In einem echten System würde dies berechnet
-                });
-            }
+            // Optional: store trend and cost in local state if UI supports it
+            (setStats as any)(prev => ({
+                ...prev,
+                totalCost: data.totalCost,
+                trend: data.trend,
+                categoryDistribution: data.categoryDistribution
+            }));
+
         } catch (err) {
             console.error('Failed to fetch stats', err);
         } finally {
@@ -134,7 +139,7 @@ export default function AnalyticsPage() {
                             Letzte 30 Tage
                             <ChevronDown className="w-3.5 h-3.5 ml-4 opacity-50" />
                         </button>
-                        <button 
+                        <button
                             onClick={handleExport}
                             className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4.5 rounded-[1.25rem] font-black uppercase tracking-widest text-[10px] flex items-center shadow-2xl shadow-blue-600/30 transition-all hover:-translate-y-1"
                         >
@@ -152,11 +157,13 @@ export default function AnalyticsPage() {
                 ) : (
                     <div className="space-y-12">
                         {/* Top Metrics */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                             <MetricCard title="Gesamt Meldungen" value={stats.total} icon={BarChart3} color="blue" />
                             <MetricCard title="In Bearbeitung" value={stats.new + stats.inProgress} icon={Clock} color="amber" />
                             <MetricCard title="Abgeschlossen" value={stats.completed} icon={CheckCircle2} color="emerald" />
                             <MetricCard title="Notfälle" value={stats.emergency} icon={AlertTriangle} color="red" />
+                            <MetricCard title="Geschätzte Kosten" value={(stats as any).totalCost || 'CHF 0.00'} icon={TrendingUp} color="blue" />
+                            <MetricCard title="Entwicklung" value={`${(stats as any).trend || 0}%`} icon={TrendingUp} color={(stats as any).trend > 0 ? 'red' : 'emerald'} />
                         </div>
 
                         {/* Visual Sections */}
@@ -185,9 +192,13 @@ export default function AnalyticsPage() {
                                             <p className="text-2xl font-black text-slate-300 uppercase tracking-tight">Tage</p>
                                         </div>
                                     </div>
-                                    <div className="pt-12 flex items-center gap-4 text-emerald-500 font-bold bg-emerald-50 w-max px-6 py-3 rounded-2xl border border-emerald-100">
-                                        <TrendingUp className="w-5 h-5 shadow-sm" />
-                                        <span className="text-xs uppercase tracking-widest font-black">12% Optimierung gegenüber Vormonat</span>
+                                    <div className={`pt-12 flex items-center gap-4 ${(stats as any).trend <= 0 ? 'text-emerald-500' : 'text-amber-500'} font-bold bg-opacity-10 w-max px-6 py-3 rounded-2xl`}>
+                                        <TrendingUp className={`w-5 h-5 ${(stats as any).trend <= 0 ? '' : 'rotate-180'}`} />
+                                        <span className="text-xs uppercase tracking-widest font-black">
+                                            {(stats as any).trend <= 0 
+                                                ? `${Math.abs((stats as any).trend)}% Abnahme gegenüber Vormonat` 
+                                                : `${(stats as any).trend}% Zunahme gegenüber Vormonat`}
+                                        </span>
                                     </div>
                                 </div>
                             </div>
@@ -227,7 +238,7 @@ function DistributionBar({ label, value, total, color }: any) {
                 <span className="text-slate-900">{value} <span className="text-slate-300 ml-2">({Math.round(percentage)}%)</span></span>
             </div>
             <div className="h-4 bg-slate-50 rounded-2xl overflow-hidden border border-slate-100 shadow-inner p-1">
-                <div 
+                <div
                     className={`h-full ${color} transition-all duration-1000 ease-out shadow-lg rounded-full`}
                     style={{ width: `${percentage}%` }}
                 />

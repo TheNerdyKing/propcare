@@ -20,7 +20,8 @@ export class EmailService {
         replyTo?: string;
         metadata?: any;
     }) {
-        this.logger.log(`Sending email via Resend to: ${payload.to}`);
+        const isSandbox = this.configService.get<string>('RESEND_SANDBOX') === 'true';
+        this.logger.log(`Sending email via Resend to: ${payload.to} (Sandbox: ${isSandbox})`);
 
         if (!this.apiKey) {
             this.logger.error('RESEND_API_KEY is not configured');
@@ -39,7 +40,7 @@ export class EmailService {
                     to: payload.to,
                     subject: payload.subject,
                     html: payload.html,
-                    text: payload.text || payload.html.replace(/<[^>]*>?/gm, ''), // basic html to text
+                    text: payload.text || payload.html.replace(/<[^>]*>?/gm, ''),
                     reply_to: payload.replyTo,
                 }),
             });
@@ -47,19 +48,31 @@ export class EmailService {
             const data: any = await response.json();
 
             if (!response.ok) {
-                this.logger.error(`Resend API failed: ${JSON.stringify(data)}`);
+                // If in sandbox mode and the error looks like a permission/restriction error
+                if (isSandbox && (response.status === 403 || response.status === 422 || data.message?.toLowerCase().includes('sandbox'))) {
+                    this.logger.warn(`SANDBOX SIMULATION: Resend blocked the send to ${payload.to}, but we are simulating success for the Buyer demo.`);
+                    return { 
+                        ok: true, 
+                        resendId: 'sandbox-simulated-id', 
+                        isSimulated: true,
+                        note: 'In Sandbox-Modus wurde der Versand simuliert (keine verifizierte Domain).' 
+                    };
+                }
+
+                this.logger.error(`Resend API Error (Status: ${response.status}): ${JSON.stringify(data)}`);
                 throw new HttpException(
-                    data.message || 'Failed to send email via Resend',
+                    data.message || `Resend API failed with status ${response.status}`,
                     HttpStatus.INTERNAL_SERVER_ERROR,
                 );
             }
 
+            this.logger.log(`Email successfully sent. Resend ID: ${data.id}`);
             return { ok: true, resendId: data.id };
         } catch (error) {
-            this.logger.error(`Email sending failed: ${error.message}`);
+            this.logger.error(`Unhandled Email Error: ${error.stack || error.message}`);
             if (error instanceof HttpException) throw error;
             throw new HttpException(
-                'Internal server error while sending email',
+                `Email sending failed: ${error.message}`,
                 HttpStatus.INTERNAL_SERVER_ERROR,
             );
         }

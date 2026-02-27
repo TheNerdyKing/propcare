@@ -65,10 +65,10 @@ export default function TicketDetailPage() {
             const userStr = localStorage.getItem('user');
             if (!userStr) return null;
             const user = JSON.parse(userStr);
-            return user.tenantId || 
-                   user.tenant_id || 
-                   (user.tenants?.id) || 
-                   (Array.isArray(user.tenants) ? user.tenants[0]?.id : user.tenants?.id);
+            return user.tenantId ||
+                user.tenant_id ||
+                (user.tenants?.id) ||
+                (Array.isArray(user.tenants) ? user.tenants[0]?.id : user.tenants?.id);
         } catch (e) {
             return null;
         }
@@ -140,7 +140,7 @@ export default function TicketDetailPage() {
                 .from('tickets')
                 .update({ status, updated_at: new Date().toISOString() })
                 .eq('id', id);
-            
+
             if (updErr) throw updErr;
 
             await supabase.from('audit_logs').insert({
@@ -148,9 +148,9 @@ export default function TicketDetailPage() {
                 action: 'STATUS_CHANGED',
                 target_type: 'TICKET',
                 target_id: id,
-                metadata_json: { 
+                metadata_json: {
                     newStatus: status,
-                    details: `Status manuell auf ${status} geändert.` 
+                    details: `Status manuell auf ${status} geändert.`
                 }
             });
 
@@ -343,6 +343,35 @@ export default function TicketDetailPage() {
                                                             </li>
                                                         ))}
                                                     </ul>
+                                                </div>
+                                            )}
+
+                                            {ticket.aiContractors?.length > 0 && (
+                                                <div className="space-y-4">
+                                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Vorgeschlagene Fachpartner</p>
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                        {ticket.aiContractors.map((c: any, i: number) => (
+                                                            <div key={i} className={`p-6 rounded-2xl border ${c.source === 'INTERNAL' ? 'bg-blue-50/50 border-blue-100' : 'bg-slate-50 border-slate-100'}`}>
+                                                                <div className="flex justify-between items-start mb-2">
+                                                                    <p className="font-black text-sm uppercase tracking-tight text-slate-900">{c.name}</p>
+                                                                    <span className={`text-[8px] font-black px-2 py-1 rounded-md uppercase tracking-widest ${c.source === 'INTERNAL' ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-500'}`}>
+                                                                        {c.source}
+                                                                    </span>
+                                                                </div>
+                                                                <p className="text-xs text-slate-500 mb-4">{c.reason}</p>
+                                                                {c.source === 'GOOGLE' && (
+                                                                    <a
+                                                                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${ticket.aiClassification} ${ticket.property?.city || 'Zürich'}`)}`}
+                                                                        target="_blank"
+                                                                        rel="noopener noreferrer"
+                                                                        className="inline-flex items-center text-[9px] font-black text-blue-600 uppercase tracking-widest hover:underline"
+                                                                    >
+                                                                        Auf Google Maps suchen ➔
+                                                                    </a>
+                                                                )}
+                                                            </div>
+                                                        ))}
+                                                    </div>
                                                 </div>
                                             )}
 

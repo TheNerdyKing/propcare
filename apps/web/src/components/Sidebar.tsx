@@ -16,6 +16,7 @@ import {
     Shield
 } from 'lucide-react';
 import { useState } from 'react';
+import Logo from './Logo';
 
 const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
@@ -64,22 +65,15 @@ export default function Sidebar() {
                 ${isOpen ? 'translate-x-0' : '-translate-x-full'}
                 lg:translate-x-0 lg:static flex flex-col shadow-[10px_0_30px_rgba(0,0,0,0.02)]
             `}>
-                <div className="p-10">
-                    <div className="flex items-center space-x-4">
-                        <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center font-black text-white shadow-xl shadow-blue-600/20 transform -rotate-6">
-                            PC
-                        </div>
-                        <span className="text-2xl font-black text-slate-900 tracking-tighter">
-                            Prop<span className="text-blue-600">Care</span>
-                        </span>
-                    </div>
+                <div className="p-8">
+                    <Logo />
                 </div>
 
                 <nav className="flex-1 px-6 space-y-2 mt-6">
                     {navigation.map((item) => {
                         const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href) && item.href !== '/');
                         const isExternal = item.href === '/';
-                        
+
                         return (
                             <Link
                                 key={item.name}

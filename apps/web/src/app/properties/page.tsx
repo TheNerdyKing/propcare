@@ -29,10 +29,10 @@ export default function PropertiesPage() {
             const userStr = localStorage.getItem('user');
             if (!userStr) return null;
             const user = JSON.parse(userStr);
-            return user.tenantId || 
-                   user.tenant_id || 
-                   (user.tenants?.id) || 
-                   (Array.isArray(user.tenants) ? user.tenants[0]?.id : user.tenants?.id);
+            return user.tenantId ||
+                user.tenant_id ||
+                (user.tenants?.id) ||
+                (Array.isArray(user.tenants) ? user.tenants[0]?.id : user.tenants?.id);
         } catch (e) {
             return null;
         }
@@ -131,37 +131,61 @@ export default function PropertiesPage() {
         }
     };
 
+    const [previewData, setPreviewData] = useState<any[]>([]);
+    const [importSummary, setImportSummary] = useState<{ created: number, updated: number } | null>(null);
+
+    const parseCsv = (text: string, tenantId: string) => {
+        const lines = text.trim().split('\n').filter(l => l.includes(','));
+        if (lines.length < 2) throw new Error('Ungültiges Format. Kopfzeile erforderlich.');
+
+        const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+        return lines.slice(1).map(line => {
+            const values = line.split(',').map(v => v.trim());
+            const obj: any = { tenant_id: tenantId };
+            headers.forEach((h, i) => {
+                const val = values[i];
+                if (h === 'name') obj.name = val;
+                if (h === 'address' || h === 'street') obj.address_line1 = val;
+                if (h === 'zip' || h === 'plz') obj.zip = val;
+                if (h === 'city' || h === 'ort') obj.city = val;
+            });
+            return obj;
+        }).filter(o => o.name && o.address_line1);
+    };
+
     const handleImport = async (e: React.FormEvent) => {
         e.preventDefault();
         const tenantId = getTenantId();
-        if (!tenantId || !csvText.trim()) return;
+        if (!tenantId || previewData.length === 0) return;
 
         setActionLoading(true);
         try {
-            const lines = csvText.trim().split('\n').filter(l => l.includes(','));
-            if (lines.length < 2) throw new Error('Ungültiges CSV-Format. Kopfzeile erforderlich.');
+            // Upsert logic: using name + tenant_id as a basic "match" if id is missing
+            let created = 0;
+            let updated = 0;
 
-            const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
-            const dataToInsert = lines.slice(1).map(line => {
-                const values = line.split(',').map(v => v.trim());
-                const obj: any = { tenant_id: tenantId };
-                headers.forEach((h, i) => {
-                    const val = values[i];
-                    if (h === 'name') obj.name = val;
-                    if (h === 'address' || h === 'street') obj.address_line1 = val;
-                    if (h === 'zip' || h === 'plz') obj.zip = val;
-                    if (h === 'city' || h === 'ort') obj.city = val;
-                });
-                return obj;
-            }).filter(o => o.name && o.address_line1);
+            for (const item of previewData) {
+                // Check if exists
+                const { data: existing } = await supabase
+                    .from('properties')
+                    .select('id')
+                    .eq('tenant_id', tenantId)
+                    .eq('name', item.name)
+                    .maybeSingle();
 
-            const { error } = await supabase.from('properties').insert(dataToInsert);
-            if (error) throw error;
+                if (existing) {
+                    await supabase.from('properties').update(item).eq('id', existing.id);
+                    updated++;
+                } else {
+                    await supabase.from('properties').insert([item]);
+                    created++;
+                }
+            }
 
-            setShowImportModal(false);
+            setImportSummary({ created, updated });
+            setPreviewData([]);
             setCsvText('');
             await fetchProperties();
-            alert('Import erfolgreich!');
         } catch (err: any) {
             alert(`Import fehlgeschlagen: ${err.message}`);
         } finally {
@@ -339,52 +363,113 @@ export default function PropertiesPage() {
                                 </button>
                             </div>
 
-                            <div 
-                                onDragOver={(e) => e.preventDefault()}
-                                onDrop={async (e) => {
-                                    e.preventDefault();
-                                    const file = e.dataTransfer.files[0];
-                                    if (file && (file.name.endsWith('.csv') || file.name.endsWith('.xlsx'))) {
-                                        const text = await file.text();
-                                        setCsvText(text);
-                                    }
-                                }}
-                                className="w-full h-48 bg-slate-50 border-2 border-dashed border-slate-200 rounded-3xl flex flex-col items-center justify-center space-y-4 group hover:border-blue-400 hover:bg-blue-50/30 transition-all cursor-pointer mb-8"
-                                onClick={() => document.getElementById('file-input')?.click()}
-                            >
-                                <div className="w-12 h-12 bg-white rounded-xl shadow-sm border border-slate-100 flex items-center justify-center text-slate-400 group-hover:text-blue-500 transition-colors">
-                                    <Download className="w-6 h-6" />
+                            {importSummary ? (
+                                <div className="text-center py-10 animate-in zoom-in-95">
+                                    <div className="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-6">
+                                        <CheckCircle2 className="w-8 h-8 text-emerald-600" />
+                                    </div>
+                                    <h3 className="text-xl font-black text-slate-900 uppercase tracking-tighter mb-4">Import Abgeschlossen</h3>
+                                    <div className="grid grid-cols-2 gap-4 mb-10">
+                                        <div className="bg-slate-50 p-4 rounded-2xl">
+                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Neu Erstellt</p>
+                                            <p className="text-2xl font-black text-slate-900">{importSummary.created}</p>
+                                        </div>
+                                        <div className="bg-slate-50 p-4 rounded-2xl">
+                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Aktualisiert</p>
+                                            <p className="text-2xl font-black text-slate-900">{importSummary.updated}</p>
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={() => {
+                                            setShowImportModal(false);
+                                            setImportSummary(null);
+                                        }}
+                                        className="w-full py-4 bg-slate-900 text-white rounded-xl font-black uppercase tracking-widest text-[10px]"
+                                    >
+                                        Schliessen
+                                    </button>
                                 </div>
-                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
-                                    {csvText ? 'Datei bereit zum Import' : 'Datei hierher ziehen oder klicken'}
-                                </p>
-                                <input 
-                                    id="file-input" 
-                                    type="file" 
-                                    className="hidden" 
-                                    accept=".csv,.xlsx" 
-                                    onChange={async (e) => {
-                                        const file = e.target.files?.[0];
-                                        if (file) {
-                                            const text = await file.text();
-                                            setCsvText(text);
-                                        }
-                                    }}
-                                />
-                            </div>
+                            ) : previewData.length > 0 ? (
+                                <div className="animate-in slide-in-from-bottom-5">
+                                    <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest mb-4">Vorschau ({previewData.length} Objekte)</h3>
+                                    <div className="max-h-60 overflow-y-auto mb-8 border border-slate-100 rounded-2xl divide-y divide-slate-50">
+                                        {previewData.map((p, i) => (
+                                            <div key={i} className="p-4 flex justify-between items-center text-xs">
+                                                <div>
+                                                    <p className="font-black text-slate-900 uppercase">{p.name}</p>
+                                                    <p className="text-slate-400">{p.address_line1}, {p.zip} {p.city}</p>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <div className="flex gap-4">
+                                        <button
+                                            onClick={() => setPreviewData([])}
+                                            className="flex-1 py-4 bg-slate-50 text-slate-400 rounded-xl font-black uppercase tracking-widest text-[10px]"
+                                        >
+                                            Abbrechen
+                                        </button>
+                                        <button
+                                            onClick={handleImport}
+                                            disabled={actionLoading}
+                                            className="flex-[2] py-4 bg-blue-600 text-white rounded-xl font-black uppercase tracking-widest text-[10px] shadow-xl shadow-blue-600/20"
+                                        >
+                                            {actionLoading ? 'Verarbeite...' : 'Bestätigen & Importieren'}
+                                        </button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <>
+                                    <div
+                                        onDragOver={(e) => e.preventDefault()}
+                                        onDrop={async (e) => {
+                                            e.preventDefault();
+                                            const file = e.dataTransfer.files[0];
+                                            if (file) {
+                                                const text = await file.text();
+                                                try {
+                                                    const parsed = parseCsv(text, getTenantId()!);
+                                                    setPreviewData(parsed);
+                                                } catch (err: any) {
+                                                    alert(err.message);
+                                                }
+                                            }
+                                        }}
+                                        className="w-full h-48 bg-slate-50 border-2 border-dashed border-slate-200 rounded-3xl flex flex-col items-center justify-center space-y-4 group hover:border-blue-400 hover:bg-blue-50/30 transition-all cursor-pointer mb-8"
+                                        onClick={() => document.getElementById('file-input')?.click()}
+                                    >
+                                        <div className="w-12 h-12 bg-white rounded-xl shadow-sm border border-slate-100 flex items-center justify-center text-slate-400 group-hover:text-blue-500 transition-colors">
+                                            <Download className="w-6 h-6" />
+                                        </div>
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
+                                            Datei hierher ziehen oder klicken
+                                        </p>
+                                        <input
+                                            id="file-input"
+                                            type="file"
+                                            className="hidden"
+                                            accept=".csv"
+                                            onChange={async (e) => {
+                                                const file = e.target.files?.[0];
+                                                if (file) {
+                                                    const text = await file.text();
+                                                    try {
+                                                        const parsed = parseCsv(text, getTenantId()!);
+                                                        setPreviewData(parsed);
+                                                    } catch (err: any) {
+                                                        alert(err.message);
+                                                    }
+                                                }
+                                            }}
+                                        />
+                                    </div>
 
-                            <div className="bg-blue-50/50 border border-blue-100 rounded-xl p-4 mb-8 text-[10px] font-bold text-blue-800 leading-relaxed">
-                                <span className="uppercase tracking-widest text-blue-900 block mb-1">Format-Vorgabe:</span>
-                                Kopfzeile: <code className="bg-white px-1.5 py-0.5 rounded border border-blue-100 font-mono">name, address, zip, city</code>
-                            </div>
-
-                            <button
-                                onClick={handleImport}
-                                disabled={actionLoading || !csvText.trim()}
-                                className="w-full py-4 rounded-xl font-black text-white bg-blue-600 hover:bg-blue-700 shadow-xl shadow-blue-600/10 transition-all uppercase tracking-widest text-[10px] disabled:opacity-50"
-                            >
-                                {actionLoading ? 'Importiert...' : 'Import Starten'}
-                            </button>
+                                    <div className="bg-blue-50/50 border border-blue-100 rounded-xl p-4 text-[10px] font-bold text-blue-800 leading-relaxed">
+                                        <span className="uppercase tracking-widest text-blue-900 block mb-1">Format-Vorgabe:</span>
+                                        Kopfzeile: <code className="bg-white px-1.5 py-0.5 rounded border border-blue-100 font-mono">name, address, zip, city</code>
+                                    </div>
+                                </>
+                            )}
                         </div>
                     </div>
                 )}
