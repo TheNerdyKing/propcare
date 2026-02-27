@@ -348,27 +348,27 @@ export default function TicketsPage() {
                 {/* Overhauled Compact Sexy Modal */}
                 {showModal && (
                     <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-md flex items-center justify-center p-8 z-[100] animate-in fade-in duration-500">
-                        <div className="bg-white rounded-[3.5rem] shadow-[0_50px_100px_rgba(0,0,0,0.4)] max-w-xl w-full border border-white/20 overflow-hidden animate-in zoom-in-95 duration-500 relative">
-                            <div className="p-10 border-b border-slate-50 flex justify-between items-center relative z-10">
+                        <div className="bg-white rounded-[4rem] shadow-[0_50px_100px_rgba(0,0,0,0.4)] max-w-xl w-full border border-white/20 overflow-hidden animate-in zoom-in-95 duration-500 relative">
+                            <div className="p-12 border-b border-slate-50 flex justify-between items-center relative z-10">
                                 <div>
                                     <div className="flex items-center space-x-3 mb-2">
                                         <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse" />
-                                        <p className="text-[10px] font-black text-blue-600 uppercase tracking-[0.3em]">Manuelle Erfassung</p>
+                                        <p className="text-[10px] font-black text-blue-600 uppercase tracking-[0.3em]">System-Eintrag</p>
                                     </div>
-                                    <h2 className="text-3xl font-black text-slate-900 tracking-tighter uppercase leading-none">MELDUNG AUFNEHMEN</h2>
+                                    <h2 className="text-4xl font-black text-slate-900 tracking-tighter uppercase leading-none">MELDUNG AUFNEHMEN</h2>
                                 </div>
-                                <button onClick={() => setShowModal(false)} className="w-12 h-12 bg-slate-50 border border-slate-100 hover:bg-slate-900 hover:text-white rounded-2xl flex items-center justify-center transition-all duration-500 group">
-                                    <X className="w-6 h-6 group-hover:rotate-90 transition-transform" />
+                                <button onClick={() => setShowModal(false)} className="w-14 h-14 bg-slate-50 border border-slate-100 hover:bg-slate-900 hover:text-white rounded-3xl flex items-center justify-center transition-all duration-500 group">
+                                    <X className="w-7 h-7 group-hover:rotate-90 transition-transform" />
                                 </button>
                             </div>
 
-                            <form onSubmit={handleManualLog} className="p-10 space-y-8 bg-white overflow-y-auto max-h-[70vh] relative z-10 custom-scrollbar">
-                                <div className="space-y-4">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1 text-[9px]">Liegenschaft & Einheit</label>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <form onSubmit={handleManualLog} className="p-12 space-y-10 bg-white overflow-y-auto max-h-[75vh] relative z-10 custom-scrollbar">
+                                <div className="space-y-5">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-1">Liegenschaft & Einheit</label>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                                         <select
                                             required
-                                            className="w-full bg-slate-50/50 border border-slate-200/50 rounded-2xl px-6 py-5 text-sm font-bold text-slate-900 focus:ring-8 focus:ring-blue-600/5 outline-none transition-all cursor-pointer"
+                                            className="w-full bg-slate-50 border border-slate-200/50 rounded-2xl px-6 py-5 text-sm font-bold text-slate-900 focus:ring-8 focus:ring-blue-600/5 outline-none transition-all cursor-pointer appearance-none"
                                             value={formData.propertyId}
                                             onChange={(e) => setFormData({ ...formData, propertyId: e.target.value })}
                                         >
@@ -380,39 +380,40 @@ export default function TicketsPage() {
                                         <input
                                             type="text" required
                                             placeholder="z.B. TOP 14"
-                                            className="w-full bg-slate-50/50 border border-slate-200/50 rounded-2xl px-6 py-5 text-sm font-bold text-slate-900 focus:ring-8 focus:ring-blue-600/5 outline-none transition-all placeholder:text-slate-200"
+                                            className="w-full bg-slate-50 border border-slate-200/50 rounded-2xl px-6 py-5 text-sm font-bold text-slate-900 focus:ring-8 focus:ring-blue-600/5 outline-none transition-all"
                                             value={formData.unitLabel}
                                             onChange={(e) => setFormData({ ...formData, unitLabel: e.target.value })}
                                         />
                                     </div>
                                 </div>
 
-                                <div className="space-y-4">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1 text-[9px]">Anliegen / Beschreibung</label>
+                                <div className="space-y-5">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-1">Anliegen / Beschreibung</label>
                                     <textarea
                                         required
                                         rows={4}
                                         placeholder="Beschreiben Sie das Problem..."
-                                        className="w-full bg-slate-50/50 border border-slate-200/50 rounded-2xl px-6 py-5 text-sm font-bold text-slate-900 focus:ring-8 focus:ring-blue-600/5 outline-none transition-all placeholder:text-slate-200 min-h-[120px] resize-none"
+                                        className="w-full bg-slate-50 border border-slate-200/50 rounded-2xl px-6 py-5 text-sm font-bold text-slate-900 focus:ring-8 focus:ring-blue-600/5 outline-none transition-all min-h-[140px] resize-none"
                                         value={formData.description}
                                         onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                                     />
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-6">
-                                    <div className="space-y-3">
-                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1 text-[9px]">Mieter Name</label>
+                                <div className="grid grid-cols-2 gap-8">
+                                    <div className="space-y-4">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-1">Mieter Name</label>
                                         <input
                                             type="text" required
-                                            className="w-full bg-slate-50 border border-slate-200/50 rounded-xl px-4 py-4 text-sm font-bold text-slate-900 focus:ring-4 focus:ring-blue-600/5 transition-all outline-none uppercase"
+                                            className="w-full bg-slate-50 border border-slate-200/50 rounded-2xl px-6 py-5 text-sm font-bold text-slate-900 focus:ring-8 focus:ring-blue-600/5 outline-none transition-all uppercase"
                                             value={formData.tenantName}
                                             onChange={(e) => setFormData({ ...formData, tenantName: e.target.value })}
+                                            placeholder="MAX MUSTER"
                                         />
                                     </div>
-                                    <div className="space-y-3">
-                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1 text-[9px]">Dringlichkeit</label>
+                                    <div className="space-y-4">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-1">Dringlichkeit</label>
                                         <select
-                                            className="w-full bg-slate-50 border border-slate-200/50 rounded-xl px-4 py-4 text-[10px] font-black uppercase tracking-widest text-slate-900 focus:ring-4 focus:ring-blue-600/5 outline-none"
+                                            className="w-full bg-slate-50 border border-slate-200/50 rounded-2xl px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-slate-900 focus:ring-8 focus:ring-blue-600/5 outline-none"
                                             value={formData.urgency}
                                             onChange={(e) => setFormData({ ...formData, urgency: e.target.value })}
                                         >
@@ -423,12 +424,35 @@ export default function TicketsPage() {
                                     </div>
                                 </div>
 
+                                <div className="grid grid-cols-2 gap-8">
+                                    <div className="space-y-4">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-1">Mieter E-Mail</label>
+                                        <input
+                                            type="email" required
+                                            placeholder="mieter@email.ch"
+                                            className="w-full bg-slate-50 border border-slate-200/50 rounded-2xl px-6 py-5 text-sm font-bold text-slate-900 focus:ring-8 focus:ring-blue-600/5 outline-none transition-all"
+                                            value={formData.tenantEmail}
+                                            onChange={(e) => setFormData({ ...formData, tenantEmail: e.target.value })}
+                                        />
+                                    </div>
+                                    <div className="space-y-4">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-1">Telefonnummer</label>
+                                        <input
+                                            type="tel" required
+                                            placeholder="+41 44 ..."
+                                            className="w-full bg-slate-50 border border-slate-200/50 rounded-2xl px-6 py-5 text-sm font-bold text-slate-900 focus:ring-8 focus:ring-blue-600/5 outline-none transition-all"
+                                            value={formData.tenantPhone}
+                                            onChange={(e) => setFormData({ ...formData, tenantPhone: e.target.value })}
+                                        />
+                                    </div>
+                                </div>
+
                                 <button
                                     type="submit"
                                     disabled={actionLoading}
-                                    className="w-full h-20 rounded-[2rem] font-black text-white bg-slate-900 hover:bg-blue-600 shadow-3xl shadow-slate-900/20 transition-all uppercase tracking-[0.3em] text-[11px] flex items-center justify-center disabled:opacity-50 gap-4 group"
+                                    className="w-full h-24 rounded-[2.5rem] font-black text-white bg-slate-900 hover:bg-blue-600 shadow-3xl shadow-slate-900/20 transition-all uppercase tracking-[0.3em] text-[12px] flex items-center justify-center disabled:opacity-50 gap-6 group mt-6"
                                 >
-                                    {actionLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><CheckCircle2 className="w-5 h-5 group-hover:scale-110 transition-all" /> ÜBERMITTELN ➔</>}
+                                    {actionLoading ? <Loader2 className="w-6 h-6 animate-spin" /> : <><CheckCircle2 className="w-6 h-6 group-hover:scale-110 transition-all" /> MELDUNG ÜBERMITTELN</>}
                                 </button>
                             </form>
                         </div>
