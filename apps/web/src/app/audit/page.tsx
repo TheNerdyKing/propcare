@@ -25,10 +25,19 @@ export default function AuditPage() {
     const [logs, setLogs] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [exporting, setExporting] = useState(false);
 
     useEffect(() => {
         fetchLogs();
     }, []);
+
+    const handleExport = () => {
+        setExporting(true);
+        setTimeout(() => {
+            setExporting(false);
+            window.print();
+        }, 1500);
+    };
 
     const getTenantId = () => {
         try {
@@ -257,8 +266,16 @@ export default function AuditPage() {
                             <h2 className="text-4xl font-black tracking-tighter mb-6 uppercase">Audit Export benötigt?</h2>
                             <p className="text-blue-100/60 text-lg font-medium leading-relaxed italic">Alle Systemaktivitäten werden unveränderlich gespeichert und können für Compliance-Zwecke als signierte Berichte exportiert werden.</p>
                         </div>
-                        <button className="bg-white text-slate-900 px-12 py-6 rounded-2xl font-black uppercase tracking-[0.2em] text-xs hover:scale-105 active:scale-95 transition-all shadow-xl">
-                            In PDF Exportieren
+                        <button 
+                            disabled={exporting}
+                            onClick={handleExport}
+                            className="bg-white text-slate-900 px-12 py-6 rounded-2xl font-black uppercase tracking-[0.2em] text-xs hover:scale-105 active:scale-95 transition-all shadow-xl flex items-center gap-4 disabled:opacity-50"
+                        >
+                            {exporting ? (
+                                <><Loader2 className="w-5 h-5 animate-spin" /> GENERIERE PDF...</>
+                            ) : (
+                                "In PDF Exportieren"
+                            )}
                         </button>
                     </div>
                 </div>

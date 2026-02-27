@@ -8,6 +8,8 @@ export const metadata = {
     description: 'Elevate your property operations with the PropCare AI Staff Portal.',
 }
 
+import { LanguageProvider } from '@/components/LanguageProvider'
+
 export default function RootLayout({
     children,
 }: {
@@ -15,7 +17,11 @@ export default function RootLayout({
 }) {
     return (
         <html lang="de">
-            <body className={inter.className}>{children}</body>
+            <body className={inter.className}>
+                <LanguageProvider>
+                    {children}
+                </LanguageProvider>
+            </body>
         </html>
     )
 }

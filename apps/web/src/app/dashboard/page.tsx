@@ -21,12 +21,14 @@ import {
     ChevronRight
 } from 'lucide-react';
 import AuthenticatedLayout from '@/components/AuthenticatedLayout';
+import { useTranslation } from '@/components/LanguageProvider';
 
 export default function DashboardPage() {
     const [tickets, setTickets] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [stats, setStats] = useState({ total: 0, open: 0, resolved: 0 });
     const [error, setError] = useState<string | null>(null);
+    const { t } = useTranslation();
 
     useEffect(() => {
         fetchData();
@@ -86,16 +88,12 @@ export default function DashboardPage() {
             const { data, error: fetchErr } = await supabase
                 .from('tickets')
                 .select('*, property:properties(name)')
-                .eq('tenant_id', tenantId);
+                .eq('tenant_id', tenantId)
+                .order('created_at', { ascending: false });
 
             if (fetchErr) throw fetchErr;
 
-            const safeTickets = (data || []).sort((a: any, b: any) => {
-                const dateA = new Date(a.createdAt || a.created_at || new Date()).getTime();
-                const dateB = new Date(b.createdAt || b.created_at || new Date()).getTime();
-                return dateB - dateA;
-            });
-
+            const safeTickets = data || [];
             setTickets(safeTickets);
             setStats({
                 total: safeTickets.length,
@@ -126,10 +124,10 @@ export default function DashboardPage() {
                     <div className="space-y-6">
                         <div className="inline-flex items-center space-x-3 bg-blue-600/10 backdrop-blur-md text-blue-600 px-5 py-2.5 rounded-2xl border border-blue-200/50">
                             <Rocket className="w-5 h-5" />
-                            <span className="text-[11px] font-black uppercase tracking-[0.25em]">Verwaltungs-Kontrollzentrum</span>
+                            <span className="text-[11px] font-black uppercase tracking-[0.25em]">Kontrollzentrum</span>
                         </div>
-                        <h1 className="text-6xl font-black text-slate-900 tracking-tighter uppercase leading-[0.9]">Live<br/><span className="text-blue-600">Dashboard</span></h1>
-                        <p className="text-slate-500 font-medium text-xl max-w-xl italic leading-relaxed">Systemstatus und aktuelle Performance-Metriken Ihrer Liegenschaften im Überblick.</p>
+                        <h1 className="text-6xl font-black text-slate-900 tracking-tighter uppercase leading-[0.9]">{t('dashboard_welcome_title')}</h1>
+                        <p className="text-slate-500 font-medium text-xl max-w-xl italic leading-relaxed">{t('dashboard_welcome_subtitle')}</p>
                     </div>
                 </div>
 
@@ -147,7 +145,7 @@ export default function DashboardPage() {
                     <div className="bg-red-50 border border-red-100 rounded-[3rem] p-16 text-center max-w-3xl mx-auto shadow-2xl shadow-red-200/20">
                         <AlertCircle className="w-20 h-20 text-red-500 mx-auto mb-8" />
                         <h2 className="text-3xl font-black text-red-900 uppercase tracking-tight mb-4">{error}</h2>
-                        <p className="text-red-600/60 font-medium mb-10 italic italic">Die Verbindung zum Datenbank-Cluster wurde unterbrochen.</p>
+                        <p className="text-red-600/60 font-medium mb-10 italic">Die Verbindung zum Datenbank-Cluster wurde unterbrochen.</p>
                         <button 
                             onClick={() => fetchData()}
                             className="bg-red-600 text-white px-14 py-6 rounded-[2rem] font-black uppercase tracking-widest text-[11px] shadow-2xl shadow-red-600/30 hover:scale-105 active:scale-95 transition-all"
@@ -182,20 +180,20 @@ export default function DashboardPage() {
                     <>
                         {/* Metrics Grid */}
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-10 mb-20">
-                            <MetricCard title="Eingang Total" value={stats.total} icon={Activity} color="white" dark={true} />
-                            <MetricCard title="In Bearbeitung" value={stats.open} icon={Navigation} color="amber" />
-                            <MetricCard title="Abgeschlossen" value={stats.resolved} icon={CheckCircle2} color="emerald" />
+                            <MetricCard title={t('dashboard_metrics_total')} value={stats.total} icon={Activity} color="white" dark={true} />
+                            <MetricCard title={t('dashboard_metrics_open')} value={stats.open} icon={Navigation} color="amber" />
+                            <MetricCard title={t('dashboard_metrics_resolved')} value={stats.resolved} icon={CheckCircle2} color="emerald" />
                         </div>
 
-                        {/* Recent Activity Table Overhaul */}
+                        {/* Recent Activity Table */}
                         <div className="bg-white/70 backdrop-blur-3xl rounded-[4rem] shadow-3xl shadow-slate-200/50 border border-slate-100 overflow-hidden">
                             <div className="p-14 border-b border-slate-50 flex items-center justify-between">
                                 <div className="flex items-center space-x-4">
                                     <div className="w-3 h-3 bg-blue-600 rounded-full animate-pulse" />
-                                    <h3 className="text-3xl font-black text-slate-900 tracking-tighter uppercase">Letzte Vorgänge</h3>
+                                    <h3 className="text-3xl font-black text-slate-900 tracking-tighter uppercase">{t('dashboard_recent_activity')}</h3>
                                 </div>
                                 <Link href="/tickets" className="bg-slate-50 text-slate-500 px-8 py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-slate-900 hover:text-white transition-all duration-500 flex items-center">
-                                    Gesamte Liste <ChevronRight className="w-5 h-5 ml-2" />
+                                    {t('dashboard_see_all')} <ChevronRight className="w-5 h-5 ml-2" />
                                 </Link>
                             </div>
                             <div className="divide-y divide-slate-50">
@@ -223,7 +221,7 @@ export default function DashboardPage() {
                                                     </div>
                                                 </div>
                                                 <h4 className="text-xl font-black text-slate-900 tracking-tight group-hover:text-blue-600 transition-colors mb-1 truncate">{ticket.property?.name || 'Liegenschaft'}</h4>
-                                                <p className="text-slate-400 font-medium text-sm line-clamp-1 italic italic">{ticket.description || 'Keine Beschreibung hinterlegt.'}</p>
+                                                <p className="text-slate-400 font-medium text-sm line-clamp-1 italic">{ticket.description || 'Keine Beschreibung hinterlegt.'}</p>
                                             </div>
                                             
                                             <div className="text-right ml-10 hidden sm:block">

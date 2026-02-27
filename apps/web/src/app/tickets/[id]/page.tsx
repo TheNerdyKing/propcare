@@ -240,13 +240,13 @@ export default function TicketDetailPage() {
                                 </span>
                                 <div className="relative group">
                                     <select
-                                        className="bg-slate-50 border border-slate-100 rounded-xl px-6 py-3 text-[10px] font-black uppercase tracking-widest text-slate-600 outline-none focus:ring-4 focus:ring-blue-500/10 cursor-pointer appearance-none pr-12 transition-all hover:bg-slate-100"
+                                        className="bg-slate-50 border border-slate-100 rounded-xl px-6 py-3 text-[10px] font-black uppercase tracking-widest text-slate-600 outline-none focus:ring-4 focus:ring-blue-600/10 cursor-pointer appearance-none pr-12 transition-all hover:bg-slate-900 hover:text-white"
                                         value={ticket.status}
                                         onChange={(e) => updateStatus(e.target.value)}
                                     >
-                                        <option value="NEW">Neu</option>
-                                        <option value="IN_PROGRESS">In Bearbeitung</option>
-                                        <option value="COMPLETED">Abgeschlossen</option>
+                                        <option value="NEW">NEU ERFASST</option>
+                                        <option value="IN_PROGRESS">IN BEARBEITUNG</option>
+                                        <option value="COMPLETED">ABGESCHLOSSEN</option>
                                     </select>
                                     <RefreshCw className="absolute right-4 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-300 pointer-events-none" />
                                 </div>

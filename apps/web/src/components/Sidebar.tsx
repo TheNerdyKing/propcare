@@ -20,21 +20,23 @@ import {
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import Logo from './Logo';
-
-const navigation = [
-    { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-    { name: 'Meldungen', href: '/tickets', icon: ClipboardList },
-    { name: 'Liegenschaften', href: '/properties', icon: Building2 },
-    { name: 'Handwerker', href: '/contractors', icon: Users },
-    { name: 'Reporting', href: '/analytics', icon: BarChart3 },
-    { name: 'Protokoll', href: '/audit', icon: Shield },
-    { name: 'Live Portal', href: '/', icon: ExternalLink },
-];
+import { useTranslation } from './LanguageProvider';
 
 export default function Sidebar() {
     const pathname = usePathname();
     const [isOpen, setIsOpen] = useState(false);
     const [userData, setUserData] = useState<any>(null);
+    const { t } = useTranslation();
+
+    const navigation = [
+        { name: t('sidebar_dashboard'), href: '/dashboard', icon: LayoutDashboard },
+        { name: t('sidebar_tickets'), href: '/tickets', icon: ClipboardList },
+        { name: t('sidebar_properties'), href: '/properties', icon: Building2 },
+        { name: t('sidebar_contractors'), href: '/contractors', icon: Users },
+        { name: t('sidebar_reporting'), href: '/analytics', icon: BarChart3 },
+        { name: t('sidebar_audit'), href: '/audit', icon: Shield },
+        { name: t('sidebar_live_portal'), href: '/', icon: ExternalLink },
+    ];
 
     useEffect(() => {
         const userStr = localStorage.getItem('user');
@@ -84,7 +86,7 @@ export default function Sidebar() {
                     <Logo light />
                     <div className="mt-4 flex items-center space-x-2">
                         <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
-                        <p className="text-[10px] font-black text-blue-400 uppercase tracking-[0.3em]">System Online</p>
+                        <p className="text-[10px] font-black text-blue-400 uppercase tracking-[0.3em]">{t('sidebar_system_online')}</p>
                     </div>
                 </div>
 
@@ -143,7 +145,7 @@ export default function Sidebar() {
                             onClick={handleLogout}
                         >
                             <LogOut className="w-4 h-4 mr-3 group-hover:-translate-x-1 transition-transform" />
-                            Session Abmelden
+                            {t('sidebar_logout')}
                         </button>
                     </div>
                 </div>
