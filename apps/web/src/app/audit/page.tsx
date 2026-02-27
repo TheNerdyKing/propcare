@@ -35,15 +35,23 @@ export default function AuditPage() {
         setLoading(true);
         setError(null);
         try {
-            const { data, error: fetchErr } = await supabase
+            let query = supabase
                 .from('audit_logs')
                 .select('*, user:users(name)')
-                .eq('tenant_id', tenantId)
-                .order('created_at', { ascending: false })
-                .limit(100);
+                .eq('tenant_id', tenantId);
+
+            // Try to order by createdAt if it exists, otherwise we'll sort manually
+            const { data, error: fetchErr } = await query.limit(100);
 
             if (fetchErr) throw fetchErr;
-            setLogs(data || []);
+
+            const safeLogs = (data || []).sort((a: any, b: any) => {
+                const dateA = new Date(a.createdAt || a.created_at || 0).getTime();
+                const dateB = new Date(b.createdAt || b.created_at || 0).getTime();
+                return dateB - dateA;
+            });
+
+            setLogs(safeLogs);
         } catch (err: any) {
             console.error('Failed to fetch audit logs:', err);
             setError('Fehler beim Laden der Systemprotokolle.');
