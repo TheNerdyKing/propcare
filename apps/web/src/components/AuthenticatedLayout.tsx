@@ -4,7 +4,7 @@ import Sidebar from './Sidebar';
 
 export default function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
     return (
-        <div className="flex h-screen bg-[#F8FAFC] overflow-hidden">
+        <div className="flex h-screen bg-[#F8FAFC] overflow-hidden notranslate" translate="no">
             {/* Sticky Sidebar */}
             <div className="flex-shrink-0 h-full">
                 <Sidebar />

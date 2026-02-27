@@ -27,18 +27,8 @@ export default function TicketsPage() {
     });
 
     useEffect(() => {
-        const timeout = setTimeout(() => {
-            if (loading) {
-                console.warn('Ticket fetch timeout reached, forcing loading false');
-                setLoading(false);
-                setError('Die Anfrage dauert länger als erwartet. Bitte prüfen Sie Ihre Verbindung.');
-            }
-        }, 8000);
-
         fetchTickets();
         fetchProperties();
-
-        return () => clearTimeout(timeout);
     }, [statusFilter, search]);
 
     const getTenantId = () => {

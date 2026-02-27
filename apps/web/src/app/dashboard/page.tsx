@@ -13,19 +13,12 @@ export default function DashboardPage() {
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        const timeout = setTimeout(() => {
-            if (loading) {
-                setLoading(false);
-                setError('Verbindung zum Server dauert zu lange.');
-            }
-        }, 8000);
-
         fetchData();
 
         const tenantId = getTenantId();
         if (!tenantId) {
             setLoading(false);
-            return () => clearTimeout(timeout);
+            return;
         }
 
         const channel = supabase
@@ -45,7 +38,6 @@ export default function DashboardPage() {
             .subscribe();
 
         return () => {
-            clearTimeout(timeout);
             supabase.removeChannel(channel);
         };
     }, []);
