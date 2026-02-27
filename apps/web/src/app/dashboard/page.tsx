@@ -78,12 +78,16 @@ export default function DashboardPage() {
             const { data, error: fetchErr } = await supabase
                 .from('tickets')
                 .select('*, property:properties(name)')
-                .eq('tenant_id', tenantId)
-                .order('created_at', { ascending: false });
+                .eq('tenant_id', tenantId);
 
             if (fetchErr) throw fetchErr;
 
-            const safeTickets = data || [];
+            const safeTickets = (data || []).sort((a: any, b: any) => {
+                const dateA = new Date(a.createdAt || a.created_at || new Date()).getTime();
+                const dateB = new Date(b.createdAt || b.created_at || new Date()).getTime();
+                return dateB - dateA;
+            });
+
             setTickets(safeTickets);
             setStats({
                 total: safeTickets.length,
@@ -98,59 +102,60 @@ export default function DashboardPage() {
         }
     };
 
-    const getStatusText = (status: string) => {
-        switch (status) {
-            case 'NEW': return 'Neu erfasst';
-            case 'IN_PROGRESS': return 'In Bearbeitung';
-            case 'COMPLETED': return 'Erledigt';
-            default: return status;
-        }
-    };
+    const MetricCard = ({ title, value, icon: Icon, color }: { title: string, value: number, icon: any, color: string }) => (
+        <div className="bg-white p-10 rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100 group hover:shadow-2xl transition-all">
+            <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-8 bg-${color}-50 text-${color}-600 group-hover:scale-110 transition-transform`}>
+                <Icon className="w-8 h-8" />
+            </div>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">{title}</p>
+            <p className="text-4xl font-black text-slate-900 tracking-tighter">{value}</p>
+        </div>
+    );
 
     const getStatusColor = (status: string) => {
         switch (status) {
             case 'NEW': return 'bg-blue-50 text-blue-600 border-blue-100';
-            case 'IN_PROGRESS': return 'bg-amber-50 text-amber-700 border-amber-100';
-            case 'COMPLETED': return 'bg-emerald-50 text-emerald-700 border-emerald-100';
+            case 'IN_PROGRESS': return 'bg-amber-50 text-amber-600 border-amber-100';
+            case 'COMPLETED': return 'bg-emerald-50 text-emerald-600 border-emerald-100';
             default: return 'bg-slate-50 text-slate-600 border-slate-100';
         }
     };
 
-    if (loading) {
-        return (
-            <AuthenticatedLayout>
-                <div className="p-10 flex flex-col items-center justify-center min-h-[70vh]">
-                    <div className="relative">
-                        <Loader2 className="animate-spin w-16 h-16 text-blue-600" />
-                        <div className="absolute inset-0 bg-blue-600/5 blur-2xl rounded-full animate-pulse" />
-                    </div>
-                    <p className="mt-8 text-slate-400 font-black uppercase tracking-[0.4em] text-[10px]">PropCare wird geladen...</p>
-                </div>
-            </AuthenticatedLayout>
-        );
-    }
-
     return (
         <AuthenticatedLayout>
             <div className="p-10 max-w-7xl mx-auto font-sans text-slate-900">
-                <div className="mb-14">
-                    <div className="inline-flex items-center space-x-2 bg-blue-50 text-blue-600 px-4 py-2 rounded-full mb-6">
-                        <Sparkles className="w-4 h-4" />
-                        <span className="text-[10px] font-black uppercase tracking-widest text-blue-700">Übersicht</span>
+                <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-16">
+                    <div>
+                        <div className="inline-flex items-center space-x-2 bg-blue-50 text-blue-600 px-4 py-2 rounded-full mb-6">
+                            <Rocket className="w-4 h-4" />
+                            <span className="text-[10px] font-black uppercase tracking-widest">Verwaltungsportal</span>
+                        </div>
+                        <h1 className="text-5xl font-black text-slate-900 tracking-tighter mb-2 uppercase">Dashboard</h1>
+                        <p className="text-slate-500 font-medium text-xl max-w-2xl italic">Willkommen zurück. Hier ist die Übersicht Ihrer aktuellen Anliegen.</p>
                     </div>
-                    <h1 className="text-6xl font-black text-slate-900 tracking-tighter mb-2 uppercase">Kommandozentrale</h1>
-                    <p className="text-slate-500 font-medium text-xl max-w-2xl italic">Echtzeit-Überblick über Ihr gesamtes Portfolio.</p>
                 </div>
 
-                {error && (
-                    <div className="mb-12 p-8 bg-red-50 text-red-600 rounded-[2rem] border border-red-100 flex items-center gap-6 shadow-xl shadow-red-900/5">
-                        <AlertCircle className="w-6 h-6" />
-                        <p className="font-black text-sm uppercase tracking-tight">{error}</p>
-                        <button onClick={() => fetchData()} className="ml-auto underline font-black text-[10px] uppercase tracking-widest hover:text-red-700">Erneut versuchen</button>
+                {loading && (
+                    <div className="flex flex-col items-center justify-center py-32 space-y-6">
+                        <Loader2 className="w-12 h-12 text-blue-600 animate-spin" />
+                        <p className="text-slate-400 font-bold text-xs uppercase tracking-widest">Daten werden geladen...</p>
                     </div>
                 )}
 
-                {tickets.length === 0 ? (
+                {error && (
+                    <div className="bg-red-50 border border-red-100 rounded-[2rem] p-10 text-center max-w-2xl mx-auto">
+                        <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-6" />
+                        <p className="text-red-900 font-black text-lg mb-8 uppercase tracking-tight">{error}</p>
+                        <button 
+                            onClick={() => fetchData()}
+                            className="bg-red-600 text-white px-10 py-5 rounded-2xl font-black uppercase tracking-widest text-[11px] shadow-xl shadow-red-600/20 hover:scale-105 transition-all"
+                        >
+                            Erneut versuchen
+                        </button>
+                    </div>
+                )}
+
+                {!loading && !error && tickets.length === 0 ? (
                     <div className="space-y-12">
                         <div className="bg-gradient-to-br from-blue-600 to-blue-800 rounded-[3.5rem] p-16 text-white relative overflow-hidden shadow-3xl">
                             <div className="absolute top-0 right-0 w-96 h-96 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl" />
@@ -171,7 +176,7 @@ export default function DashboardPage() {
                             </div>
                         </div>
                     </div>
-                ) : (
+                ) : !loading && !error && (
                     <>
                         {/* Highlights Grid */}
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-10 mb-16">
@@ -180,71 +185,47 @@ export default function DashboardPage() {
                             <MetricCard title="Abgeschlossen" value={stats.resolved} icon={Sparkles} color="emerald" />
                         </div>
 
-                        <div className="flex items-end justify-between mb-10 px-4">
-                            <div>
-                                <h2 className="text-3xl font-black text-slate-900 tracking-tighter uppercase leading-none mb-1">Letzte Aktivitäten</h2>
-                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Die neuesten 5 Meldungen im System</p>
+                        {/* Recent Activity */}
+                        <div className="bg-white rounded-[3rem] shadow-xl shadow-slate-200/40 border border-slate-100 overflow-hidden">
+                            <div className="p-10 border-b border-slate-50 flex items-center justify-between">
+                                <h3 className="text-2xl font-black text-slate-900 tracking-tighter uppercase">Letzte Aktivitäten</h3>
+                                <Link href="/tickets" className="text-blue-600 font-black uppercase tracking-widest text-[10px] hover:translate-x-1 transition-transform flex items-center">
+                                    Alle Tickets <ArrowRight className="w-4 h-4 ml-2" />
+                                </Link>
                             </div>
-                            <Link href="/tickets" className="w-12 h-12 bg-white border border-slate-100 rounded-2xl flex items-center justify-center text-slate-300 hover:bg-blue-600 hover:text-white hover:border-blue-600 hover:shadow-lg hover:shadow-blue-600/20 transition-all">
-                                <ArrowRight className="w-6 h-6" />
-                            </Link>
-                        </div>
-
-                        <div className="bg-white shadow-2xl shadow-slate-200/40 border border-slate-100 overflow-hidden rounded-[3rem]">
-                            <ul className="divide-y divide-slate-50">
+                            <div className="divide-y divide-slate-50">
                                 {tickets.slice(0, 5).map((ticket) => (
-                                    <li key={ticket.id} className="group">
-                                        <Link href={`/tickets/${ticket.id}`} className="block hover:bg-slate-50 transition-all duration-300 px-12 py-8">
-                                            <div className="flex items-center justify-between mb-4">
-                                                <div className="flex items-center gap-4">
-                                                    <span className="font-mono font-black text-blue-600 bg-blue-50 px-3 py-1.5 rounded-xl border border-blue-100 text-[10px] shadow-sm">
-                                                        {ticket.reference_code}
-                                                    </span>
-                                                    <span className={`px-4 py-2 text-[9px] font-black rounded-xl uppercase tracking-widest border shadow-sm ${getStatusColor(ticket.status)}`}>
-                                                        {getStatusText(ticket.status)}
-                                                    </span>
-                                                </div>
-                                                <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">
-                                                    {new Date(ticket.createdAt || ticket.created_at).toLocaleDateString('de-CH')}
+                                    <Link 
+                                        key={ticket.id} 
+                                        href={`/tickets/${ticket.id}`}
+                                        className="flex items-center p-10 hover:bg-slate-50 transition-all group"
+                                    >
+                                        <div className="flex-1">
+                                            <div className="flex items-center space-x-3 mb-3">
+                                                <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest">{ticket.reference_code || ticket.referenceCode}</span>
+                                                <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${getStatusColor(ticket.status)}`}>
+                                                    {ticket.status}
                                                 </span>
                                             </div>
-                                            <div className="flex items-end justify-between">
-                                                <div>
-                                                    <h4 className="text-2xl font-black text-slate-900 group-hover:text-blue-600 transition-colors uppercase tracking-tighter truncate max-w-lg">
-                                                        {ticket.property?.name || '---'}
-                                                    </h4>
-                                                    <p className="text-slate-400 font-bold text-[10px] uppercase tracking-widest mt-1">{ticket.unit_label || 'Liegenschaft allgemein'}</p>
-                                                </div>
-                                                <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-300 group-hover:bg-blue-600 group-hover:text-white group-hover:translate-x-2 transition-all shadow-sm">
-                                                    <ArrowRight className="w-5 h-5" />
-                                                </div>
-                                            </div>
-                                        </Link>
-                                    </li>
+                                            <p className="text-lg font-black text-slate-900 tracking-tight group-hover:text-blue-600 transition-colors">{ticket.property?.name || 'Unbekanntes Objekt'}</p>
+                                            <p className="text-slate-500 font-medium text-sm line-clamp-1 italic">{ticket.description}</p>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest mb-1">Eingang</p>
+                                            <p className="text-sm font-bold text-slate-900">
+                                                {new Date(ticket.createdAt || ticket.created_at).toLocaleDateString('de-CH')}
+                                            </p>
+                                        </div>
+                                        <div className="ml-8 w-12 h-12 rounded-2xl flex items-center justify-center text-slate-300 group-hover:bg-blue-600 group-hover:text-white group-hover:shadow-lg transition-all">
+                                            <ArrowRight className="w-6 h-6" />
+                                        </div>
+                                    </Link>
                                 ))}
-                            </ul>
+                            </div>
                         </div>
                     </>
                 )}
             </div>
         </AuthenticatedLayout>
-    );
-}
-
-function MetricCard({ title, value, icon: Icon, color }: any) {
-    const colorClasses = {
-        blue: 'bg-blue-50 text-blue-600 border-blue-100',
-        amber: 'bg-amber-50 text-amber-600 border-amber-100',
-        emerald: 'bg-emerald-50 text-emerald-600 border-emerald-100'
-    }[color as 'blue' | 'amber' | 'emerald'];
-
-    return (
-        <div className="bg-white p-10 rounded-[2.5rem] shadow-xl shadow-slate-200/30 border border-slate-100 group hover:shadow-2xl hover:-translate-y-2 transition-all duration-500">
-            <div className={`w-14 h-14 ${colorClasses} border rounded-2xl flex items-center justify-center mb-10 shadow-sm group-hover:scale-110 transition-transform duration-500`}>
-                <Icon className="w-7 h-7" />
-            </div>
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3 px-1">{title}</p>
-            <p className="text-6xl font-black text-slate-900 tracking-tighter">{value}</p>
-        </div>
     );
 }

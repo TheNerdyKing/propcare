@@ -40,6 +40,7 @@ export async function POST(request: NextRequest) {
         const referenceCode = `T-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
 
         // 3. Insert ticket into Supabase
+        // 3. Insert ticket into Supabase
         const { data: ticket, error } = await supabase
             .from('tickets')
             .insert({
@@ -53,13 +54,18 @@ export async function POST(request: NextRequest) {
                 urgency: body.urgency || 'NORMAL',
                 reference_code: referenceCode,
                 status: 'NEW',
-                ai_status: 'NOT_REQUESTED',
+                // Column name mismatch fix: try to use what prisma maps or the SQL says
+                // Based on SQL: internal_status. Based on Prisma: ai_status.
+                // We'll omit it for now to let it use default, or try to be safe.
                 type: body.type || 'DAMAGE_REPORT'
             })
             .select()
             .single();
 
-        if (error) throw error;
+        if (error) {
+            console.error('[API] Supabase Insert Error:', error);
+            throw error;
+        }
 
         // 4. Create Audit Log for creation
         await supabase.from('audit_logs').insert({

@@ -69,8 +69,7 @@ export default function TicketsPage() {
             let query = supabase
                 .from('tickets')
                 .select('*, property:properties(name)')
-                .eq('tenant_id', tenantId)
-                .order('created_at', { ascending: false });
+                .eq('tenant_id', tenantId);
 
             if (statusFilter) {
                 query = query.eq('status', statusFilter);
@@ -83,7 +82,13 @@ export default function TicketsPage() {
             const { data, error: fetchErr } = await query;
             if (fetchErr) throw fetchErr;
 
-            setTickets(data || []);
+            const sortedData = (data || []).sort((a, b) => {
+                const dateA = new Date(a.createdAt || a.created_at || 0).getTime();
+                const dateB = new Date(b.createdAt || b.created_at || 0).getTime();
+                return dateB - dateA;
+            });
+
+            setTickets(sortedData);
         } catch (err: any) {
             console.error('Failed to fetch tickets:', err);
             setError('Fehler beim Laden der Tickets.');

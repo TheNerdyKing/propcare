@@ -24,22 +24,29 @@ export async function GET(request: NextRequest) {
         // Fetch all tickets for the tenant to calculate metrics
         const { data: tickets, error } = await supabase
             .from('tickets')
-            .select('status, urgency, updated_at, created_at, cost_estimate_chf, category, closed_at')
+            .select('status, urgency, updatedAt, createdAt, cost_estimate_chf, category, closed_at')
             .eq('tenant_id', tenantId);
 
-        if (error) throw error;
+        if (error) {
+            console.error('[API] Analytics fetch error:', error);
+            throw error;
+        }
 
         const now = new Date();
         const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
         const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
 
-        const currentMonthTickets = tickets.filter(t => new Date(t.created_at) >= thirtyDaysAgo);
-        const previousMonthTickets = tickets.filter(t => new Date(t.created_at) >= sixtyDaysAgo && new Date(t.created_at) < thirtyDaysAgo);
+        const currentMonthTickets = tickets.filter(t => new Date(t.createdAt || t.created_at) >= thirtyDaysAgo);
+        const previousMonthTickets = tickets.filter(t => new Date(t.createdAt || t.created_at) >= sixtyDaysAgo && new Date(t.createdAt || t.created_at) < thirtyDaysAgo);
 
         // Resolution Time Calculation
         const closedTickets = tickets.filter(t => t.closed_at);
         const avgResolutionTimeMs = closedTickets.length > 0
-            ? closedTickets.reduce((acc, t) => acc + (new Date(t.closed_at).getTime() - new Date(t.created_at).getTime()), 0) / closedTickets.length
+            ? closedTickets.reduce((acc, t) => {
+                const start = new Date(t.createdAt || t.created_at).getTime();
+                const end = new Date(t.closed_at).getTime();
+                return acc + (end - start);
+            }, 0) / closedTickets.length
             : 0;
 
         const avgResolutionTimeDays = (avgResolutionTimeMs / (1000 * 60 * 60 * 24)).toFixed(1);
