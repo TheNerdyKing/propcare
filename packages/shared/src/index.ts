@@ -8,4 +8,4 @@ export const RegistrationSchema = z.object({
 
 export type RegistrationData = z.infer<typeof RegistrationSchema>;
 
-export * from './ai/analysis.schema.ts';
+export * from './ai/analysis.schema';
