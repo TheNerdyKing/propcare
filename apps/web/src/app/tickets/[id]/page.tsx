@@ -140,7 +140,7 @@ export default function TicketDetailPage() {
         try {
             const { error: updErr } = await supabase
                 .from('tickets')
-                .update({ status, updated_at: new Date().toISOString() })
+                .update({ status, updatedAt: new Date().toISOString() })
                 .eq('id', id);
 
             if (updErr) throw updErr;
