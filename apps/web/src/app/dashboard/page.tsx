@@ -88,12 +88,16 @@ export default function DashboardPage() {
             const { data, error: fetchErr } = await supabase
                 .from('tickets')
                 .select('*, property:properties(name)')
-                .eq('tenant_id', tenantId)
-                .order('created_at', { ascending: false });
+                .eq('tenant_id', tenantId);
 
             if (fetchErr) throw fetchErr;
 
-            const safeTickets = data || [];
+            const safeTickets = (data || []).sort((a: any, b: any) => {
+                const dateA = new Date(a.createdAt || a.created_at || 0).getTime();
+                const dateB = new Date(b.createdAt || b.created_at || 0).getTime();
+                return dateB - dateA;
+            });
+
             setTickets(safeTickets);
             setStats({
                 total: safeTickets.length,

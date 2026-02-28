@@ -21,33 +21,49 @@ import {
 } from 'lucide-react';
 
 export default function AnalyticsPage() {
-    const [stats, setStats] = useState({
+    const [stats, setStats] = useState<any>({
         total: 0,
         new: 0,
         inProgress: 0,
         completed: 0,
         emergency: 0,
-        avgResolutionTime: '2.4 Tage',
-        totalCost: 'CHF 0.00',
-        trend: 0
+        avgResolutionTime: '0 Tage',
+        totalCost: 0,
+        avgCost: 0,
+        trend: 0,
+        timeSeriesData: [],
+        categoryData: [],
+        propertyCount: 0,
+        efficiency: 0
     });
+    const [properties, setProperties] = useState<any[]>([]);
+    const [selectedPropertyId, setSelectedPropertyId] = useState('all');
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        fetchProperties();
         fetchStats();
-    }, []);
+    }, [selectedPropertyId]);
 
     const getTenantId = () => {
         try {
             const userStr = localStorage.getItem('user');
             if (!userStr) return null;
             const user = JSON.parse(userStr);
-            return user.tenantId ||
-                user.tenant_id ||
-                (user.tenants?.id) ||
-                (Array.isArray(user.tenants) ? user.tenants[0]?.id : user.tenants?.id);
+            return user.tenantId || user.tenant_id || user.tenants?.id || (Array.isArray(user.tenants) ? user.tenants[0]?.id : user.tenants?.id);
         } catch (e) {
             return null;
+        }
+    };
+
+    const fetchProperties = async () => {
+        const tenantId = getTenantId();
+        if (!tenantId) return;
+        try {
+            const { data, error } = await supabase.from('properties').select('id, name').eq('tenant_id', tenantId);
+            if (!error && data) setProperties(data);
+        } catch (err) {
+            console.error('Failed to fetch properties', err);
         }
     };
 
@@ -59,21 +75,11 @@ export default function AnalyticsPage() {
         }
 
         try {
-            const res = await fetch(`/api/reporting/metrics?tenantId=${tenantId}`);
+            setLoading(true);
+            const res = await fetch(`/api/reporting/metrics?tenantId=${tenantId}&propertyId=${selectedPropertyId}`);
             if (!res.ok) throw new Error('API request failed');
             const data = await res.json();
-
-            setStats({
-                total: data.total,
-                new: data.new,
-                inProgress: data.inProgress,
-                completed: data.completed,
-                emergency: data.emergency,
-                avgResolutionTime: data.avgResolutionTime || '2.4 Tage',
-                totalCost: data.totalCost || 'CHF 0.00',
-                trend: data.trend || 0
-            });
-
+            setStats(data);
         } catch (err) {
             console.error('Failed to fetch stats', err);
         } finally {
@@ -81,172 +87,263 @@ export default function AnalyticsPage() {
         }
     };
 
-    const handleExport = async () => {
-        const tenantId = getTenantId();
-        if (!tenantId) return;
-
-        try {
-            const { data: tickets, error: expErr } = await supabase
-                .from('tickets')
-                .select('reference_code, status, urgency, category, tenant_name, createdAt')
-                .eq('tenant_id', tenantId);
-
-            if (expErr) throw expErr;
-            if (!tickets || tickets.length === 0) return alert('Keine Daten für Export gefunden.');
-
-            const headers = ['Referenz', 'Status', 'Dringlichkeit', 'Kategorie', 'Mieter', 'Datum'];
-            const csvContent = [
-                headers.join(','),
-                ...tickets.map(t => [
-                    (t as any).reference_code,
-                    t.status,
-                    t.urgency,
-                    t.category || '-',
-                    `"${t.tenant_name}"`,
-                    new Date((t as any).createdAt || (t as any).created_at || Date.now()).toLocaleDateString('de-CH')
-                ].join(','))
-            ].join('\n');
-
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.setAttribute('href', url);
-            link.setAttribute('download', `PropCare_Performance_Report_${new Date().toISOString().split('T')[0]}.csv`);
-            link.style.visibility = 'hidden';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        } catch (err: any) {
-            alert('Export fehlgeschlagen: ' + err.message);
-        }
+    const handlePrint = () => {
+        window.print();
     };
 
     return (
         <AuthenticatedLayout>
-            <div className="p-12 max-w-7xl mx-auto font-sans text-slate-900 animate-in fade-in slide-in-from-bottom-4 duration-1000">
-                <div className="flex flex-col md:flex-row md:items-end justify-between gap-10 mb-20">
-                    <div className="space-y-6">
-                        <div className="inline-flex items-center space-x-3 bg-indigo-600/10 backdrop-blur-md text-indigo-600 px-5 py-2.5 rounded-2xl border border-indigo-200/50 hover:scale-105 transition-transform">
-                            <BarChart3 className="w-5 h-5" />
-                            <span className="text-[11px] font-black uppercase tracking-[0.2em]">Data Insights & Analytics</span>
-                        </div>
-                        <h1 className="text-6xl font-black text-slate-900 tracking-tighter uppercase leading-[0.9]">Smart<br/><span className="text-indigo-600">Reporting</span></h1>
-                        <p className="text-slate-500 font-medium text-xl max-w-xl italic leading-relaxed">Tiefgehende Analyse Ihrer Portfolio-Performance und Response-Metriken.</p>
+            <div className="p-8 max-w-[1400px] mx-auto font-sans text-slate-900 print:p-0">
+                {/* Header */}
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12 print:mb-8">
+                    <div>
+                        <h1 className="text-4xl font-black text-slate-900 tracking-tight">Reporting</h1>
+                        <p className="text-slate-500 font-medium">Auswertungen und Statistiken</p>
                     </div>
-                    
-                    <div className="flex gap-4">
-                        <button className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-xl shadow-slate-200/40 flex items-center space-x-6 h-full hover:bg-slate-50 transition-all group">
-                            <div className="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                                <Calendar className="w-7 h-7" />
+
+                    <div className="flex flex-wrap items-center gap-4 print:hidden">
+                        <div className="relative min-w-[240px]">
+                            <select
+                                value={selectedPropertyId}
+                                onChange={(e) => setSelectedPropertyId(e.target.value)}
+                                className="w-full h-14 bg-white border border-slate-200 rounded-2xl px-6 font-bold text-slate-900 appearance-none focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all cursor-pointer shadow-sm"
+                            >
+                                <option value="all">Alle Liegenschaften</option>
+                                {properties.map(p => (
+                                    <option key={p.id} value={p.id}>{p.name}</option>
+                                ))}
+                            </select>
+                            <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                                <ChevronDown className="w-4 h-4" />
                             </div>
-                            <div>
-                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Zeitraum</p>
-                                <div className="flex items-center space-x-2">
-                                    <p className="font-black text-slate-900 text-lg">Letzte 30 Tage</p>
-                                    <ChevronDown className="w-4 h-4 text-slate-300" />
-                                </div>
-                            </div>
-                        </button>
-                        
+                        </div>
+
                         <button
-                            onClick={handleExport}
-                            className="bg-slate-900 text-white px-12 py-7 rounded-[2.5rem] font-black uppercase tracking-[0.2em] text-[11px] flex items-center shadow-3xl shadow-slate-900/40 hover:scale-105 active:scale-95 transition-all"
+                            onClick={handlePrint}
+                            className="bg-white text-slate-900 border border-slate-200 px-8 h-14 rounded-2xl font-black uppercase tracking-widest text-[10px] flex items-center shadow-sm hover:bg-slate-50 transition-all"
                         >
-                            <Download className="w-6 h-6 mr-4" />
+                            <Download className="w-4 h-4 mr-3 text-slate-400" />
                             Report Exportieren
                         </button>
                     </div>
                 </div>
 
                 {loading ? (
-                    <div className="p-40 text-center flex flex-col items-center">
-                        <div className="relative">
-                            <div className="absolute inset-0 bg-indigo-600/20 rounded-full blur-3xl animate-pulse" />
-                            <Loader2 className="animate-spin w-20 h-20 text-indigo-600 relative z-10" />
-                        </div>
-                        <p className="mt-10 text-slate-400 font-black uppercase tracking-[0.4em] text-[12px]">Berechne Datensätze...</p>
+                    <div className="py-20 flex flex-col items-center">
+                        <Loader2 className="animate-spin w-12 h-12 text-blue-600 mb-4" />
+                        <p className="text-slate-400 font-black uppercase tracking-widest text-[10px]">Lade Berichtsdaten...</p>
                     </div>
                 ) : (
-                    <div className="space-y-16">
-                        {/* High-Level KPIs */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                            <MetricCard title="Gesamtvolumen" value={stats.total} icon={Activity} color="white" dark={true} />
-                            <MetricCard title="Aktivität" value={stats.new + stats.inProgress} icon={Clock} color="amber" />
-                            <MetricCard title="Abschlussrate" value={stats.completed} icon={CheckCircle2} color="emerald" />
-                            <MetricCard title="Notfall-Quote" value={stats.emergency} icon={AlertTriangle} color="red" />
+                    <div className="space-y-8">
+                        {/* Top KPIs */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                            <StatCard
+                                title="Offene Meldungen"
+                                value={stats.new + stats.inProgress}
+                                subtext={`${stats.new} neu, ${stats.inProgress} in Bearbeitung`}
+                                icon={Clock}
+                            />
+                            <StatCard
+                                title="Erledigt"
+                                value={stats.completed}
+                                subtext={`${stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0}% aller Meldungen`}
+                                icon={CheckCircle2}
+                            />
+                            <StatCard
+                                title="Notfälle"
+                                value={stats.emergency}
+                                subtext="Dringende Meldungen"
+                                icon={AlertTriangle}
+                            />
+                            <StatCard
+                                title="Ø Kosten"
+                                value={`CHF ${Math.round(stats.avgCost)}`}
+                                subtext="Pro Meldung (geschätzt)"
+                                icon={Activity}
+                            />
                         </div>
 
-                        {/* Detailed Analysis Section */}
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-                            {/* Performance Radar */}
-                            <div className="bg-slate-900 rounded-[4rem] p-16 text-white relative overflow-hidden shadow-3xl group">
-                                <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-indigo-600/20 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/2" />
-                                <div className="relative z-10">
-                                    <div className="flex items-center justify-between mb-16">
-                                        <h3 className="text-3xl font-black tracking-tighter uppercase leading-none">Performance Index</h3>
-                                        <div className="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center border border-white/10">
-                                            <TrendingUp className="w-8 h-8 text-indigo-400" />
-                                        </div>
-                                    </div>
-                                    
-                                    <div className="mb-16">
-                                        <div className="flex items-baseline space-x-6 mb-4">
-                                            <span className="text-9xl font-black text-white tracking-tighter leading-none">{stats.avgResolutionTime.split(' ')[0]}</span>
-                                            <span className="text-3xl font-black text-indigo-400 uppercase tracking-tighter tracking-widest">Tage ➔ Ø</span>
-                                        </div>
-                                        <p className="text-white/40 text-lg font-medium italic italic">Durchschnittliche Zeit von der Erfassung bis zur vollständigen Behebung.</p>
-                                    </div>
-
-                                    <div className={`inline-flex items-center px-8 py-4 rounded-3xl gap-4 font-black uppercase tracking-widest text-[11px] ${stats.trend <= 0 ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
-                                        <TrendingUp className={`w-5 h-5 ${stats.trend <= 0 ? '' : 'rotate-180'}`} />
-                                        {stats.trend <= 0 
-                                            ? `${Math.abs(stats.trend)}% schneller als im Vormonat` 
-                                            : `${stats.trend}% höhere Last gegenüber Vormonat`}
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Status Distribution Visual */}
-                            <div className="bg-white/70 backdrop-blur-3xl p-16 rounded-[4rem] shadow-3xl shadow-slate-200/50 border border-slate-100 flex flex-col group">
-                                <div className="flex items-center justify-between mb-16">
-                                    <h3 className="text-3xl font-black text-slate-900 tracking-tighter uppercase leading-none">Status-Mix</h3>
-                                    <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center border border-slate-100 group-hover:bg-slate-900 group-hover:text-white transition-all duration-500">
-                                        <PieChart className="w-8 h-8" />
-                                    </div>
-                                </div>
-                                <div className="space-y-12 shrink-0">
-                                    <ProgressStrip label="Neu eingegangen" value={stats.new} total={stats.total} color="bg-indigo-600" />
-                                    <ProgressStrip label="In aktiver Bearbeitung" value={stats.inProgress} total={stats.total} color="bg-amber-500" />
-                                    <ProgressStrip label="Erfolgreich abgeschlossen" value={stats.completed} total={stats.total} color="bg-emerald-500" />
-                                </div>
-                            </div>
+                        {/* Middle Charts */}
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                            <ChartCard title="Meldungen nach Kategorie" sub="Verteilung der Schadensmeldungen">
+                                <SimpleBarChart data={stats.categoryData} />
+                            </ChartCard>
+                            <ChartCard title="Meldungen über Zeit" sub="Letzte 7 Tage">
+                                <SimpleLineChart data={stats.timeSeriesData} />
+                            </ChartCard>
                         </div>
 
-                        {/* Financial Analytics Preview Block */}
-                        <div className="bg-gradient-to-br from-indigo-700 to-blue-900 rounded-[4.5rem] p-20 text-white relative overflow-hidden shadow-3xl shadow-indigo-900/30 group">
-                            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10" />
-                            <div className="relative z-10 flex flex-col lg:flex-row items-center justify-between gap-16">
-                                <div className="max-w-2xl">
-                                    <div className="flex items-center space-x-4 mb-4">
-                                        <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
-                                        <p className="text-[11px] font-black text-indigo-200 uppercase tracking-[0.4em]">Finanzielle Transparenz</p>
-                                    </div>
-                                    <h2 className="text-6xl font-black tracking-tighter mb-8 uppercase leading-[0.9]">Kosten-Analyse & Budgetierung</h2>
-                                    <p className="text-indigo-100/60 text-2xl font-medium leading-relaxed italic">Erhalten Sie volle Einsicht in die Reparaturkosten-Struktur Ihres Portfolios. Automatisch konsolidiert aus allen Handwerker-Belegen.</p>
-                                </div>
-                                <div className="bg-white/10 backdrop-blur-3xl p-14 rounded-[3.5rem] border border-white/10 min-w-[340px] text-center group-hover:scale-105 transition-transform duration-700">
-                                    <p className="text-[11px] font-black uppercase tracking-[0.3em] mb-4 text-indigo-200/60">Gesamtaufwand (30T)</p>
-                                    <p className="text-6xl font-black tracking-tighter text-white mb-10">{stats.totalCost}</p>
-                                    <button className="w-full py-6 rounded-2xl bg-white text-slate-900 font-black uppercase tracking-widest text-[11px] shadow-xl hover:shadow-2xl transition-all">
-                                        Details Einsehen
-                                    </button>
-                                </div>
-                            </div>
+                        {/* Bottom KPIs */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <StatCard
+                                title="Liegenschaften"
+                                value={stats.propertyCount}
+                                subtext="Verwaltete Objekte"
+                            />
+                            <StatCard
+                                title="Gesamtkosten"
+                                value={`CHF ${Math.round(stats.totalCost).toLocaleString('de-CH')}`}
+                                subtext="Geschätzte Reparaturkosten"
+                            />
+                            <StatCard
+                                title="Effizienz"
+                                value={`${stats.efficiency}%`}
+                                subtext="Erledigungsrate"
+                            />
                         </div>
                     </div>
                 )}
             </div>
+            <style jsx global>{`
+                @media print {
+                    @page { margin: 1cm; }
+                    body { background: white; }
+                    .AuthenticatedLayout_main { padding: 0 !important; margin: 0 !important; }
+                    aside, nav, .print-hidden { display: none !important; }
+                }
+            `}</style>
         </AuthenticatedLayout>
+    );
+}
+
+function StatCard({ title, value, subtext, icon: Icon }: any) {
+    return (
+        <div className="bg-white p-8 rounded-3xl border border-slate-200/60 shadow-sm flex flex-col items-start min-h-[160px] hover:border-blue-500/30 transition-all duration-500">
+            <div className="flex items-center justify-between w-full mb-4">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{title}</p>
+                {Icon && <Icon className="w-3.5 h-3.5 text-slate-300" />}
+            </div>
+            <p className="text-3xl font-black text-slate-900 tracking-tighter mb-1.5">{value}</p>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">{subtext}</p>
+        </div>
+    );
+}
+
+function ChartCard({ title, sub, children }: any) {
+    return (
+        <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200/60 shadow-sm flex flex-col h-[400px]">
+            <div className="mb-8">
+                <h3 className="text-xl font-black text-slate-900 tracking-tight leading-none">{title}</h3>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">{sub}</p>
+            </div>
+            <div className="flex-1 w-full relative">
+                {children}
+            </div>
+        </div>
+    );
+}
+
+function SimpleBarChart({ data }: { data: any[] }) {
+    if (!data || data.length === 0) return null;
+    const max = Math.max(...data.map(d => d.count), 5);
+
+    return (
+        <div className="h-full w-full flex items-end justify-between px-4 pb-12 pt-4">
+            {data.map((d, i) => (
+                <div key={i} className="flex flex-col items-center flex-1 group">
+                    <div className="relative w-12 flex flex-col justify-end h-full">
+                        <div
+                            className="bg-slate-100 rounded-xl w-full transition-all duration-1000 group-hover:bg-blue-600 group-hover:shadow-[0_0_20px_rgba(37,99,235,0.3)]"
+                            style={{ height: `${(d.count / max) * 100}%` }}
+                        >
+                            <div className="absolute -top-10 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-900 text-white text-[10px] font-black px-2 py-1 rounded-lg">
+                                {d.count}
+                            </div>
+                        </div>
+                    </div>
+                    <span className="mt-6 text-[9px] font-black text-slate-400 uppercase tracking-widest transform -rotate-45 origin-top-left -ml-2 whitespace-nowrap">
+                        {d.name}
+                    </span>
+                </div>
+            ))}
+            {/* Grid lines */}
+            <div className="absolute inset-0 flex flex-col justify-between pointer-events-none opacity-20 py-12 pt-4">
+                {[...Array(5)].map((_, i) => (
+                    <div key={i} className="w-full border-t border-dashed border-slate-900" />
+                ))}
+            </div>
+            <div className="absolute left-0 top-0 bottom-0 border-l border-slate-100" />
+            <div className="absolute left-0 right-0 bottom-12 border-b border-slate-900 opacity-20" />
+        </div>
+    );
+}
+
+function SimpleLineChart({ data }: { data: any[] }) {
+    if (!data || data.length === 0) return null;
+    const max = Math.max(...data.map(d => d.count), 5);
+    const width = 600;
+    const height = 240;
+    const padding = 40;
+
+    const points = data.map((d, i) => {
+        const x = (i / (data.length - 1)) * (width - padding * 2) + padding;
+        const y = height - ((d.count / max) * (height - padding * 2)) - padding;
+        return `${x},${y}`;
+    }).join(' ');
+
+    const areaPoints = `${padding},${height - padding} ${points} ${width - padding},${height - padding}`;
+
+    return (
+        <div className="h-full w-full flex flex-col">
+            <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-full overflow-visible">
+                {/* Area Background */}
+                <polyline
+                    points={areaPoints}
+                    fill="url(#area-gradient)"
+                    className="opacity-10"
+                />
+                <defs>
+                    <linearGradient id="area-gradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#2563eb" />
+                        <stop offset="100%" stopColor="white" stopOpacity="0" />
+                    </linearGradient>
+                </defs>
+
+                {/* Grid Lines */}
+                {[...Array(5)].map((_, i) => (
+                    <line
+                        key={i}
+                        x1={padding} y1={padding + (i * (height - padding * 2) / 4)}
+                        x2={width - padding} y2={padding + (i * (height - padding * 2) / 4)}
+                        stroke="#f1f5f9" strokeWidth="1" strokeDasharray="4 4"
+                    />
+                ))}
+
+                {/* Main Line */}
+                <polyline
+                    points={points}
+                    fill="none"
+                    stroke="#2563eb"
+                    strokeWidth="4"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="drop-shadow-[0_4px_10px_rgba(37,99,235,0.3)] transition-all duration-1000"
+                    style={{ strokeDasharray: 1000, strokeDashoffset: 0 }}
+                />
+
+                {/* Points */}
+                {data.map((d, i) => {
+                    const x = (i / (data.length - 1)) * (width - padding * 2) + padding;
+                    const y = height - ((d.count / max) * (height - padding * 2)) - padding;
+                    return (
+                        <g key={i} className="group cursor-pointer">
+                            <circle cx={x} cy={y} r="6" fill="#2563eb" className="group-hover:r-8 transition-all" />
+                            <circle cx={x} cy={y} r="12" fill="#2563eb" fillOpacity="0.1" className="opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <text x={x} y={y - 15} textAnchor="middle" className="opacity-0 group-hover:opacity-100 text-[10px] font-black fill-slate-900 transition-opacity">
+                                {d.count}
+                            </text>
+                            <text x={x} y={height - 10} textAnchor="middle" className="text-[9px] font-black fill-slate-400 tracking-tighter uppercase">
+                                {d.date}
+                            </text>
+                        </g>
+                    );
+                })}
+
+                {/* Axes */}
+                <line x1={padding} y1={height - padding} x2={width - padding} y2={height - padding} stroke="#0f172a" strokeWidth="2" strokeOpacity="0.1" />
+                <line x1={padding} y1={padding} x2={padding} y2={height - padding} stroke="#0f172a" strokeWidth="2" strokeOpacity="0.1" />
+            </svg>
+        </div>
     );
 }
 
@@ -265,7 +362,7 @@ function MetricCard({ title, value, icon: Icon, color, dark = false }: any) {
             </div>
         );
     }
-    
+
     const colors: any = {
         amber: 'bg-amber-50 text-amber-600 border-amber-100',
         emerald: 'bg-emerald-50 text-emerald-600 border-emerald-100',

@@ -4,17 +4,17 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import AuthenticatedLayout from '@/components/AuthenticatedLayout';
 import { useTranslation } from '@/components/LanguageProvider';
-import { 
-    Building2, 
-    Plus, 
-    Download, 
-    ChevronRight, 
-    MapPin, 
-    X, 
-    FileText, 
-    CheckCircle2, 
-    AlertCircle, 
-    Loader2, 
+import {
+    Building2,
+    Plus,
+    Download,
+    ChevronRight,
+    MapPin,
+    X,
+    FileText,
+    CheckCircle2,
+    AlertCircle,
+    Loader2,
     Trash2,
     Search,
     Filter,
@@ -150,7 +150,34 @@ export default function PropertiesPage() {
         }
     };
 
-    const filteredProperties = properties.filter(p => 
+    const handleImport = async (csvText: string) => {
+        const tenantId = getTenantId();
+        if (!tenantId || !csvText) return;
+
+        setActionLoading(true);
+        try {
+            const res = await fetch('/api/public/import-properties', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ tenantId, csv: csvText })
+            });
+
+            if (!res.ok) {
+                const errData = await res.json();
+                throw new Error(errData.error || 'Import failed');
+            }
+
+            alert(language === 'de' ? 'Import erfolgreich abgeschlossen.' : 'Import completed successfully.');
+            setShowImportModal(false);
+            await fetchProperties();
+        } catch (err: any) {
+            alert(`Import Fehler: ${err.message}`);
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
+    const filteredProperties = properties.filter(p =>
         p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         p.address_line1.toLowerCase().includes(searchTerm.toLowerCase())
     );
@@ -164,10 +191,10 @@ export default function PropertiesPage() {
                             <Building2 className="w-5 h-5" />
                             <span className="text-[11px] font-black uppercase tracking-[0.2em]">{t('sidebar_properties')}</span>
                         </div>
-                        <h1 className="text-6xl font-black text-slate-900 tracking-tighter uppercase leading-[0.9]">{t('properties_title').includes(' ') ? t('properties_title').split(' ').map((word, i) => i === 1 ? <><br/><span key={i} className="text-blue-600">{word}</span></> : word) : t('properties_title')}</h1>
+                        <h1 className="text-6xl font-black text-slate-900 tracking-tighter uppercase leading-[0.9]">{t('properties_title').includes(' ') ? t('properties_title').split(' ').map((word, i) => i === 1 ? <><br /><span key={i} className="text-blue-600">{word}</span></> : word) : t('properties_title')}</h1>
                         <p className="text-slate-500 font-medium text-xl max-w-xl italic leading-relaxed">{t('properties_subtitle')}</p>
                     </div>
-                    
+
                     <div className="flex gap-4">
                         <button
                             onClick={() => setShowImportModal(true)}
@@ -235,27 +262,27 @@ export default function PropertiesPage() {
                                         <Building2 className="w-9 h-9" />
                                     </div>
                                     <div className="flex items-center gap-3">
-                                        <button 
-                                            onClick={() => handleDelete(p.id, p.name)} 
+                                        <button
+                                            onClick={() => handleDelete(p.id, p.name)}
                                             className="w-12 h-12 flex items-center justify-center bg-slate-50 text-slate-300 hover:bg-red-500 hover:text-white rounded-2xl transition-all duration-500"
                                         >
                                             <Trash2 className="w-5 h-5" />
                                         </button>
-                                        <button 
+                                        <button
                                             onClick={() => {
                                                 setEditingProperty(p);
                                                 setFormData({ name: p.name || '', addressLine1: p.address_line1 || '', zip: p.zip || '', city: p.city || '' });
                                                 setShowModal(true);
-                                            }} 
+                                            }}
                                             className="h-12 px-6 flex items-center justify-center bg-slate-50 text-slate-900 text-[10px] font-black uppercase tracking-widest hover:bg-slate-900 hover:text-white rounded-2xl transition-all duration-500"
                                         >
                                             {language === 'de' ? 'Editieren' : 'Edit'}
                                         </button>
                                     </div>
                                 </div>
-                                
+
                                 <h3 className="text-3xl font-black text-slate-900 mb-6 uppercase tracking-tighter truncate leading-none group-hover:text-blue-600 transition-colors">{p.name}</h3>
-                                
+
                                 <div className="space-y-3 mb-12">
                                     <div className="flex items-center text-slate-400 font-bold text-sm italic italic">
                                         <MapPin className="w-4 h-4 mr-3 text-blue-500" />
@@ -265,7 +292,7 @@ export default function PropertiesPage() {
                                         {p.zip} {p.city}
                                     </div>
                                 </div>
-                                
+
                                 <div className="pt-10 border-t border-slate-50 flex justify-between items-center">
                                     <div className="flex gap-10">
                                         <div>
@@ -369,6 +396,58 @@ export default function PropertiesPage() {
                                     {actionLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><CheckCircle2 className="w-5 h-5" /> Objekt Speichern</>}
                                 </button>
                             </form>
+                        </div>
+                    </div>
+                )}
+
+                {/* Import Modal */}
+                {showImportModal && (
+                    <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-md flex items-center justify-center p-8 z-[110] animate-in fade-in duration-500">
+                        <div className="bg-white rounded-[3.5rem] shadow-[0_50px_100px_rgba(0,0,0,0.4)] max-w-2xl w-full border border-white/20 overflow-hidden animate-in zoom-in-95 duration-500">
+                            <div className="p-12 border-b border-slate-50 flex justify-between items-center">
+                                <div>
+                                    <p className="text-[10px] font-black text-blue-600 uppercase tracking-[0.3em] mb-2">Bulk Import</p>
+                                    <h2 className="text-4xl font-black text-slate-900 tracking-tighter uppercase leading-none">Excel / CSV Import</h2>
+                                </div>
+                                <button onClick={() => setShowImportModal(false)} className="w-14 h-14 bg-slate-50 border border-slate-100 hover:bg-slate-900 hover:text-white rounded-2xl flex items-center justify-center transition-all duration-500">
+                                    <X className="w-7 h-7" />
+                                </button>
+                            </div>
+                            <div className="p-12 space-y-10">
+                                <div className="bg-blue-50/50 p-8 rounded-3xl border border-blue-100">
+                                    <p className="text-xs font-bold text-blue-950 mb-4 uppercase tracking-widest">Anleitung:</p>
+                                    <ul className="text-xs text-blue-900/70 space-y-2 font-medium">
+                                        <li>1. Bereiten Sie eine CSV-Datei vor</li>
+                                        <li>2. Spalten: <code className="bg-white px-2 py-0.5 rounded border border-blue-200">name, address, zip, city</code></li>
+                                        <li>3. Kopieren Sie den Text in das Feld unten oder laden Sie die Datei hoch</li>
+                                    </ul>
+                                </div>
+
+                                <textarea
+                                    className="w-full h-48 bg-slate-50 border border-slate-200 rounded-3xl p-8 text-sm font-mono outline-none focus:ring-8 focus:ring-blue-600/5 transition-all"
+                                    placeholder="name,address,zip,city&#10;Haus A,Musterstr 1,8000,Zürich&#10;Haus B,Postweg 2,8001,Zürich"
+                                    id="csv-input"
+                                />
+
+                                <div className="flex gap-4">
+                                    <button
+                                        onClick={() => setShowImportModal(false)}
+                                        className="flex-1 h-20 rounded-[2rem] font-black text-slate-400 border border-slate-100 hover:bg-slate-50 transition-all uppercase tracking-widest text-[10px]"
+                                    >
+                                        Abbrechen
+                                    </button>
+                                    <button
+                                        disabled={actionLoading}
+                                        onClick={() => {
+                                            const val = (document.getElementById('csv-input') as HTMLTextAreaElement).value;
+                                            handleImport(val);
+                                        }}
+                                        className="flex-[2] h-20 rounded-[2rem] font-black text-white bg-blue-600 hover:bg-blue-700 shadow-3xl shadow-blue-600/20 transition-all uppercase tracking-[0.3em] text-[11px] flex items-center justify-center gap-4"
+                                    >
+                                        {actionLoading ? <Loader2 className="w-6 h-6 animate-spin" /> : <><Download className="w-6 h-6" /> Import Starten</>}
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 )}

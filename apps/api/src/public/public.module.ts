@@ -3,7 +3,6 @@ import { PublicController } from './public.controller';
 import { PublicService } from './public.service';
 import { PrismaModule } from '../prisma/prisma.module';
 
-// import { BullModule } from '@nestjs/bullmq';
 import { AiModule } from '../ai/ai.module';
 import { EmailModule } from '../email/email.module';
 
@@ -12,10 +11,6 @@ import { EmailModule } from '../email/email.module';
         PrismaModule,
         AiModule,
         EmailModule,
-        BullModule.registerQueue({
-            name: 'ai-processing',
-        }),
-        */
     ],
     controllers: [PublicController],
     providers: [PublicService],

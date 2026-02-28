@@ -14,6 +14,7 @@ export async function GET(request: NextRequest) {
     try {
         const { searchParams } = new URL(request.url);
         const tenantId = searchParams.get('tenantId');
+        const propertyId = searchParams.get('propertyId');
 
         if (!tenantId) {
             return NextResponse.json({ error: 'Missing tenantId' }, { status: 400 });
@@ -22,15 +23,27 @@ export async function GET(request: NextRequest) {
         const supabase = getSupabase();
 
         // Fetch all tickets for the tenant to calculate metrics
-        const { data: tickets, error } = await supabase
+        let query = supabase
             .from('tickets')
-            .select('status, urgency, updatedAt, createdAt, cost_estimate_chf, category, closed_at')
+            .select('id, status, urgency, updatedAt, createdAt, cost_estimate_chf, category, closed_at, property_id')
             .eq('tenant_id', tenantId);
+
+        if (propertyId && propertyId !== 'all') {
+            query = query.eq('property_id', propertyId);
+        }
+
+        const { data: tickets, error } = await query;
 
         if (error) {
             console.error('[API] Analytics fetch error:', error);
             throw error;
         }
+
+        // Fetch property count for the tenant
+        const { count: propertyCount } = await supabase
+            .from('properties')
+            .select('*', { count: 'exact', head: true })
+            .eq('tenant_id', tenantId);
 
         const now = new Date();
         const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
@@ -56,26 +69,69 @@ export async function GET(request: NextRequest) {
 
         // Cost Calculation
         const totalCost = tickets.reduce((acc, t) => acc + (Number(t.cost_estimate_chf) || 0), 0);
+        const avgCost = tickets.length > 0 ? totalCost / tickets.length : 0;
 
         // Trend
         const trend = previousMonthTickets.length > 0
             ? ((currentMonthTickets.length - previousMonthTickets.length) / previousMonthTickets.length) * 100
             : 0;
 
+        // Daily data for last 7 days
+        const last7Days = [...Array(7)].map((_, i) => {
+            const d = new Date();
+            d.setDate(d.getDate() - (6 - i));
+            d.setHours(0, 0, 0, 0);
+            return d;
+        });
+
+        const timeSeriesData = last7Days.map(date => {
+            const dateStr = date.toLocaleDateString('de-CH', { day: '2-digit', month: '2-digit' });
+            const count = tickets.filter(t => {
+                const tDate = new Date(t.createdAt);
+                return tDate.getDate() === date.getDate() && tDate.getMonth() === date.getMonth();
+            }).length;
+            return { date: dateStr, count };
+        });
+
+        // Category Distribution mapping to the UI list
+        const categories = {
+            'SANITARY': 'Sanitär',
+            'ELECTRICAL': 'Elektrik',
+            'HEATING': 'Heizung',
+            'WINDOWS_DOORS': 'Fenster',
+            'OTHER': 'Sonstiges'
+        };
+
+        const categoryStats = tickets.reduce((acc: any, t) => {
+            const cat = t.category || 'OTHER';
+            const mappedCat = categories[cat as keyof typeof categories] || 'Sonstiges';
+            acc[mappedCat] = (acc[mappedCat] || 0) + 1;
+            return acc;
+        }, {});
+
+        // Ensure all categories are present for the chart
+        const categoryData = Object.values(categories).map(catName => ({
+            name: catName,
+            count: categoryStats[catName] || 0
+        }));
+
+        const completedCount = tickets.filter(t => t.status === 'CLOSED' || t.status === 'SENT').length;
+        const efficiency = tickets.length > 0 ? (completedCount / tickets.length) * 100 : 0;
+
         return NextResponse.json({
             total: tickets.length,
             new: tickets.filter(t => t.status === 'NEW').length,
             inProgress: tickets.filter(t => t.status === 'IN_PROGRESS' || t.status === 'OPEN').length,
-            completed: tickets.filter(t => t.status === 'CLOSED' || t.status === 'SENT').length,
-            emergency: tickets.filter(t => t.urgency === 'EMERGENCY').length,
+            completed: completedCount,
+            emergency: tickets.filter(t => t.urgency === 'EMERGENCY' || t.urgency === 'URGENT').length,
             avgResolutionTime: `${avgResolutionTimeDays} Tage`,
-            totalCost: totalCost.toLocaleString('de-CH', { style: 'currency', currency: 'CHF' }),
+            totalCost: totalCost,
+            avgCost: avgCost,
             trend: trend.toFixed(1),
-            categoryDistribution: tickets.reduce((acc: any, t) => {
-                const cat = t.category || 'Unkategorisiert';
-                acc[cat] = (acc[cat] || 0) + 1;
-                return acc;
-            }, {})
+            timeSeriesData,
+            categoryData,
+            propertyCount: propertyCount || 0,
+            efficiency: efficiency.toFixed(0)
         });
 
     } catch (error: any) {
