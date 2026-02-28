@@ -132,6 +132,11 @@ export default function SchadensmeldungPage() {
                         <p className="text-4xl font-mono font-black text-blue-600 tracking-widest">{referenceCode}</p>
                     </div>
 
+                    <div className="flex items-center justify-center space-x-3 text-emerald-600 font-bold text-[10px] uppercase tracking-widest mb-10">
+                        <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                        <span>Bestätigung per E-Mail gesendet</span>
+                    </div>
+
                     <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
                         <a
                             href={`/status/${ticketId}`}

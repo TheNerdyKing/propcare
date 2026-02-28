@@ -22,6 +22,8 @@ type InquiryFormValues = z.infer<typeof inquirySchema>;
 export default function AllgemeinPage() {
     const [properties, setProperties] = useState<{ id: string; name: string }[]>([]);
     const [submitted, setSubmitted] = useState(false);
+    const [referenceCode, setReferenceCode] = useState('');
+    const [ticketId, setTicketId] = useState('');
     const [loading, setLoading] = useState(false);
     const [fetchingProps, setFetchingProps] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -57,11 +59,14 @@ export default function AllgemeinPage() {
         setLoading(true);
         setError(null);
         try {
-            await api.post('public/tickets', {
+            const response = await api.post('public/tickets', {
                 ...data,
                 type: 'GENERAL_INQUIRY',
                 urgency: 'NORMAL'
             });
+            const ticketData = response.data;
+            setReferenceCode(ticketData.reference_code || ticketData.referenceCode);
+            setTicketId(ticketData.id);
             setSubmitted(true);
         } catch (err: any) {
             console.error('Submission error:', err);
@@ -80,14 +85,33 @@ export default function AllgemeinPage() {
                     </div>
                     <h2 className="text-4xl font-black text-slate-900 mb-4 tracking-tighter uppercase">Anfrage gesendet</h2>
                     <p className="text-slate-500 font-medium text-lg leading-relaxed mb-10">
-                        Vielen Dank für Ihre Nachricht. Wir werden uns so schnell wie möglich bei Ihnen melden.
+                        Vielen Dank für Ihre Nachricht. Wir haben Ihre Anfrage erhalten und werden uns in Kürze bei Ihnen melden.
                     </p>
-                    <button
-                        onClick={() => window.location.href = '/'}
-                        className="w-full px-8 h-16 bg-emerald-600 text-white rounded-2xl flex items-center justify-center font-black uppercase tracking-widest text-[10px] shadow-xl shadow-emerald-600/20 hover:scale-105 transition-transform"
-                    >
-                        Zurück zum Mieterportal ➔
-                    </button>
+
+                    <div className="bg-slate-50 rounded-3xl p-8 border border-slate-100 mb-10">
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-3">Ihre Referenznummer</p>
+                        <p className="text-4xl font-mono font-black text-emerald-600 tracking-widest">{referenceCode}</p>
+                    </div>
+
+                    <div className="flex items-center justify-center space-x-3 text-emerald-600 font-bold text-[10px] uppercase tracking-widest mb-10">
+                        <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                        <span>Bestätigung per E-Mail gesendet</span>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
+                        <a
+                            href={`/status/${ticketId}`}
+                            className="w-full sm:w-auto px-8 h-16 bg-emerald-600 text-white rounded-2xl flex items-center justify-center font-black uppercase tracking-widest text-[10px] shadow-xl shadow-emerald-600/20 hover:scale-105 transition-transform"
+                        >
+                            Status verfolgen ➔
+                        </a>
+                        <button
+                            onClick={() => window.location.href = '/'}
+                            className="text-slate-400 font-bold text-xs uppercase tracking-[0.2em] hover:text-emerald-600 transition-colors"
+                        >
+                            Zurück zum Portal
+                        </button>
+                    </div>
                 </div>
             </div>
         );

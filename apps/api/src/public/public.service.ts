@@ -3,12 +3,16 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateTicketDto } from './dto/create-ticket.dto';
 import { TicketType, AiStatus, TicketStatus, Urgency, SenderType } from '@prisma/client';
 import { AiService } from '../ai/ai.service';
+import { EmailService } from '../email/email.service';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class PublicService {
     constructor(
         private prisma: PrismaService,
-        private aiService: AiService
+        private aiService: AiService,
+        private emailService: EmailService,
+        private configService: ConfigService
     ) { }
 
     async createTicket(dto: CreateTicketDto) {
@@ -54,6 +58,37 @@ export class PublicService {
         this.aiService.processTicket(ticket.id).catch(aiErr => {
             console.error(`In-process AI trigger failed for ${ticket.id}:`, aiErr.message);
         });
+
+        // 5. Send confirmation email to tenant (Non-Blocking)
+        if (ticket.tenantEmail) {
+            const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'https://propcare.vercel.app';
+            const trackingUrl = `${frontendUrl}/status/${ticket.id}`;
+            
+            this.emailService.sendDraftEmail({
+                to: ticket.tenantEmail,
+                subject: `Meldung eingegangen: ${referenceCode}`,
+                html: `
+                    <div style="font-family: sans-serif; background-color: #f8fafc; padding: 40px;">
+                        <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 20px; padding: 40px; border: 1px solid #e2e8f0;">
+                            <h1 style="color: #0f172a; font-size: 24px; font-weight: 800; text-transform: uppercase; margin-bottom: 20px;">Vielen Dank für Ihre Meldung</h1>
+                            <p style="color: #64748b; font-size: 16px; margin-bottom: 30px;">Ihre Meldung wurde erfolgreich im System erfasst. Sie können den Status jederzeit online verfolgen.</p>
+                            
+                            <div style="background-color: #f1f5f9; padding: 25px; border-radius: 15px; margin-bottom: 30px; text-align: center;">
+                                <p style="text-transform: uppercase; font-size: 10px; font-weight: 800; color: #94a3b8; letter-spacing: 2px; margin-bottom: 10px;">Ihre Referenznummer</p>
+                                <p style="font-size: 32px; font-weight: 800; color: #2563eb; letter-spacing: 3px; font-family: monospace; margin: 0;">${referenceCode}</p>
+                            </div>
+                            
+                            <a href="${trackingUrl}" style="display: block; background-color: #2563eb; color: #ffffff; text-align: center; padding: 18px; border-radius: 12px; text-decoration: none; font-weight: 800; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Status verfolgen ➔</a>
+                            
+                            <hr style="margin-top: 40px; border: none; border-top: 1px solid #f1f5f9;">
+                            <p style="color: #94a3b8; font-size: 12px; text-align: center; margin-top: 20px;">PropCare - Ihr digitaler Begleiter für effiziente Hausverwaltung.</p>
+                        </div>
+                    </div>
+                `
+            }).catch(err => {
+                console.error(`Failed to send confirmation email for ticket ${ticket.id}:`, err.message);
+            });
+        }
 
         return ticket;
     }
