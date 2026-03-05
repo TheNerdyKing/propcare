@@ -16,26 +16,26 @@ export async function sendEmail({ to, subject, body, html }: { to: string | stri
         });
 
         if (error) {
-            console.error('[Email] Failed to send:', error);
-            
-            // Simulation for Buyer Demo / Sandbox
+            console.error('[Email] Failed to send via Resend API:', error);
+
+            // Simulation for Buyer Demo / Sandbox / Unverified domain
             if (isSandbox) {
-                console.warn('[Email] SANDBOX MOCK: Simulating success despite error:', error.message);
-                return { success: true, simulated: true };
+                console.warn('[Email] SANDBOX MOCK: Simulating success despite Resend error:', error.message);
+                return { success: true, simulated: true, data: { id: 'simulated_id_123' } };
             }
 
-            return { success: false, error };
+            return { success: false, error: error.message || 'Unknown Email Error' };
         }
 
         return { success: true, data };
     } catch (err: any) {
-        console.error('[Email] Exception:', err);
-        
+        console.error('[Email] Exception caught inside sendEmail:', err);
+
         if (isSandbox) {
-            console.warn('[Email] SANDBOX MOCK: Simulating success despite exception.');
-            return { success: true, simulated: true };
+            console.warn('[Email] SANDBOX MOCK: Simulating success despite code exception:', err.message);
+            return { success: true, simulated: true, data: { id: 'simulated_id_exception' } };
         }
 
-        return { success: false, error: err.message };
+        return { success: false, error: err.message || 'Internal Send Error' };
     }
 }

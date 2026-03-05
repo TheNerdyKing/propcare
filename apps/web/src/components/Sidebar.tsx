@@ -36,6 +36,8 @@ export default function Sidebar() {
         { name: t('sidebar_contractors'), href: '/contractors', icon: Users },
         { name: t('sidebar_reporting'), href: '/analytics', icon: BarChart3 },
         { name: t('sidebar_audit'), href: '/audit', icon: Shield },
+        // Simple client-side conditional for Admin
+        ...(userData?.role === 'SUPER_ADMIN' || userData?.email === 'info@kreativelabs.ch' || userData?.name === 'Kreative LABS' ? [{ name: 'Super Admin', href: '/admin', icon: Shield }] : []),
         { name: t('sidebar_live_portal'), href: '/', icon: ExternalLink },
     ];
 
@@ -103,13 +105,13 @@ export default function Sidebar() {
                                     ${isActive ? 'text-blue-600' : 'text-slate-500 group-hover:text-white group-hover:rotate-6'}
                                 `} />
                                 {item.name}
-                                
+
                                 {isActive && (
                                     <div className="ml-auto flex items-center">
                                         <div className="w-1 h-3 rounded-full bg-blue-600" />
                                     </div>
                                 )}
-                                
+
                                 {isExternal && (
                                     <ExternalLink className="ml-auto w-3 h-3 text-slate-600 group-hover:text-blue-400" />
                                 )}
@@ -129,7 +131,7 @@ export default function Sidebar() {
                                 <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">{userData?.role === 'STAFF' ? t('sidebar_role_team') : t('sidebar_role_owner')}</p>
                             </div>
                         </div>
-                        
+
                         <button
                             className="flex items-center justify-center w-full px-5 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest rounded-2xl bg-white/5 hover:bg-red-500 hover:text-white transition-all duration-500 group"
                             onClick={handleLogout}

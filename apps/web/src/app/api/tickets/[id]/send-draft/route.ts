@@ -4,11 +4,27 @@ import { sendEmail } from '@/lib/email';
 
 export const dynamic = 'force-dynamic';
 
-function getSupabase() {
+function getSupabase(request: NextRequest) {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    if (!supabaseServiceKey) throw new Error('SUPABASE_SERVICE_ROLE_KEY is required');
-    return createClient(supabaseUrl, supabaseServiceKey);
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+
+    // Create client with service key OR anon key
+    const client = createClient(supabaseUrl, supabaseKey);
+
+    // If we have an auth header from the user, attach it
+    const authHeader = request.headers.get('Authorization');
+    if (authHeader) {
+        // Technically creates a new client but works for this scope
+        return createClient(supabaseUrl, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
+            global: {
+                headers: {
+                    Authorization: authHeader
+                }
+            }
+        });
+    }
+
+    return client;
 }
 
 export async function POST(
@@ -20,7 +36,7 @@ export async function POST(
     const { toEmail, subject, message } = body;
 
     try {
-        const supabase = getSupabase();
+        const supabase = getSupabase(request);
         console.log(`[API] Sending contractor email for ticket ${id} to ${toEmail}`);
 
         if (!toEmail || !message) {
@@ -62,13 +78,13 @@ export async function POST(
                     action: 'EMAIL_SENT',
                     target_type: 'TICKET',
                     target_id: id,
-                    metadata_json: { 
-                        to: toEmail, 
+                    metadata_json: {
+                        to: toEmail,
                         subject,
                         details: `E-Mail an ${toEmail} gesendet.`
                     }
                 });
-            
+
             // 4. Update Ticket status to SENT
             await supabase
                 .from('tickets')
