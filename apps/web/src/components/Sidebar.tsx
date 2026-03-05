@@ -74,12 +74,8 @@ export default function Sidebar() {
                 ${isOpen ? 'translate-x-0' : '-translate-x-full'}
                 lg:translate-x-0 lg:static flex flex-col shadow-[20px_0_60px_rgba(0,0,0,0.3)]
             `}>
-                <div className="p-10 mb-8">
-                    <Logo light />
-                    <div className="mt-4 flex items-center space-x-2">
-                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
-                        <p className="text-[10px] font-black text-blue-400 uppercase tracking-[0.3em]">{t('sidebar_system_online')}</p>
-                    </div>
+                <div className="px-10 py-12 mb-4">
+                    <Logo light showStatus />
                 </div>
 
                 <nav className="flex-1 px-6 space-y-1.5">

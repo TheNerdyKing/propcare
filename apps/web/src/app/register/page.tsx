@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabaseClient';
 import { Loader2, ShieldCheck, Mail, Lock, User, Building, ArrowRight } from 'lucide-react';
+import Logo from '@/components/Logo';
 
 const registerSchema = z.object({
     tenantName: z.string().min(2, 'Name der Hausverwaltung ist erforderlich'),
@@ -85,17 +86,9 @@ export default function RegisterPage() {
 
             <div className="max-w-md w-full space-y-10 p-12 rounded-[3.5rem] border border-white/5 bg-slate-900/60 backdrop-blur-3xl shadow-[0_30px_100px_rgba(0,0,0,0.5)] relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl p-1 pointer-events-none" />
-                
-                <div className="relative z-10 text-center">
-                    <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-8 shadow-2xl shadow-blue-600/20 transform -rotate-6">
-                        <span className="text-white font-black text-2xl">PC</span>
-                    </div>
-                    <h2 className="text-4xl font-black tracking-tighter text-white uppercase mb-2">
-                        Account <span className="text-blue-500">Erstellen</span>
-                    </h2>
-                    <p className="text-slate-400 font-medium text-sm italic">
-                        Starten Sie jetzt mit der modernen Verwaltung Ihrer Liegenschaften.
-                    </p>
+
+                <div className="relative z-10 text-center mb-10 overflow-visible">
+                    <Logo light showStatus className="mx-auto scale-110" />
                 </div>
 
                 <form className="mt-10 space-y-5" onSubmit={handleSubmit(onSubmit)}>

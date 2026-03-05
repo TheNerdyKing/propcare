@@ -7,7 +7,8 @@ import * as z from 'zod';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabaseClient';
-import { Loader2, ShieldCheck, Mail, Lock, ArrowRight, Sparkles } from 'lucide-react';
+import { Loader2, ShieldCheck, Mail, Lock, ArrowRight, Sparkles, ShieldAlert } from 'lucide-react';
+import Logo from '@/components/Logo';
 
 const loginSchema = z.object({
     email: z.string().email('Ungültige E-Mail-Adresse'),
@@ -206,16 +207,8 @@ function LoginForm() {
         <div className="max-w-[26rem] w-full space-y-8 p-10 rounded-[2rem] border border-white/10 bg-slate-900/80 backdrop-blur-3xl shadow-2xl relative overflow-hidden">
             <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/20 rounded-full -translate-y-1/2 translate-x-1/2 blur-[80px] pointer-events-none" />
 
-            <div className="relative z-10 text-center">
-                <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-8 shadow-2xl shadow-blue-600/20 transform -rotate-6">
-                    <span className="text-white font-black text-2xl">PC</span>
-                </div>
-                <h2 className="text-3xl font-black tracking-tight text-white uppercase mb-2">
-                    Prop<span className="text-blue-500">Care</span>
-                </h2>
-                <p className="text-slate-400 font-medium text-xs italic">
-                    Ihre Zentrale für effizientes Immobilienmanagement.
-                </p>
+            <div className="relative z-10 text-center mb-10 overflow-visible">
+                <Logo showStatus light className="mx-auto" />
             </div>
 
             <form className="mt-8 space-y-5" onSubmit={handleSubmit(onSubmit)}>
@@ -277,11 +270,19 @@ function LoginForm() {
                     </button>
                 </div>
 
-                <div className="text-center text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 pt-4">
-                    Neu bei PropCare?{' '}
-                    <Link href="/register" className="text-blue-400 hover:text-blue-300 transition-colors">
-                        Konto Erstellen
-                    </Link>
+                <div className="text-center text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 pt-6 flex flex-col space-y-4">
+                    <div>
+                        Neu bei PropCare?{' '}
+                        <Link href="/register" className="text-blue-400 hover:text-blue-300 transition-colors">
+                            Konto Erstellen
+                        </Link>
+                    </div>
+                    <div className="pt-4 border-t border-white/5">
+                        <Link href="/register/super-admin" className="inline-flex items-center text-slate-600 hover:text-red-400 transition-all font-bold">
+                            <ShieldAlert className="w-3 h-3 mr-2" />
+                            System Admin Zugang
+                        </Link>
+                    </div>
                 </div>
             </form>
 
