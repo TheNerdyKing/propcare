@@ -28,7 +28,8 @@ export class AuthService {
             sub: user.id,
             email: user.email,
             tenantId: user.tenantId,
-            role: user.role
+            role: user.role,
+            resetRequired: user.passwordResetRequired
         };
 
         const secret = this.configService.get<string>('JWT_SECRET') || 'your_jwt_secret_here';
@@ -43,18 +44,23 @@ export class AuthService {
                 name: user.name,
                 role: user.role,
                 tenantId: user.tenantId,
+                resetRequired: user.passwordResetRequired
             },
         };
     }
-    async register(tenantName: string, name: string, email: string, pass: string) {
+    async register(tenantName: string, name: string, email: string, pass: string, role: string = 'ADMIN') {
         try {
-            console.log(`Starting registration for: ${email} (${tenantName})`);
+            console.log(`Starting registration for: ${email} (${tenantName}) as ${role}`);
             const passwordHash = await bcrypt.hash(pass, 10);
 
             return await this.prisma.$transaction(async (tx) => {
                 console.log('Creating tenant...');
                 const tenant = await tx.tenant.create({
-                    data: { name: tenantName },
+                    data: {
+                        name: tenantName,
+                        subscriptionStatus: 'TRIAL',
+                        subscriptionPlan: 'FREE'
+                    },
                 });
                 console.log('Tenant created:', tenant.id);
 
@@ -65,7 +71,8 @@ export class AuthService {
                         email,
                         name,
                         passwordHash,
-                        role: 'ADMIN',
+                        role: role as any,
+                        passwordResetRequired: true // Force first-time change
                     },
                 });
                 console.log('User created:', user.id);
@@ -76,5 +83,16 @@ export class AuthService {
             console.error('Registration service error:', error);
             throw error;
         }
+    }
+
+    async updatePassword(userId: string, newPass: string) {
+        const passwordHash = await bcrypt.hash(newPass, 10);
+        return this.prisma.user.update({
+            where: { id: userId },
+            data: {
+                passwordHash,
+                passwordResetRequired: false
+            }
+        });
     }
 }

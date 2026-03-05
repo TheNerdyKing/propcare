@@ -11,6 +11,7 @@ datasource db {
 }
 
 enum Role {
+  SUPER_ADMIN
   ADMIN
   EMPLOYEE
 }
@@ -45,10 +46,12 @@ enum Urgency {
 }
 
 model Tenant {
-  id         String   @id @default(uuid())
-  name       String
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id                 String   @id @default(uuid())
+  name               String
+  subscriptionStatus String   @default("TRIAL") @map("subscription_status")
+  subscriptionPlan   String   @default("FREE") @map("subscription_plan")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
   users       User[]
   properties  Property[]
@@ -61,14 +64,15 @@ model Tenant {
 }
 
 model User {
-  id           String   @id @default(uuid())
-  tenantId     String   @map("tenant_id")
-  email        String
-  name         String
-  role         Role     @default(EMPLOYEE)
-  passwordHash String   @map("password_hash")
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id                    String   @id @default(uuid())
+  tenantId              String   @map("tenant_id")
+  email                 String
+  name                  String
+  role                  Role     @default(EMPLOYEE)
+  passwordHash          String   @map("password_hash")
+  passwordResetRequired Boolean  @default(false) @map("password_reset_required")
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
 
   tenant    Tenant     @relation(fields: [tenantId], references: [id])
   auditLogs AuditLog[]
