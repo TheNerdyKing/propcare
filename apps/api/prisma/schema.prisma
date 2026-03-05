@@ -71,6 +71,7 @@ model User {
   role                  Role     @default(EMPLOYEE)
   passwordHash          String   @map("password_hash")
   passwordResetRequired Boolean  @default(false) @map("password_reset_required")
+  setupSecret           String?  @unique @map("setup_secret")
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
 

@@ -2,6 +2,7 @@ import { Controller, Post, Body, UnauthorizedException, ConflictException } from
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+import { VerifySetupDto } from './dto/verify-setup.dto';
 import { Public } from './decorators/public.decorator';
 
 @Controller('auth')
@@ -34,5 +35,15 @@ export class AuthController {
             throw new UnauthorizedException('Invalid credentials');
         }
         return this.authService.login(user);
+    }
+
+    @Public()
+    @Post('verify-setup')
+    async verifySetup(@Body() verifySetupDto: VerifySetupDto) {
+        const result = await this.authService.verifySetupSecret(verifySetupDto.secret);
+        if (!result) {
+            throw new UnauthorizedException('Invalid setup secret or account already initialized');
+        }
+        return result;
     }
 }

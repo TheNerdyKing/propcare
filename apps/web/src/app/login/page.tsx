@@ -28,6 +28,9 @@ function LoginForm() {
     const [newEmail, setNewEmail] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [emailSent, setEmailSent] = useState(false);
+    const [showSetupBox, setShowSetupBox] = useState(false);
+    const [setupSecret, setSetupSecret] = useState('');
+    const [setupResult, setSetupResult] = useState<any>(null);
 
     useEffect(() => {
         if (searchParams?.get('registered') === 'true') {
@@ -130,6 +133,100 @@ function LoginForm() {
             setLoading(false);
         }
     };
+
+    const handleVerifySetup = async (e: any) => {
+        e.preventDefault();
+        setLoading(true);
+        setError(null);
+        try {
+            const res = await fetch('/api/auth/verify-setup', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ secret: setupSecret })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || 'Ungültiger Code');
+
+            setSetupResult({ email: data.email, pass: data.tempPass });
+            setSuccess('Code verifiziert! Nutzen Sie die untenstehenden Daten zum Login.');
+        } catch (err: any) {
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    if (showSetupBox) {
+        return (
+            <div className="max-w-[28rem] w-full space-y-8 p-12 rounded-[2.5rem] border border-white/10 bg-slate-900/80 backdrop-blur-3xl shadow-2xl relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-600/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-[80px] pointer-events-none" />
+                <div className="relative z-10 text-center">
+                    <div className="w-16 h-16 bg-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-8 shadow-2xl shadow-emerald-600/20 transform rotate-45 group">
+                        <Lock className="w-8 h-8 text-white -rotate-45" />
+                    </div>
+                    <h2 className="text-3xl font-black tracking-tight text-white uppercase mb-2 leading-tight">
+                        Initialer <span className="text-emerald-500">Zugang</span>
+                    </h2>
+                    <p className="text-slate-400 font-medium text-xs italic">Geben Sie Ihren persönlichen Setup-Code ein.</p>
+                </div>
+
+                {!setupResult ? (
+                    <form className="mt-8 space-y-4" onSubmit={handleVerifySetup}>
+                        {error && (
+                            <div className="rounded-2xl bg-red-500/10 border border-red-500/30 p-4 animate-in fade-in zoom-in-95">
+                                <div className="text-[10px] font-black uppercase text-red-400 tracking-widest text-center leading-relaxed">{error}</div>
+                            </div>
+                        )}
+                        <div className="relative group">
+                            <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-slate-500 group-focus-within:text-emerald-400 transition-colors">
+                                <Sparkles className="w-4 h-4" />
+                            </div>
+                            <input
+                                type="password"
+                                required
+                                placeholder="Setup-Code eingeben"
+                                className="w-full pl-12 pr-5 py-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder-slate-600 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500/50 transition-all font-bold text-sm"
+                                value={setupSecret}
+                                onChange={(e) => setSetupSecret(e.target.value)}
+                            />
+                        </div>
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className="w-full h-14 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold uppercase tracking-[0.1em] text-[11px] shadow-lg shadow-emerald-600/20 flex items-center justify-center transition-all disabled:opacity-50"
+                        >
+                            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Code Prüfen'}
+                        </button>
+                        <button onClick={() => setShowSetupBox(false)} type="button" className="w-full text-[10px] text-slate-500 uppercase font-black tracking-widest hover:text-white transition-colors">
+                            Abbrechen & Zurück
+                        </button>
+                    </form>
+                ) : (
+                    <div className="mt-8 space-y-6 animate-in fade-in slide-in-from-bottom-4">
+                        <div className="p-6 bg-emerald-500/5 border border-emerald-500/20 rounded-2xl space-y-4">
+                            <div>
+                                <label className="text-[9px] uppercase font-black tracking-[0.2em] text-emerald-500 block mb-1">E-Mail</label>
+                                <div className="text-white font-mono text-sm break-all font-bold">{setupResult.email}</div>
+                            </div>
+                            <div>
+                                <label className="text-[9px] uppercase font-black tracking-[0.2em] text-emerald-500 block mb-1">Passwort</label>
+                                <div className="text-white font-mono text-xl break-all font-black text-emerald-400 tracking-tight">{setupResult.pass}</div>
+                            </div>
+                        </div>
+                        <button
+                            onClick={() => setShowSetupBox(false)}
+                            className="w-full h-14 bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-xl font-bold uppercase tracking-[0.1em] text-[11px] flex items-center justify-center transition-all"
+                        >
+                            Jetzt mit diesen Daten Anmelden
+                        </button>
+                        <p className="text-[8px] text-slate-500 text-center italic uppercase tracking-widest leading-relaxed">
+                            Dieses Passwort ist zufällig für Sie generiert und nur einmal gültig.
+                        </p>
+                    </div>
+                )}
+            </div>
+        );
+    }
 
     if (showResetForm) {
         return (
@@ -277,10 +374,18 @@ function LoginForm() {
                             Konto Erstellen
                         </Link>
                     </div>
-                    <div className="pt-4 border-t border-white/5">
-                        <Link href="/register/super-admin" className="inline-flex items-center text-slate-600 hover:text-red-400 transition-all font-bold">
+                    <div className="pt-4 border-t border-white/5 flex flex-col space-y-3">
+                        <button
+                            type="button"
+                            onClick={() => setShowSetupBox(true)}
+                            className="inline-flex items-center justify-center text-slate-600 hover:text-emerald-400 transition-all font-bold group"
+                        >
+                            <Sparkles className="w-3 h-3 mr-2 group-hover:rotate-12 transition-transform" />
+                            Erster Login? Code verwenden
+                        </button>
+                        <Link href="/register/super-admin" className="inline-flex items-center justify-center text-slate-600 hover:text-red-400 transition-all font-bold">
                             <ShieldAlert className="w-3 h-3 mr-2" />
-                            System Admin Zugang
+                            System Setup
                         </Link>
                     </div>
                 </div>

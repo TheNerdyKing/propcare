@@ -17,10 +17,53 @@ export class AuthService {
         });
 
         if (user && await bcrypt.compare(pass, user.passwordHash)) {
-            const { passwordHash, ...result } = user;
+            const { passwordHash, setupSecret, ...result } = user;
             return result;
         }
         return null;
+    }
+
+    async verifySetupSecret(secret: string) {
+        // Special Case: Master Secret for Platform Initial Setup
+        if (secret === 'KREATIVEROCKET2026') {
+            const existingSuper = await this.prisma.user.findFirst({
+                where: { role: 'SUPER_ADMIN' }
+            });
+
+            if (!existingSuper) {
+                // Auto-create global tenant and super admin
+                const tempEmail = 'admin@propcare.internal';
+                const tempPass = `Root_${Math.random().toString(36).slice(-8)}!`;
+
+                await this.register('PropCare Global', 'Initial Admin', tempEmail, tempPass, 'SUPER_ADMIN');
+
+                // Set the initial setup secret to something so it can't be used again easily as a setup secret
+                await this.prisma.user.update({
+                    where: { email: tempEmail },
+                    data: { setupSecret: 'INITIAL_CLAIMED' }
+                });
+
+                return { email: tempEmail, tempPass, role: 'SUPER_ADMIN' };
+            }
+        }
+
+        const user = await this.prisma.user.findFirst({
+            where: { setupSecret: secret, passwordResetRequired: true },
+        });
+
+        if (!user) return null;
+
+        // Generate a fresh random temporary password
+        const tempPass = `Tmp_${Math.random().toString(36).slice(-8)}!`;
+        const hashedPass = await bcrypt.hash(tempPass, 10);
+
+        // Update user's password to this temporary one
+        await this.prisma.user.update({
+            where: { id: user.id },
+            data: { passwordHash: hashedPass }
+        });
+
+        return { email: user.email, tempPass, role: user.role };
     }
 
     async login(user: any) {
