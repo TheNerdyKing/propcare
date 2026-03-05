@@ -72,22 +72,22 @@ function LoginForm() {
     };
 
     return (
-        <div className="max-w-md w-full space-y-10 p-12 rounded-[3.5rem] border border-white/5 bg-slate-900/60 backdrop-blur-3xl shadow-[0_30px_100px_rgba(0,0,0,0.5)] relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl p-1 pointer-events-none" />
+        <div className="max-w-[26rem] w-full space-y-8 p-10 rounded-[2rem] border border-white/10 bg-slate-900/80 backdrop-blur-3xl shadow-2xl relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/20 rounded-full -translate-y-1/2 translate-x-1/2 blur-[80px] pointer-events-none" />
             
             <div className="relative z-10 text-center">
                 <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-8 shadow-2xl shadow-blue-600/20 transform -rotate-6">
                     <span className="text-white font-black text-2xl">PC</span>
                 </div>
-                <h2 className="text-4xl font-black tracking-tighter text-white uppercase mb-2">
+                <h2 className="text-3xl font-black tracking-tight text-white uppercase mb-2">
                     Prop<span className="text-blue-500">Care</span>
                 </h2>
-                <p className="text-slate-400 font-medium text-sm italic">
+                <p className="text-slate-400 font-medium text-xs italic">
                     Ihre Zentrale für effizientes Immobilienmanagement.
                 </p>
             </div>
 
-            <form className="mt-10 space-y-6" onSubmit={handleSubmit(onSubmit)}>
+            <form className="mt-8 space-y-5" onSubmit={handleSubmit(onSubmit)}>
                 {error && (
                     <div className="rounded-2xl bg-red-500/10 border border-red-500/30 p-4 animate-in fade-in slide-in-from-top-2">
                         <div className="text-[10px] font-black uppercase text-red-400 tracking-widest text-center">{error}</div>
@@ -131,16 +131,16 @@ function LoginForm() {
                     </div>
                 </div>
 
-                <div className="pt-6">
+                <div className="pt-4">
                     <button
                         type="submit"
                         disabled={loading}
-                        className="w-full h-16 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black uppercase tracking-[0.2em] text-[11px] shadow-2xl shadow-blue-600/30 flex items-center justify-center transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 group"
+                        className="w-full h-14 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold uppercase tracking-[0.1em] text-[11px] shadow-lg shadow-blue-600/20 flex items-center justify-center transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 group"
                     >
                         {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (
                             <>
                                 Jetzt Anmelden
-                                <ArrowRight className="w-4 h-4 ml-3 group-hover:translate-x-1 transition-transform" />
+                                <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
                             </>
                         )}
                     </button>
@@ -154,8 +154,8 @@ function LoginForm() {
                 </div>
             </form>
             
-            <div className="mt-10 flex items-center justify-center space-x-2 text-[9px] font-black uppercase tracking-widest text-slate-600">
-                <ShieldCheck className="w-3.5 h-3.5" />
+            <div className="mt-8 flex items-center justify-center space-x-2 text-[10px] uppercase font-bold tracking-widest text-slate-500">
+                <ShieldCheck className="w-4 h-4" />
                 <span>Gesicherte SSL Verschlüsselung</span>
             </div>
         </div>
@@ -164,9 +164,9 @@ function LoginForm() {
 
 export default function LoginPage() {
     return (
-        <div className="min-h-screen flex items-center justify-center bg-slate-950 py-12 px-4 sm:px-6 lg:px-8 font-sans relative overflow-hidden">
-            <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-600/5 rounded-full blur-[100px] pointer-events-none" />
-            <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-900/5 rounded-full blur-[100px] pointer-events-none" />
+        <div className="min-h-screen flex items-center justify-center bg-slate-900 py-12 px-4 sm:px-6 lg:px-8 font-sans relative overflow-hidden">
+            <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-[120px] pointer-events-none" />
+            <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-indigo-600/10 rounded-full blur-[120px] pointer-events-none" />
             
             <Suspense fallback={<div className="text-white"><Loader2 className="animate-spin text-blue-600" /></div>}>
                 <LoginForm />
