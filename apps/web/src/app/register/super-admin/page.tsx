@@ -58,12 +58,35 @@ export default function SuperAdminSetup() {
             const finalSetupSecret = masterSecret;
 
             // Create Admin User in Auth
-            const { data: authData, error: authError } = await supabase.auth.signUp({
-                email: tempEmail,
-                password: tempPass,
-            });
+            let authData: any;
+            let authError: any;
 
-            if (authError) throw authError;
+            try {
+                const result = await supabase.auth.signUp({
+                    email: tempEmail,
+                    password: tempPass,
+                });
+                authData = result.data;
+                authError = result.error;
+            } catch (e: any) {
+                authError = e;
+            }
+
+            // Detect if the error is just the confirmation email failing (happens with unverified domains)
+            const isEmailError = authError?.message?.toUpperCase().includes('EMAIL') || authError?.message?.toUpperCase().includes('CONFIRMATION');
+
+            if (authError && !isEmailError) throw authError;
+
+            // If it's an email error, try to fetch the user anyway in case it was created
+            if (isEmailError && !authData?.user) {
+                const { data: existingUser } = await supabase.from('users').select('id').eq('email', tempEmail).single();
+                if (existingUser) {
+                    authData = { user: existingUser };
+                } else {
+                    // It really failed
+                    throw new Error('Supabase Email Error: Bitte deaktivieren Sie "Confirm Email" in Ihren Supabase Auth Einstellungen, da Ihre Domain noch nicht verifiziert ist.');
+                }
+            }
 
             // Create in Users table
             const { error: userError } = await supabase
