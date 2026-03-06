@@ -29,6 +29,7 @@ function LoginForm() {
     const [newPassword, setNewPassword] = useState('');
     const [emailSent, setEmailSent] = useState(false);
     const [showSetupBox, setShowSetupBox] = useState(false);
+    const [showAdminPortal, setShowAdminPortal] = useState(false);
     const [setupSecret, setSetupSecret] = useState('');
     const [setupResult, setSetupResult] = useState<any>(null);
 
@@ -164,9 +165,9 @@ function LoginForm() {
                     <Lock className="w-5 h-5 text-white -rotate-45" />
                 </div>
                 <h2 className="text-xl font-black tracking-tight text-white uppercase mb-1 leading-tight">
-                    Initialer <span className="text-emerald-500">Zugang</span>
+                    Admin <span className="text-emerald-500">Initialisierung</span>
                 </h2>
-                <p className="text-slate-400 font-medium text-[10px] italic">Geben Sie Ihren persönlichen Setup-Code ein.</p>
+                <p className="text-slate-400 font-medium text-[10px] italic">Nur für Super-Admins beim ersten Login.</p>
 
                 {!setupResult ? (
                     <form className="mt-8 space-y-4" onSubmit={handleVerifySetup}>
@@ -196,7 +197,7 @@ function LoginForm() {
                             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Code Prüfen'}
                         </button>
                         <button onClick={() => setShowSetupBox(false)} type="button" className="w-full text-[10px] text-slate-500 uppercase font-black tracking-widest hover:text-white transition-colors">
-                            Abbrechen & Zurück
+                            Abbrechen & Zurück zum Portal
                         </button>
                     </form>
                 ) : (
@@ -212,16 +213,56 @@ function LoginForm() {
                             </div>
                         </div>
                         <button
-                            onClick={() => setShowSetupBox(false)}
+                            onClick={() => { setShowSetupBox(false); setSetupResult(null); }}
                             className="w-full h-11 bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-lg font-bold uppercase tracking-[0.1em] text-[10px] flex items-center justify-center transition-all"
                         >
-                            Jetzt Anmelden
+                            Fertig & Login
                         </button>
                         <p className="text-[8px] text-slate-500 text-center italic uppercase tracking-widest leading-relaxed">
                             Dieses Passwort ist zufällig für Sie generiert und nur einmal gültig.
                         </p>
                     </div>
                 )}
+            </div>
+        );
+    }
+
+    if (showAdminPortal) {
+        return (
+            <div className="max-w-[22rem] w-full space-y-6 p-8 rounded-[2rem] border border-white/10 bg-[#1e293b]/60 backdrop-blur-3xl shadow-[0_0_40px_rgba(0,0,0,0.3)] ring-1 ring-white/10 relative overflow-hidden text-center">
+                <div className="absolute top-0 right-0 w-48 h-48 bg-red-600/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-[60px] pointer-events-none" />
+                <div className="w-12 h-12 bg-red-600 rounded-xl flex items-center justify-center mx-auto mb-6 shadow-[0_0_20px_rgba(220,38,38,0.3)] transform rotate-45 group">
+                    <ShieldAlert className="w-6 h-6 text-white -rotate-45" />
+                </div>
+                <h2 className="text-xl font-black tracking-tight text-white uppercase mb-1 leading-tight">
+                    Super Admin <span className="text-red-500">Portal</span>
+                </h2>
+                <p className="text-slate-400 font-medium text-[10px] italic">Plattform-Administration & Setup</p>
+
+                <div className="mt-8 space-y-3">
+                    <button
+                        onClick={() => { setShowSetupBox(true); }}
+                        className="w-full h-11 bg-white/5 hover:bg-emerald-500/10 text-white border border-white/10 rounded-lg font-bold uppercase tracking-[0.1em] text-[10px] flex items-center justify-center transition-all group"
+                    >
+                        <Sparkles className="w-4 h-4 mr-2 text-emerald-500 group-hover:scale-110 transition-transform" />
+                        Erster Login? Code verwenden
+                    </button>
+
+                    <Link
+                        href="/register/super-admin"
+                        className="w-full h-11 bg-white/5 hover:bg-red-500/10 text-white border border-white/10 rounded-lg font-bold uppercase tracking-[0.1em] text-[10px] flex items-center justify-center transition-all group"
+                    >
+                        <ShieldAlert className="w-4 h-4 mr-2 text-red-500 group-hover:scale-110 transition-transform" />
+                        System initial einrichten
+                    </Link>
+
+                    <button
+                        onClick={() => setShowAdminPortal(false)}
+                        className="w-full pt-4 text-[10px] text-slate-500 uppercase font-black tracking-widest hover:text-white transition-colors"
+                    >
+                        Zurück zum Login
+                    </button>
+                </div>
             </div>
         );
     }
@@ -373,16 +414,12 @@ function LoginForm() {
                     <div className="pt-4 border-t border-white/5 flex flex-col space-y-3">
                         <button
                             type="button"
-                            onClick={() => setShowSetupBox(true)}
-                            className="inline-flex items-center justify-center text-slate-600 hover:text-emerald-400 transition-all font-bold group"
+                            onClick={() => setShowAdminPortal(true)}
+                            className="inline-flex items-center justify-center text-slate-600 hover:text-red-400 transition-all font-bold group"
                         >
-                            <Sparkles className="w-3 h-3 mr-2 group-hover:rotate-12 transition-transform" />
-                            Erster Login? Code verwenden
+                            <ShieldAlert className="w-3 h-3 mr-2 group-hover:rotate-12 transition-transform" />
+                            Super Admin Portal
                         </button>
-                        <Link href="/register/super-admin" className="inline-flex items-center justify-center text-slate-600 hover:text-red-400 transition-all font-bold">
-                            <ShieldAlert className="w-3 h-3 mr-2" />
-                            System Setup
-                        </Link>
                     </div>
                 </div>
             </form>
