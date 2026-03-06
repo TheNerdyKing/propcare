@@ -29,4 +29,4 @@ export async function sendEmail({ to, subject, body, html }: { to: string | stri
         return { success: true, simulated: true, error: err.message };
     }
 }
-}
+
