@@ -11,6 +11,7 @@ export default function SuperAdminSetup() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [credentials, setCredentials] = useState<{ email: string; pass: string; secret: string } | null>(null);
+    const [setupCode, setSetupCode] = useState(`ADM-${Math.random().toString(36).toUpperCase().slice(-8)}`);
     const [copied, setCopied] = useState(false);
 
     const handleGenerate = async (e: React.FormEvent) => {
@@ -48,7 +49,7 @@ export default function SuperAdminSetup() {
 
             const tempEmail = `setup-${Math.floor(Math.random() * 10000)}@propcare.internal`;
             const tempPass = `Tmp_${Math.random().toString(36).slice(-8)}!`;
-            const setupSecret = `SECRET-${Math.random().toString(36).toUpperCase().slice(-8)}`;
+            const finalSetupSecret = setupCode;
 
             // Create Admin User in Auth
             const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -69,12 +70,12 @@ export default function SuperAdminSetup() {
                     role: 'SUPER_ADMIN',
                     password_hash: 'managed-by-supabase',
                     password_reset_required: true,
-                    setup_secret: setupSecret
+                    setup_secret: finalSetupSecret
                 }]);
 
             if (userError) throw userError;
 
-            setCredentials({ email: tempEmail, pass: tempPass, secret: setupSecret });
+            setCredentials({ email: tempEmail, pass: tempPass, secret: finalSetupSecret });
         } catch (err: any) {
             setError(err.message);
         } finally {
@@ -109,18 +110,46 @@ export default function SuperAdminSetup() {
 
                 {!credentials ? (
                     <form onSubmit={handleGenerate} className="space-y-6">
-                        <div className="relative group">
-                            <div className="absolute inset-y-0 left-0 pl-10 flex items-center pointer-events-none text-slate-500 group-focus-within:text-red-400 transition-colors">
-                                <Lock className="w-3.5 h-3.5" />
+                        <div className="space-y-4">
+                            <div className="relative group">
+                                <div className="absolute inset-y-0 left-0 pl-10 flex items-center pointer-events-none text-slate-500 group-focus-within:text-red-400 transition-colors">
+                                    <Lock className="w-3.5 h-3.5" />
+                                </div>
+                                <input
+                                    type="password"
+                                    required
+                                    value={secret}
+                                    onChange={(e) => setSecret(e.target.value)}
+                                    placeholder="Master-Secret (KREATIVEROCKET2026)"
+                                    className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500/50 transition-all font-bold text-xs shadow-inner"
+                                />
                             </div>
-                            <input
-                                type="password"
-                                required
-                                value={secret}
-                                onChange={(e) => setSecret(e.target.value)}
-                                placeholder="Master-Secret eingeben"
-                                className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500/50 transition-all font-bold text-xs shadow-inner"
-                            />
+
+                            <div className="pt-4 border-t border-white/5 space-y-2">
+                                <label className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500 block ml-1">Ihr Setup-Pinn (Zufällig generiert)</label>
+                                <div className="flex space-x-2">
+                                    <div className="relative flex-1 group">
+                                        <div className="absolute inset-y-0 left-0 pl-10 flex items-center pointer-events-none text-slate-500 group-focus-within:text-emerald-400 transition-colors">
+                                            <ShieldAlert className="w-3.5 h-3.5" />
+                                        </div>
+                                        <input
+                                            type="text"
+                                            required
+                                            value={setupCode}
+                                            onChange={(e) => setSetupCode(e.target.value)}
+                                            placeholder="Setup Code"
+                                            className="w-full pl-10 pr-4 py-3 bg-emerald-500/5 border border-emerald-500/10 rounded-xl text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500/50 transition-all font-mono font-bold text-xs shadow-inner"
+                                        />
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => setSetupCode(`ADM-${Math.random().toString(36).toUpperCase().slice(-8)}`)}
+                                        className="px-4 py-3 bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-xl transition-all group"
+                                    >
+                                        <Loader2 className="w-4 h-4 group-hover:rotate-180 transition-transform duration-500" />
+                                    </button>
+                                </div>
+                            </div>
                         </div>
 
                         {error && (

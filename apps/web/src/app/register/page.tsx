@@ -15,6 +15,7 @@ const registerSchema = z.object({
     name: z.string().min(2, 'Ihr Name ist erforderlich'),
     email: z.string().email('Ungültige E-Mail-Adresse'),
     password: z.string().min(6, 'Passwort muss mindestens 6 Zeichen lang sein'),
+    setupCode: z.string().min(4, 'Setup-Code ist erforderlich'),
 });
 
 type TicketFormValues = z.infer<typeof registerSchema>;
@@ -28,10 +29,21 @@ export default function RegisterPage() {
     const {
         register,
         handleSubmit,
+        setValue,
+        watch,
         formState: { errors },
     } = useForm<TicketFormValues>({
         resolver: zodResolver(registerSchema),
+        defaultValues: {
+            setupCode: `REG-${Math.random().toString(36).toUpperCase().slice(-8)}`
+        }
     });
+
+    const currentSetupCode = watch('setupCode');
+
+    const generateNewCode = () => {
+        setValue('setupCode', `REG-${Math.random().toString(36).toUpperCase().slice(-8)}`);
+    };
 
     const onSubmit = async (data: TicketFormValues) => {
         setLoading(true);
@@ -69,13 +81,13 @@ export default function RegisterPage() {
                     name: data.name,
                     role: 'ADMIN',
                     password_hash: 'managed-by-supabase',
-                    setup_secret: uniqueSecret,
-                    password_reset_required: false // Normal registration doesn't need mandatory reset usually, but let's keep it as per flow if needed.
+                    setup_secret: data.setupCode,
+                    password_reset_required: false
                 }]);
 
             if (userError) throw userError;
 
-            setSetupSecret(uniqueSecret);
+            setSetupSecret(data.setupCode);
         } catch (err: any) {
             console.error('Registration error details:', err);
             setError(err.message === 'User already registered' ? 'Diese E-Mail-Adresse wird bereits verwendet.' : 'Registrierung fehlgeschlagen. Bitte versuchen Sie es erneut.');
@@ -189,6 +201,36 @@ export default function RegisterPage() {
                                 {errors.password && (
                                     <p className="text-red-400 text-[9px] font-black uppercase mt-1.5 ml-1 tracking-widest">{errors.password.message}</p>
                                 )}
+                            </div>
+
+                            <div className="pt-4 pb-2 border-t border-white/5 space-y-2">
+                                <label className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500 block ml-1">Setup-Secret (Für ersten Login)</label>
+                                <div className="flex space-x-2">
+                                    <div className="relative flex-1 group">
+                                        <div className="absolute inset-y-0 left-0 pl-10 flex items-center pointer-events-none text-slate-500 group-focus-within:text-emerald-400 transition-colors">
+                                            <ShieldCheck className="w-3.5 h-3.5" />
+                                        </div>
+                                        <input
+                                            {...register('setupCode')}
+                                            placeholder="Ihr Setup-Code"
+                                            className="w-full pl-10 pr-4 py-3 bg-emerald-500/5 border border-emerald-500/10 rounded-xl text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500/50 transition-all font-mono font-bold text-xs shadow-inner"
+                                        />
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={generateNewCode}
+                                        className="px-4 py-3 bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-xl transition-all group"
+                                        title="Neuen Code generieren"
+                                    >
+                                        <Loader2 className="w-4 h-4 group-hover:rotate-180 transition-transform duration-500" />
+                                    </button>
+                                </div>
+                                {errors.setupCode && (
+                                    <p className="text-red-400 text-[9px] font-black uppercase mt-1.5 ml-1 tracking-widest">{errors.setupCode.message}</p>
+                                )}
+                                <p className="text-[8px] text-slate-500 uppercase tracking-widest italic leading-relaxed px-1">
+                                    Dies ist Ihr persönlicher Schlüssel für den Portal-Zugang.
+                                </p>
                             </div>
                         </div>
 
