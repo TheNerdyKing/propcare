@@ -10,7 +10,7 @@ export default function SuperAdminSetup() {
     const [secret, setSecret] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [credentials, setCredentials] = useState<{ email: string; pass: string } | null>(null);
+    const [credentials, setCredentials] = useState<{ email: string; pass: string; secret: string } | null>(null);
     const [copied, setCopied] = useState(false);
 
     const handleGenerate = async (e: React.FormEvent) => {
@@ -48,6 +48,7 @@ export default function SuperAdminSetup() {
 
             const tempEmail = `setup-${Math.floor(Math.random() * 10000)}@propcare.internal`;
             const tempPass = `Tmp_${Math.random().toString(36).slice(-8)}!`;
+            const setupSecret = `SECRET-${Math.random().toString(36).toUpperCase().slice(-8)}`;
 
             // Create Admin User in Auth
             const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -67,12 +68,13 @@ export default function SuperAdminSetup() {
                     name: 'Super Admin Initial',
                     role: 'SUPER_ADMIN',
                     password_hash: 'managed-by-supabase',
-                    password_reset_required: true
+                    password_reset_required: true,
+                    setup_secret: setupSecret
                 }]);
 
             if (userError) throw userError;
 
-            setCredentials({ email: tempEmail, pass: tempPass });
+            setCredentials({ email: tempEmail, pass: tempPass, secret: setupSecret });
         } catch (err: any) {
             setError(err.message);
         } finally {
@@ -139,12 +141,18 @@ export default function SuperAdminSetup() {
                     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-5">
                         <div className="p-6 bg-emerald-500/5 border border-emerald-500/20 rounded-2xl space-y-4">
                             <div>
-                                <label className="text-[10px] uppercase font-black tracking-[0.2em] text-emerald-500 block mb-1">Generated Email</label>
-                                <div className="text-white font-mono text-sm break-all bg-white/5 p-3 rounded-lg border border-white/5">{credentials.email}</div>
+                                <label className="text-[10px] uppercase font-black tracking-[0.2em] text-emerald-500 block mb-1">Ihr Einmal-Setup-Code (Secret)</label>
+                                <div className="text-white font-mono text-xl break-all bg-emerald-500/10 p-4 rounded-xl border border-emerald-500/30 text-center font-black tracking-widest">{credentials.secret}</div>
                             </div>
-                            <div>
-                                <label className="text-[10px] uppercase font-black tracking-[0.2em] text-emerald-500 block mb-1">Generated Password</label>
-                                <div className="text-white font-mono text-sm break-all bg-white/5 p-3 rounded-lg border border-white/5">{credentials.pass}</div>
+                            <div className="grid grid-cols-1 gap-4 pt-2">
+                                <div>
+                                    <label className="text-[9px] uppercase font-black tracking-[0.2em] text-slate-500 block mb-1">Temp. E-Mail</label>
+                                    <div className="text-white/60 font-mono text-xs break-all bg-white/5 p-2 rounded-lg border border-white/5">{credentials.email}</div>
+                                </div>
+                                <div>
+                                    <label className="text-[9px] uppercase font-black tracking-[0.2em] text-slate-500 block mb-1">Temp. Passwort</label>
+                                    <div className="text-white/60 font-mono text-xs break-all bg-white/5 p-2 rounded-lg border border-white/5">{credentials.pass}</div>
+                                </div>
                             </div>
                         </div>
 

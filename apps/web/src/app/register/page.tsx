@@ -23,6 +23,7 @@ export default function RegisterPage() {
     const router = useRouter();
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
+    const [setupSecret, setSetupSecret] = useState<string | null>(null);
 
     const {
         register,
@@ -57,6 +58,8 @@ export default function RegisterPage() {
 
             if (tenantError) throw tenantError;
 
+            const uniqueSecret = `REG-${Math.random().toString(36).toUpperCase().slice(-8)}`;
+
             const { error: userError } = await supabase
                 .from('users')
                 .insert([{
@@ -65,12 +68,14 @@ export default function RegisterPage() {
                     email: data.email,
                     name: data.name,
                     role: 'ADMIN',
-                    password_hash: 'managed-by-supabase'
+                    password_hash: 'managed-by-supabase',
+                    setup_secret: uniqueSecret,
+                    password_reset_required: false // Normal registration doesn't need mandatory reset usually, but let's keep it as per flow if needed.
                 }]);
 
             if (userError) throw userError;
 
-            router.push('/login?registered=true');
+            setSetupSecret(uniqueSecret);
         } catch (err: any) {
             console.error('Registration error details:', err);
             setError(err.message === 'User already registered' ? 'Diese E-Mail-Adresse wird bereits verwendet.' : 'Registrierung fehlgeschlagen. Bitte versuchen Sie es erneut.');
@@ -92,95 +97,124 @@ export default function RegisterPage() {
                     <Logo light showStatus className="mx-auto scale-110" />
                 </div>
 
-                <form className="mt-10 space-y-5" onSubmit={handleSubmit(onSubmit)}>
-                    {error && (
-                        <div className="rounded-2xl bg-red-500/10 border border-red-500/30 p-4 animate-in fade-in slide-in-from-top-2">
-                            <div className="text-[10px] font-black uppercase text-red-400 tracking-widest text-center">{error}</div>
-                        </div>
-                    )}
-
-                    <div className="space-y-4 font-sans">
-                        <div className="relative group">
-                            <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-slate-500 group-focus-within:text-blue-400 transition-colors">
-                                <Building className="w-4 h-4" />
+                {setupSecret ? (
+                    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
+                        <div className="text-center">
+                            <div className="w-20 h-20 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
+                                <ShieldCheck className="w-10 h-10 text-emerald-500" />
                             </div>
-                            <input
-                                {...register('tenantName')}
-                                placeholder="Name der Hausverwaltung"
-                                className="w-full pl-12 pr-5 py-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder-slate-600 focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500/50 transition-all font-bold text-sm shadow-inner"
-                            />
-                            {errors.tenantName && (
-                                <p className="text-red-400 text-[10px] font-black uppercase mt-2 ml-1 tracking-widest">{errors.tenantName.message}</p>
-                            )}
+                            <h2 className="text-3xl font-black text-white uppercase tracking-tighter">Erfolgreich!</h2>
+                            <p className="text-slate-400 text-sm mt-2 font-medium">Ihr Account wurde erstellt. Sichern Sie Ihren Zugangsschlüssel:</p>
                         </div>
 
-                        <div className="relative group">
-                            <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-slate-500 group-focus-within:text-blue-400 transition-colors">
-                                <User className="w-4 h-4" />
-                            </div>
-                            <input
-                                {...register('name')}
-                                placeholder="Ihr vollständiger Name"
-                                className="w-full pl-12 pr-5 py-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder-slate-600 focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500/50 transition-all font-bold text-sm shadow-inner"
-                            />
-                            {errors.name && (
-                                <p className="text-red-400 text-[10px] font-black uppercase mt-2 ml-1 tracking-widest">{errors.name.message}</p>
-                            )}
+                        <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-3xl p-8 text-center ring-1 ring-emerald-500/20">
+                            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-500/60 mb-3">Persönlicher Setup-Code</p>
+                            <p className="text-4xl font-mono font-black text-white tracking-widest bg-emerald-500/10 py-4 rounded-xl">{setupSecret}</p>
                         </div>
 
-                        <div className="relative group">
-                            <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-slate-500 group-focus-within:text-blue-400 transition-colors">
-                                <Mail className="w-4 h-4" />
-                            </div>
-                            <input
-                                {...register('email')}
-                                type="email"
-                                placeholder="E-Mail Adresse"
-                                className="w-full pl-12 pr-5 py-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder-slate-600 focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500/50 transition-all font-bold text-sm shadow-inner"
-                            />
-                            {errors.email && (
-                                <p className="text-red-400 text-[10px] font-black uppercase mt-2 ml-1 tracking-widest">{errors.email.message}</p>
-                            )}
-                        </div>
-
-                        <div className="relative group">
-                            <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-slate-500 group-focus-within:text-blue-400 transition-colors">
-                                <Lock className="w-4 h-4" />
-                            </div>
-                            <input
-                                {...register('password')}
-                                type="password"
-                                placeholder="Passwort"
-                                className="w-full pl-12 pr-5 py-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder-slate-600 focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500/50 transition-all font-bold text-sm shadow-inner"
-                            />
-                            {errors.password && (
-                                <p className="text-red-400 text-[10px] font-black uppercase mt-2 ml-1 tracking-widest">{errors.password.message}</p>
-                            )}
+                        <div className="space-y-4">
+                            <Link
+                                href="/login"
+                                className="w-full h-16 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl font-black uppercase tracking-[0.2em] text-[11px] shadow-2xl shadow-blue-600/30 flex items-center justify-center transition-all"
+                            >
+                                Jetzt Anmelden <ArrowRight className="w-4 h-4 ml-3" />
+                            </Link>
+                            <p className="text-[9px] text-slate-500 text-center italic leading-relaxed uppercase tracking-widest px-8">
+                                Bewahren Sie diesen Code sicher auf. Er kann für den ersten Login oder zur Verifizierung genutzt werden.
+                            </p>
                         </div>
                     </div>
+                ) : (
+                    <form className="mt-10 space-y-5" onSubmit={handleSubmit(onSubmit)}>
+                        {error && (
+                            <div className="rounded-2xl bg-red-500/10 border border-red-500/30 p-4 animate-in fade-in slide-in-from-top-2">
+                                <div className="text-[10px] font-black uppercase text-red-400 tracking-widest text-center">{error}</div>
+                            </div>
+                        )}
 
-                    <div className="pt-6">
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            className="w-full h-16 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black uppercase tracking-[0.2em] text-[11px] shadow-2xl shadow-blue-600/30 flex items-center justify-center transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 group font-sans"
-                        >
-                            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (
-                                <>
-                                    Konto Jetzt Erstellen
-                                    <ArrowRight className="w-4 h-4 ml-3 group-hover:translate-x-1 transition-transform" />
-                                </>
-                            )}
-                        </button>
-                    </div>
+                        <div className="space-y-4 font-sans">
+                            <div className="relative group">
+                                <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-slate-500 group-focus-within:text-blue-400 transition-colors">
+                                    <Building className="w-4 h-4" />
+                                </div>
+                                <input
+                                    {...register('tenantName')}
+                                    placeholder="Name der Hausverwaltung"
+                                    className="w-full pl-12 pr-5 py-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder-slate-600 focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500/50 transition-all font-bold text-sm shadow-inner"
+                                />
+                                {errors.tenantName && (
+                                    <p className="text-red-400 text-[10px] font-black uppercase mt-2 ml-1 tracking-widest">{errors.tenantName.message}</p>
+                                )}
+                            </div>
 
-                    <div className="text-center text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 pt-4 font-sans">
-                        Bereits registriert?{' '}
-                        <Link href="/login" className="text-blue-400 hover:text-blue-300 transition-colors">
-                            Hier anmelden
-                        </Link>
-                    </div>
-                </form>
+                            <div className="relative group">
+                                <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-slate-500 group-focus-within:text-blue-400 transition-colors">
+                                    <User className="w-4 h-4" />
+                                </div>
+                                <input
+                                    {...register('name')}
+                                    placeholder="Ihr vollständiger Name"
+                                    className="w-full pl-12 pr-5 py-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder-slate-600 focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500/50 transition-all font-bold text-sm shadow-inner"
+                                />
+                                {errors.name && (
+                                    <p className="text-red-400 text-[10px] font-black uppercase mt-2 ml-1 tracking-widest">{errors.name.message}</p>
+                                )}
+                            </div>
+
+                            <div className="relative group">
+                                <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-slate-500 group-focus-within:text-blue-400 transition-colors">
+                                    <Mail className="w-4 h-4" />
+                                </div>
+                                <input
+                                    {...register('email')}
+                                    type="email"
+                                    placeholder="E-Mail Adresse"
+                                    className="w-full pl-12 pr-5 py-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder-slate-600 focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500/50 transition-all font-bold text-sm shadow-inner"
+                                />
+                                {errors.email && (
+                                    <p className="text-red-400 text-[10px] font-black uppercase mt-2 ml-1 tracking-widest">{errors.email.message}</p>
+                                )}
+                            </div>
+
+                            <div className="relative group">
+                                <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-slate-500 group-focus-within:text-blue-400 transition-colors">
+                                    <Lock className="w-4 h-4" />
+                                </div>
+                                <input
+                                    {...register('password')}
+                                    type="password"
+                                    placeholder="Passwort"
+                                    className="w-full pl-12 pr-5 py-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder-slate-600 focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500/50 transition-all font-bold text-sm shadow-inner"
+                                />
+                                {errors.password && (
+                                    <p className="text-red-400 text-[10px] font-black uppercase mt-2 ml-1 tracking-widest">{errors.password.message}</p>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="pt-6">
+                            <button
+                                type="submit"
+                                disabled={loading}
+                                className="w-full h-16 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black uppercase tracking-[0.2em] text-[11px] shadow-2xl shadow-blue-600/30 flex items-center justify-center transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 group font-sans"
+                            >
+                                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (
+                                    <>
+                                        Konto Jetzt Erstellen
+                                        <ArrowRight className="w-4 h-4 ml-3 group-hover:translate-x-1 transition-transform" />
+                                    </>
+                                )}
+                            </button>
+                        </div>
+
+                        <div className="text-center text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 pt-4 font-sans">
+                            Bereits registriert?{' '}
+                            <Link href="/login" className="text-blue-400 hover:text-blue-300 transition-colors">
+                                Hier anmelden
+                            </Link>
+                        </div>
+                    </form>
+                )}
 
                 <div className="mt-10 flex items-center justify-center space-x-2 text-[9px] font-black uppercase tracking-widest text-slate-600">
                     <ShieldCheck className="w-3.5 h-3.5" />
