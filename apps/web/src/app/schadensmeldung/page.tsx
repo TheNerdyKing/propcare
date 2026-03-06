@@ -77,7 +77,7 @@ export default function SchadensmeldungPage() {
                 type: 'DAMAGE_REPORT'
             });
             const ticketData = response.data;
-            
+
             // Handle image uploads if any
             if (files.length > 0) {
                 const tId = ticketData.id;
@@ -157,66 +157,66 @@ export default function SchadensmeldungPage() {
     }
 
     return (
-        <div className="min-h-screen bg-slate-50 py-20 px-4 sm:px-6 lg:px-8 font-sans text-slate-900">
-            <div className="max-w-4xl mx-auto">
-                <div className="mb-16 text-center">
-                    <div className="inline-flex items-center space-x-2 bg-blue-50 text-blue-600 px-4 py-2 rounded-full mb-6">
-                        <ShieldCheck className="w-4 h-4" />
-                        <span className="text-[10px] font-black uppercase tracking-widest text-blue-700">Sicheres Service-Portal</span>
+        <div className="min-h-screen bg-[#1e293b] py-10 px-4 font-sans text-white">
+            <div className="max-w-3xl mx-auto">
+                <div className="mb-10 text-center">
+                    <div className="inline-flex items-center space-x-2 bg-blue-600/10 text-blue-400 px-3 py-1.5 rounded-full mb-4">
+                        <ShieldCheck className="w-3.5 h-3.5" />
+                        <span className="text-[9px] font-black uppercase tracking-widest">Sicheres Service-Portal</span>
                     </div>
-                    <h1 className="text-6xl font-black text-slate-900 tracking-tighter mb-4 uppercase">
-                        Service <span className="text-blue-600">Meldung</span>
+                    <h1 className="text-3xl font-black text-white tracking-tight mb-2 uppercase">
+                        Service <span className="text-blue-400">Meldung</span>
                     </h1>
-                    <p className="text-slate-500 text-xl font-medium max-w-xl mx-auto italic">
+                    <p className="text-slate-400 text-sm font-medium max-w-md mx-auto italic">
                         Senden Sie Ihre Anfrage oder Schadensmeldung direkt an die zuständige Hausverwaltung.
                     </p>
                 </div>
 
-                <form onSubmit={handleSubmit(onSubmit)} className="bg-white rounded-[3rem] p-12 shadow-2xl shadow-slate-200/50 border border-slate-100 space-y-12">
+                <form onSubmit={handleSubmit(onSubmit)} className="bg-slate-900/60 backdrop-blur-3xl rounded-[2rem] p-8 shadow-2xl border border-white/5 space-y-8">
                     {error && (
-                        <div className="flex items-center space-x-3 p-6 bg-red-50 text-red-600 rounded-2xl border border-red-100">
-                            <AlertCircle className="w-5 h-5 flex-shrink-0" />
-                            <p className="font-bold text-sm tracking-tight">{error}</p>
+                        <div className="flex items-center space-x-3 p-4 bg-red-500/10 text-red-400 rounded-xl border border-red-500/20">
+                            <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                            <p className="font-bold text-xs tracking-tight">{error}</p>
                         </div>
                     )}
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
                         {/* Category selection */}
-                        <div className="md:col-span-2 space-y-4">
-                            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Art des Schadens</label>
+                        <div className="md:col-span-2 space-y-3">
+                            <label className="block text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] ml-1">Art des Schadens</label>
                             <div className="relative">
                                 <select
                                     {...register('category')}
-                                    className="w-full h-16 bg-slate-50 border border-slate-100 rounded-2xl px-6 font-bold text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all appearance-none cursor-pointer"
+                                    className="w-full h-12 bg-white/5 border border-white/10 rounded-xl px-5 font-bold text-white focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all appearance-none cursor-pointer text-xs"
                                 >
-                                    <option value="PLUMBING">Sanitär / Wasser</option>
-                                    <option value="ELECTRICAL">Elektro / Licht</option>
-                                    <option value="HEATING">Heizung / Klima</option>
-                                    <option value="WINDOWS">Fenster / Türen / Schlösser</option>
-                                    <option value="APPLIANCES">Küchengeräte / Waschmaschine</option>
-                                    <option value="MOLD">Schimmel / Feuchtigkeit</option>
-                                    <option value="OTHER">Andere technische Störung</option>
+                                    <option value="PLUMBING" className="bg-[#1e293b]">Sanitär / Wasser</option>
+                                    <option value="ELECTRICAL" className="bg-[#1e293b]">Elektro / Licht</option>
+                                    <option value="HEATING" className="bg-[#1e293b]">Heizung / Klima</option>
+                                    <option value="WINDOWS" className="bg-[#1e293b]">Fenster / Türen / Schlösser</option>
+                                    <option value="APPLIANCES" className="bg-[#1e293b]">Küchengeräte / Waschmaschine</option>
+                                    <option value="MOLD" className="bg-[#1e293b]">Schimmel / Feuchtigkeit</option>
+                                    <option value="OTHER" className="bg-[#1e293b]">Andere technische Störung</option>
                                 </select>
-                                <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">▼</div>
+                                <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500 px-1 text-[8px]">▼</div>
                             </div>
                         </div>
 
                         {/* Building */}
-                        <div className="space-y-3">
-                            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Liegenschaft</label>
+                        <div className="space-y-2">
+                            <label className="block text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] ml-1">Liegenschaft</label>
                             <div className="relative">
                                 <select
                                     {...register('propertyId')}
                                     disabled={fetchingProps}
-                                    className="w-full h-14 bg-slate-50 border border-slate-100 rounded-2xl px-6 font-bold text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all appearance-none cursor-pointer disabled:opacity-50"
+                                    className="w-full h-12 bg-white/5 border border-white/10 rounded-xl px-5 font-bold text-white focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all appearance-none cursor-pointer disabled:opacity-50 text-xs"
                                 >
-                                    <option value="">Objekt auswählen...</option>
+                                    <option value="" className="bg-[#1e293b]">Objekt auswählen...</option>
                                     {properties.map((p) => (
-                                        <option key={p.id} value={p.id}>{p.name}</option>
+                                        <option key={p.id} value={p.id} className="bg-[#1e293b]">{p.name}</option>
                                     ))}
                                 </select>
-                                <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                                    {fetchingProps ? <Loader2 className="w-4 h-4 animate-spin" /> : '▼'}
+                                <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">
+                                    {fetchingProps ? <Loader2 className="w-3 h-3 animate-spin" /> : <span className="text-[8px]">▼</span>}
                                 </div>
                             </div>
                             {errors.propertyId && <p className="text-red-500 text-[10px] font-black uppercase mt-2 ml-1">{errors.propertyId.message}</p>}
@@ -305,29 +305,29 @@ export default function SchadensmeldungPage() {
                         {errors.description && <p className="text-red-500 text-[10px] font-black uppercase mt-2 ml-1">{errors.description.message}</p>}
                     </div>
 
-                        <div className="bg-blue-50/50 rounded-[2rem] p-8 border border-blue-100 flex items-start space-x-6 hover:bg-blue-50 transition-colors duration-500">
-                            <div className="flex items-center h-6">
-                                <input
-                                    {...register('permissionToEnter')}
-                                    type="checkbox"
-                                    className="w-6 h-6 rounded-lg text-blue-600 border-slate-200 focus:ring-blue-500 transition-all cursor-pointer"
-                                />
-                            </div>
-                            <div className="space-y-1">
-                                <label className="block text-sm font-black text-blue-900 tracking-tight cursor-pointer">Zutrittserlaubnis</label>
-                                <p className="text-blue-700/60 text-sm font-medium leading-relaxed">
-                                    Ich erlaube beauftragten Handwerkern den Zutritt zur Wohnung, auch wenn ich nicht anwesend bin. Dies beschleunigt die Behebung des Schadens erheblich.
-                                </p>
-                            </div>
+                    <div className="bg-blue-50/50 rounded-[2rem] p-8 border border-blue-100 flex items-start space-x-6 hover:bg-blue-50 transition-colors duration-500">
+                        <div className="flex items-center h-6">
+                            <input
+                                {...register('permissionToEnter')}
+                                type="checkbox"
+                                className="w-6 h-6 rounded-lg text-blue-600 border-slate-200 focus:ring-blue-500 transition-all cursor-pointer"
+                            />
                         </div>
+                        <div className="space-y-1">
+                            <label className="block text-sm font-black text-blue-900 tracking-tight cursor-pointer">Zutrittserlaubnis</label>
+                            <p className="text-blue-700/60 text-sm font-medium leading-relaxed">
+                                Ich erlaube beauftragten Handwerkern den Zutritt zur Wohnung, auch wenn ich nicht anwesend bin. Dies beschleunigt die Behebung des Schadens erheblich.
+                            </p>
+                        </div>
+                    </div>
 
                     <button
                         type="submit"
                         disabled={loading || fetchingProps}
-                        className="w-full h-20 bg-blue-600 hover:bg-blue-700 text-white rounded-[2rem] font-black uppercase tracking-[0.2em] text-[11px] shadow-2xl shadow-blue-600/30 flex items-center justify-center transition-all hover:scale-[1.01] active:translate-y-0.5 disabled:opacity-50"
+                        className="w-full h-14 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-black uppercase tracking-[0.2em] text-[10px] shadow-xl shadow-blue-500/20 flex items-center justify-center transition-all hover:scale-[1.02] active:translate-y-0.5 disabled:opacity-50"
                     >
                         {loading ? (
-                            <Loader2 className="w-6 h-6 animate-spin" />
+                            <Loader2 className="w-4.5 h-4.5 animate-spin" />
                         ) : (
                             'Übermittlung starten'
                         )}

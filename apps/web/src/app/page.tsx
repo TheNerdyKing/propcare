@@ -9,9 +9,9 @@ export default function LandingPage() {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
 
     return (
-        <main className="min-h-screen bg-[#F8FAFC] flex flex-col relative overflow-hidden">
+        <main className="min-h-screen bg-[#1e293b] flex flex-col relative overflow-hidden text-white">
             {/* Header with Navigation */}
-            <header className="relative w-full z-50 bg-white/50 backdrop-blur-md border-b border-slate-200/50">
+            <header className="relative w-full z-50 bg-[#1e293b]/50 backdrop-blur-md border-b border-white/5">
                 <div className="max-w-7xl mx-auto px-6 lg:px-10 h-20 md:h-24 flex items-center justify-between">
                     <Logo />
 
@@ -33,11 +33,11 @@ export default function LandingPage() {
 
                 {/* Mobile Navigation Dropdown */}
                 {isMenuOpen && (
-                    <div className="md:hidden absolute top-[100%] left-0 w-full bg-white border-b border-slate-200/50 shadow-xl px-6 py-6 animate-in slide-in-from-top-2 z-50">
+                    <div className="md:hidden absolute top-[100%] left-0 w-full bg-[#1e293b] border-b border-white/10 shadow-xl px-6 py-6 animate-in slide-in-from-top-2 z-50">
                         <Link
                             href="/login"
                             onClick={() => setIsMenuOpen(false)}
-                            className="block w-full py-4 bg-slate-50 border border-slate-100 text-center text-xs font-black text-slate-600 hover:text-blue-600 hover:bg-slate-100 rounded-2xl uppercase tracking-[0.2em] transition-colors"
+                            className="block w-full py-3 bg-white/5 border border-white/10 text-center text-[10px] font-black text-slate-300 hover:text-white hover:bg-white/10 rounded-xl uppercase tracking-[0.2em] transition-colors"
                         >
                             Verwaltung Login
                         </Link>
@@ -45,47 +45,47 @@ export default function LandingPage() {
                 )}
             </header>
 
-            <div className="flex-1 flex flex-col items-center justify-center p-6 lg:p-10 max-w-4xl mx-auto w-full z-10">
-                <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
-                    <div className="md:col-span-2 text-center mb-8 md:mb-12">
-                        <h1 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tight uppercase mb-4 mt-4 md:mt-0">
-                            Willkommen beim <span className="text-blue-600">Mieterportal</span>
+            <div className="flex-1 flex flex-col items-center justify-center p-6 max-w-2xl mx-auto w-full z-10">
+                <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="md:col-span-2 text-center mb-6">
+                        <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight uppercase mb-3 leading-tight">
+                            Willkommen beim <span className="text-blue-400">Mieterportal</span>
                         </h1>
-                        <p className="text-slate-500 font-medium text-base md:text-lg italic">
+                        <p className="text-slate-400 font-medium text-sm italic">
                             Wie können wir Ihnen heute helfen?
                         </p>
                     </div>
 
                     <Link
                         href="/schadensmeldung"
-                        className="group bg-white p-8 md:p-10 rounded-[2rem] shadow-xl shadow-slate-200/50 border border-slate-100 hover:shadow-2xl hover:shadow-blue-600/10 transition-all hover:-translate-y-2 flex flex-col items-center text-center"
+                        className="group bg-white/5 p-6 rounded-[2rem] border border-white/5 hover:bg-white/10 hover:shadow-[0_0_30px_rgba(37,99,235,0.15)] transition-all flex flex-col items-center text-center ring-1 ring-white/5"
                     >
-                        <div className="w-16 h-16 md:w-20 md:h-20 bg-blue-50 rounded-2xl md:rounded-3xl flex items-center justify-center mb-6 md:mb-8 group-hover:bg-blue-600 group-hover:text-white transition-all duration-500 shadow-sm">
-                            <Wrench className="w-8 h-8 md:w-10 md:h-10 text-blue-600 group-hover:text-white" />
+                        <div className="w-14 h-14 bg-blue-600/20 rounded-2xl flex items-center justify-center mb-5 group-hover:bg-blue-600 group-hover:text-white transition-all duration-500 shadow-[0_0_15px_rgba(37,99,235,0.1)]">
+                            <Wrench className="w-6 h-6 text-blue-400 group-hover:text-white" />
                         </div>
-                        <h2 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight uppercase mb-3">Schadensmeldung</h2>
-                        <p className="text-slate-500 font-bold text-[10px] md:text-xs uppercase tracking-widest leading-relaxed">
+                        <h2 className="text-lg font-black text-white tracking-tight uppercase mb-2">Schadensmeldung</h2>
+                        <p className="text-slate-500 font-bold text-[9px] uppercase tracking-widest leading-relaxed">
                             Defekte melden & Reparaturen verfolgen
                         </p>
                     </Link>
 
                     <Link
                         href="/allgemein"
-                        className="group bg-white p-8 md:p-10 rounded-[2rem] shadow-xl shadow-slate-200/50 border border-slate-100 hover:shadow-2xl hover:shadow-blue-600/10 transition-all hover:-translate-y-2 flex flex-col items-center text-center"
+                        className="group bg-white/5 p-6 rounded-[2rem] border border-white/5 hover:bg-white/10 hover:shadow-[0_0_30px_rgba(37,99,235,0.15)] transition-all flex flex-col items-center text-center ring-1 ring-white/5"
                     >
-                        <div className="w-16 h-16 md:w-20 md:h-20 bg-slate-50 rounded-2xl md:rounded-3xl flex items-center justify-center mb-6 md:mb-8 group-hover:bg-blue-600 group-hover:text-white transition-all duration-500 shadow-sm">
-                            <Info className="w-8 h-8 md:w-10 md:h-10 text-slate-400 group-hover:text-white" />
+                        <div className="w-14 h-14 bg-slate-800 rounded-2xl flex items-center justify-center mb-5 group-hover:bg-blue-600 group-hover:text-white transition-all duration-500 shadow-sm">
+                            <Info className="w-6 h-6 text-slate-400 group-hover:text-white" />
                         </div>
-                        <h2 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight uppercase mb-3">Administrative Anfrage</h2>
-                        <p className="text-slate-500 font-bold text-[10px] md:text-xs uppercase tracking-widest leading-relaxed">
+                        <h2 className="text-lg font-black text-white tracking-tight uppercase mb-2">Administrative Anfrage</h2>
+                        <p className="text-slate-500 font-bold text-[9px] uppercase tracking-widest leading-relaxed">
                             Fragen zu Verträgen oder Abrechnungen
                         </p>
                     </Link>
                 </div>
 
                 {/* Visual background elements */}
-                <div className="absolute -bottom-24 -right-24 w-[30rem] h-[30rem] md:w-[40rem] md:h-[40rem] bg-blue-600/5 rounded-full blur-3xl -z-0 pointer-events-none"></div>
-                <div className="absolute -top-24 -left-24 w-[30rem] h-[30rem] md:w-[40rem] md:h-[40rem] bg-blue-600/5 rounded-full blur-3xl -z-0 pointer-events-none"></div>
+                <div className="absolute -bottom-24 -right-24 w-[30rem] h-[30rem] bg-blue-500/10 rounded-full blur-[120px] -z-0 pointer-events-none animate-pulse"></div>
+                <div className="absolute -top-24 -left-24 w-[30rem] h-[30rem] bg-indigo-500/10 rounded-full blur-[120px] -z-0 pointer-events-none animate-pulse delay-700"></div>
             </div>
         </main>
     );

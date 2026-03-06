@@ -123,15 +123,15 @@ export default function DashboardPage() {
 
     return (
         <AuthenticatedLayout>
-            <div className="p-6 max-w-6xl mx-auto font-sans text-slate-900 animate-in fade-in slide-in-from-bottom-4 duration-1000">
-                <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
-                    <div className="space-y-4">
-                        <div className="inline-flex items-center space-x-2.5 bg-blue-600/10 backdrop-blur-md text-blue-600 px-4 py-2 rounded-xl border border-blue-200/30">
-                            <Rocket className="w-4 h-4" />
-                            <span className="text-[10px] font-black uppercase tracking-[0.2em]">Kontrollzentrum</span>
+            <div className="p-4 max-w-5xl mx-auto font-sans text-white animate-in fade-in slide-in-from-bottom-2 duration-1000">
+                <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
+                    <div className="space-y-3">
+                        <div className="inline-flex items-center space-x-2 bg-blue-500/10 text-blue-400 px-3 py-1.5 rounded-lg border border-blue-500/20">
+                            <Rocket className="w-3.5 h-3.5" />
+                            <span className="text-[9px] font-black uppercase tracking-[0.2em]">Terminal</span>
                         </div>
-                        <h1 className="text-4xl font-black text-slate-900 tracking-tighter uppercase leading-tight">{t('dashboard_welcome_title')}</h1>
-                        <p className="text-slate-500 font-medium text-lg max-w-lg italic leading-relaxed">{t('dashboard_welcome_subtitle')}</p>
+                        <h1 className="text-2xl font-black text-white tracking-tight uppercase leading-tight">{t('dashboard_welcome_title')}</h1>
+                        <p className="text-slate-500 font-medium text-xs max-w-sm italic leading-relaxed">{t('dashboard_welcome_subtitle')}</p>
                     </div>
                 </div>
 
@@ -183,21 +183,21 @@ export default function DashboardPage() {
                 ) : !loading && !error && (
                     <>
                         {/* Metrics Grid */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
                             <MetricCard title={t('dashboard_metrics_total')} value={stats.total} icon={Activity} color="white" dark={true} />
-                            <MetricCard title={t('dashboard_metrics_open')} value={stats.open} icon={Navigation} color="amber" />
-                            <MetricCard title={t('dashboard_metrics_resolved')} value={stats.resolved} icon={CheckCircle2} color="emerald" />
+                            <MetricCard title={t('dashboard_metrics_open')} value={stats.open} icon={Navigation} color="amber" dark={true} />
+                            <MetricCard title={t('dashboard_metrics_resolved')} value={stats.resolved} icon={CheckCircle2} color="emerald" dark={true} />
                         </div>
 
                         {/* Recent Activity Table */}
-                        <div className="bg-white/70 backdrop-blur-3xl rounded-[2.5rem] shadow-[0_0_40px_rgba(0,0,0,0.05)] border border-slate-100 overflow-hidden">
-                            <div className="p-8 border-b border-slate-50 flex items-center justify-between">
-                                <div className="flex items-center space-x-3">
-                                    <div className="w-2.5 h-2.5 bg-blue-600 rounded-full animate-pulse" />
-                                    <h3 className="text-xl font-black text-slate-900 tracking-tighter uppercase">{t('dashboard_recent_activity')}</h3>
+                        <div className="bg-slate-900/40 backdrop-blur-3xl rounded-3xl shadow-xl border border-white/5 overflow-hidden ring-1 ring-white/5">
+                            <div className="p-6 border-b border-white/5 flex items-center justify-between">
+                                <div className="flex items-center space-x-2.5">
+                                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
+                                    <h3 className="text-lg font-black text-white tracking-tight uppercase">{t('dashboard_recent_activity')}</h3>
                                 </div>
-                                <Link href="/tickets" className="bg-slate-50 text-slate-500 px-6 py-2.5 rounded-xl font-black uppercase tracking-widest text-[9px] hover:bg-slate-900 hover:text-white transition-all duration-500 flex items-center">
-                                    {t('dashboard_see_all')} <ChevronRight className="w-4 h-4 ml-1.5" />
+                                <Link href="/tickets" className="bg-white/5 text-slate-400 px-4 py-2 rounded-lg font-black uppercase tracking-widest text-[8px] hover:bg-white/10 hover:text-white transition-all duration-500 flex items-center">
+                                    {t('dashboard_see_all')} <ChevronRight className="w-3 h-3 ml-1" />
                                 </Link>
                             </div>
                             <div className="divide-y divide-slate-50">
@@ -209,11 +209,11 @@ export default function DashboardPage() {
                                         <Link
                                             key={ticket.id}
                                             href={`/tickets/${ticket.id}`}
-                                            className="flex items-center p-8 hover:bg-blue-50/40 transition-all group animate-in slide-in-from-left-4 duration-700"
+                                            className="flex items-center p-5 hover:bg-white/5 transition-all group animate-in slide-in-from-left-4 duration-700"
                                             style={{ animationDelay: `${index * 50}ms` }}
                                         >
-                                            <div className="w-12 h-12 bg-slate-100 rounded-xl flex items-center justify-center shrink-0 border border-slate-200 group-hover:bg-white transition-colors duration-500 mr-8 group-hover:scale-110 shadow-sm">
-                                                <Building2 className="w-6 h-6 text-slate-400 group-hover:text-blue-600 transition-colors" />
+                                            <div className="w-10 h-10 bg-white/5 rounded-lg flex items-center justify-center shrink-0 border border-white/10 group-hover:bg-white/10 transition-colors duration-500 mr-6 group-hover:scale-110 shadow-sm">
+                                                <Building2 className="w-5 h-5 text-slate-500 group-hover:text-blue-400 transition-colors" />
                                             </div>
 
                                             <div className="flex-1 min-w-0 font-sans">

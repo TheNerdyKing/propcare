@@ -148,7 +148,7 @@ function LoginForm() {
             const data = await res.json();
             if (!res.ok) throw new Error(data.message || 'Ungültiger Code');
 
-            setSetupResult({ email: data.email, pass: data.tempPass });
+            setSetupResult({ email: data.email, pass: data.tempPass, name: data.name, role: data.role });
             setSuccess('Code verifiziert! Nutzen Sie die untenstehenden Daten zum Login.');
         } catch (err: any) {
             setError(err.message);
@@ -159,15 +159,15 @@ function LoginForm() {
 
     if (showSetupBox) {
         return (
-            <div className="max-w-[22rem] w-full space-y-6 p-8 rounded-[2rem] border border-white/10 bg-slate-900/60 backdrop-blur-3xl shadow-[0_0_40px_rgba(0,0,0,0.3)] ring-1 ring-white/10 relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-48 h-48 bg-emerald-600/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-[60px] pointer-events-none" />
-                <div className="w-12 h-12 bg-emerald-600 rounded-xl flex items-center justify-center mx-auto mb-6 shadow-[0_0_20px_rgba(16,185,129,0.3)] transform rotate-45 group">
-                    <Lock className="w-5 h-5 text-white -rotate-45" />
+            <div className="max-w-[20rem] w-full space-y-5 p-6 rounded-[1.5rem] border border-white/5 bg-blue-950/60 backdrop-blur-3xl shadow-[0_0_30px_rgba(0,0,0,0.2)] ring-1 ring-white/10 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-[40px] pointer-events-none" />
+                <div className="w-10 h-10 bg-emerald-600 rounded-lg flex items-center justify-center mx-auto mb-4 shadow-[0_0_15px_rgba(16,185,129,0.2)] transform rotate-45 group">
+                    <Lock className="w-4 h-4 text-white -rotate-45" />
                 </div>
-                <h2 className="text-xl font-black tracking-tight text-white uppercase mb-1 leading-tight">
+                <h2 className="text-lg font-black tracking-tight text-white uppercase mb-1 leading-tight text-center">
                     Admin <span className="text-emerald-500">Initialisierung</span>
                 </h2>
-                <p className="text-slate-400 font-medium text-[10px] italic">Nur für Super-Admins beim ersten Login.</p>
+                <p className="text-slate-500 font-medium text-[9px] italic text-center">Nur für Super-Admins beim ersten Login.</p>
 
                 {!setupResult ? (
                     <form className="mt-8 space-y-4" onSubmit={handleVerifySetup}>
@@ -205,16 +205,18 @@ function LoginForm() {
                         <div className="p-4 bg-emerald-500/5 border border-emerald-500/10 rounded-xl space-y-3">
                             <div>
                                 <label className="text-[8px] uppercase font-black tracking-[0.2em] text-emerald-500 block mb-1">E-Mail</label>
-                                <div className="text-white font-mono text-xs break-all font-bold">{setupResult.email}</div>
+                                <div className="text-white font-mono text-[10px] break-all font-bold">{setupResult.email}</div>
                             </div>
-                            <div>
-                                <label className="text-[8px] uppercase font-black tracking-[0.2em] text-emerald-500 block mb-1">Passwort</label>
-                                <div className="text-white font-mono text-lg break-all font-black text-emerald-400 tracking-tight">{setupResult.pass}</div>
-                            </div>
+                            {setupResult.name && (
+                                <div>
+                                    <label className="text-[8px] uppercase font-black tracking-[0.2em] text-slate-500 block mb-1">Inhaber / Name</label>
+                                    <div className="text-white font-black text-[10px] tracking-tight">{setupResult.name}</div>
+                                </div>
+                            )}
                         </div>
                         <button
                             onClick={() => { setShowSetupBox(false); setSetupResult(null); }}
-                            className="w-full h-11 bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-lg font-bold uppercase tracking-[0.1em] text-[10px] flex items-center justify-center transition-all"
+                            className="w-full h-11 bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-lg font-bold uppercase tracking-[0.1em] text-[9px] flex items-center justify-center transition-all"
                         >
                             Fertig & Login
                         </button>
@@ -229,30 +231,30 @@ function LoginForm() {
 
     if (showAdminPortal) {
         return (
-            <div className="max-w-[22rem] w-full space-y-6 p-8 rounded-[2rem] border border-white/10 bg-[#1e293b]/60 backdrop-blur-3xl shadow-[0_0_40px_rgba(0,0,0,0.3)] ring-1 ring-white/10 relative overflow-hidden text-center">
-                <div className="absolute top-0 right-0 w-48 h-48 bg-red-600/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-[60px] pointer-events-none" />
-                <div className="w-12 h-12 bg-red-600 rounded-xl flex items-center justify-center mx-auto mb-6 shadow-[0_0_20px_rgba(220,38,38,0.3)] transform rotate-45 group">
-                    <ShieldAlert className="w-6 h-6 text-white -rotate-45" />
+            <div className="max-w-[20rem] w-full space-y-5 p-6 rounded-[1.5rem] border border-white/5 bg-blue-950/60 backdrop-blur-3xl shadow-[0_0_30px_rgba(0,0,0,0.2)] ring-1 ring-white/10 relative overflow-hidden text-center">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-red-600/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-[40px] pointer-events-none" />
+                <div className="w-10 h-10 bg-red-600 rounded-lg flex items-center justify-center mx-auto mb-4 shadow-[0_0_15px_rgba(220,38,38,0.2)] transform rotate-45 group">
+                    <ShieldAlert className="w-5 h-5 text-white -rotate-45" />
                 </div>
-                <h2 className="text-xl font-black tracking-tight text-white uppercase mb-1 leading-tight">
+                <h2 className="text-lg font-black tracking-tight text-white uppercase mb-1 leading-tight">
                     Super Admin <span className="text-red-500">Portal</span>
                 </h2>
-                <p className="text-slate-400 font-medium text-[10px] italic">Plattform-Administration & Setup</p>
+                <p className="text-slate-500 font-medium text-[9px] italic">Plattform-Administration & Setup</p>
 
                 <div className="mt-8 space-y-3">
                     <button
                         onClick={() => { setShowSetupBox(true); }}
-                        className="w-full h-11 bg-white/5 hover:bg-emerald-500/10 text-white border border-white/10 rounded-lg font-bold uppercase tracking-[0.1em] text-[10px] flex items-center justify-center transition-all group"
+                        className="w-full h-11 bg-white/5 hover:bg-emerald-500/10 text-white border border-white/5 rounded-lg font-bold uppercase tracking-[0.1em] text-[9px] flex items-center justify-center transition-all group"
                     >
-                        <Sparkles className="w-4 h-4 mr-2 text-emerald-500 group-hover:scale-110 transition-transform" />
+                        <Sparkles className="w-3.5 h-3.5 mr-2 text-emerald-500 group-hover:scale-110 transition-transform" />
                         Erster Login? Code verwenden
                     </button>
 
                     <Link
                         href="/register/super-admin"
-                        className="w-full h-11 bg-white/5 hover:bg-red-500/10 text-white border border-white/10 rounded-lg font-bold uppercase tracking-[0.1em] text-[10px] flex items-center justify-center transition-all group"
+                        className="w-full h-11 bg-white/5 hover:bg-red-500/10 text-white border border-white/5 rounded-lg font-bold uppercase tracking-[0.1em] text-[9px] flex items-center justify-center transition-all group"
                     >
-                        <ShieldAlert className="w-4 h-4 mr-2 text-red-500 group-hover:scale-110 transition-transform" />
+                        <ShieldAlert className="w-3.5 h-3.5 mr-2 text-red-500 group-hover:scale-110 transition-transform" />
                         System initial einrichten
                     </Link>
 
@@ -338,11 +340,11 @@ function LoginForm() {
     }
 
     return (
-        <div className="max-w-[22rem] w-full space-y-6 p-8 rounded-[2rem] border border-white/10 bg-[#1e293b]/60 backdrop-blur-3xl shadow-[0_0_40px_rgba(0,0,0,0.3)] ring-1 ring-white/10 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-48 h-48 bg-blue-600/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-[60px] pointer-events-none" />
+        <div className="max-w-[20rem] w-full space-y-5 p-6 rounded-[1.5rem] border border-white/5 bg-blue-950/60 backdrop-blur-3xl shadow-[0_0_30px_rgba(0,0,0,0.2)] ring-1 ring-white/10 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-600/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-[40px] pointer-events-none" />
 
-            <div className="relative z-10 text-center mb-6 overflow-visible">
-                <Logo showStatus light className="mx-auto scale-90" />
+            <div className="relative z-10 text-center mb-4 overflow-visible">
+                <Logo showStatus light className="mx-auto" />
             </div>
 
             <form className="mt-8 space-y-5" onSubmit={handleSubmit(onSubmit)}>
@@ -434,13 +436,13 @@ function LoginForm() {
 
 export default function LoginPage() {
     return (
-        <div className="min-h-screen flex items-center justify-center bg-[#1e293b] py-12 px-4 sm:px-6 lg:px-8 font-sans relative overflow-hidden">
+        <div className="min-h-screen flex items-center justify-center bg-[#334155] py-8 px-4 font-sans relative overflow-hidden">
             {/* Enhanced radial gradients for a more "luminous" feel */}
-            <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_20%_20%,#334155_0%,transparent_50%)] pointer-events-none" />
-            <div className="absolute top-1/4 left-1/4 w-[600px] h-[600px] bg-blue-500/20 rounded-full blur-[140px] pointer-events-none animate-pulse" />
-            <div className="absolute bottom-1/4 right-1/4 w-[600px] h-[600px] bg-indigo-500/20 rounded-full blur-[140px] pointer-events-none animate-pulse duration-700" />
+            <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_20%_20%,#475569_0%,transparent_50%)] pointer-events-none" />
+            <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-blue-500/10 rounded-full blur-[100px] pointer-events-none animate-pulse" />
+            <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] bg-indigo-500/10 rounded-full blur-[100px] pointer-events-none animate-pulse duration-700" />
 
-            <Suspense fallback={<div className="text-white"><Loader2 className="animate-spin text-blue-600" /></div>}>
+            <Suspense fallback={<div className="text-white"><Loader2 className="w-8 h-8 animate-spin text-blue-500" /></div>}>
                 <LoginForm />
             </Suspense>
         </div>

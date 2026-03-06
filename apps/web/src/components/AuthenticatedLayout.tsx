@@ -72,7 +72,7 @@ export default function AuthenticatedLayout({ children }: { children: React.Reac
     }, [pathname]);
 
     if (accessState === 'LOADING') {
-        return <div className="flex h-screen bg-[#F8FAFC] items-center justify-center"><div className="w-8 h-8 rounded-full border-4 border-blue-600 border-t-transparent animate-spin"></div></div>;
+        return <div className="flex h-screen bg-[#1e293b] items-center justify-center"><div className="w-6 h-6 rounded-full border-2 border-blue-500 border-t-transparent animate-spin"></div></div>;
     }
 
     if (accessState === 'BLOCKED' || accessState === 'TRIAL_EXPIRED') {
@@ -116,7 +116,7 @@ export default function AuthenticatedLayout({ children }: { children: React.Reac
     }
 
     return (
-        <div className="flex h-screen bg-[#f1f5f9] overflow-hidden notranslate" translate="no">
+        <div className="flex h-screen bg-[#1e293b] overflow-hidden notranslate" translate="no">
             {/* Sticky Sidebar */}
             <div className="flex-shrink-0 h-full">
                 <Sidebar />
@@ -125,18 +125,18 @@ export default function AuthenticatedLayout({ children }: { children: React.Reac
             {/* Main Content Area */}
             <div className="flex-1 flex flex-col min-w-0 h-full">
                 {/* Visual Connector Header - Unifies the layout */}
-                <header className="h-11 bg-white/70 backdrop-blur-md border-b border-slate-200/60 flex-shrink-0 px-8 flex items-center justify-between z-10">
+                <header className="h-10 bg-blue-950/40 backdrop-blur-md border-b border-white/5 flex-shrink-0 px-8 flex items-center justify-between z-10">
                     <div className="flex items-center space-x-2.5">
-                        <div className="w-1 h-1 rounded-full bg-blue-600 shadow-[0_0_8px_rgba(37,99,235,0.4)] animate-pulse" />
-                        <span className="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em]">Cloud Sync Aktiv</span>
-                        <span className="text-slate-200 mx-1.5 text-xs">/</span>
-                        <span className="text-[8px] font-black text-blue-600 uppercase tracking-[0.2em]">Portal</span>
+                        <div className="w-1 h-1 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(37,99,235,0.4)] animate-pulse" />
+                        <span className="text-[8px] font-black text-slate-500 uppercase tracking-[0.2em]">Live Status</span>
+                        <span className="text-white/10 mx-1.5 text-xs">/</span>
+                        <span className="text-[8px] font-black text-blue-400 uppercase tracking-[0.2em]">Management Portal</span>
                     </div>
 
                     {/* Display Days Remaining if in trial */}
                     {daysRemaining !== null && daysRemaining <= 5 && (
-                        <div className="flex items-center bg-amber-50 px-3 py-1 rounded-full border border-amber-100">
-                            <span className="text-[8px] font-black uppercase text-amber-600 tracking-widest">Testphase: {daysRemaining} Tage übrig</span>
+                        <div className="flex items-center bg-blue-600/10 px-3 py-1 rounded-full border border-blue-500/20">
+                            <span className="text-[8px] font-black uppercase text-blue-400 tracking-widest">Testphase: {daysRemaining} Tage</span>
                         </div>
                     )}
                 </header>

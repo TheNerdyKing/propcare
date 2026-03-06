@@ -1,26 +1,43 @@
 @import "tailwindcss";
 
 @theme {
-  --color-indigo-600: #4f46e5;
-  --color-indigo-500: #6366f1;
-  --color-slate-950: #020617;
+  --color-blue-950: #1a202c;
+  --color-slate-950: #1a202c;
+  --color-brand-blue: #0178bc;
 }
 
 :root {
-  --background: #0f172a;
+  --background: #334155;
   --foreground: #ffffff;
+  --card: #2d3748;
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 14px;
+  font-size: 13px;
   -webkit-font-smoothing: antialiased;
 }
 
 @layer base {
-  input, button, select, textarea {
+
+  input,
+  button,
+  select,
+  textarea {
     @apply transition-all duration-300;
   }
+}
+
+.glow-blue {
+  box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
+}
+
+.glow-emerald {
+  box-shadow: 0 0 15px rgba(16, 185, 129, 0.3);
+}
+
+.glow-red {
+  box-shadow: 0 0 15px rgba(239, 68, 68, 0.3);
 }
