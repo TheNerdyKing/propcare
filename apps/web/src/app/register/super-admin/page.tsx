@@ -89,9 +89,10 @@ export default function SuperAdminSetup() {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-slate-950 px-4 py-12 font-sans relative overflow-hidden">
+        <div className="min-h-screen flex items-center justify-center bg-[#0f172a] px-4 py-12 font-sans relative overflow-hidden">
             {/* Styling exactly like Login but more premium */}
-            <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-red-600/5 rounded-full blur-[120px] pointer-events-none" />
+            <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_50%_-20%,#1e293b_0%,transparent_70%)] pointer-events-none" />
+            <div className="absolute top-1/4 left-1/4 w-[600px] h-[600px] bg-red-600/10 rounded-full blur-[140px] pointer-events-none" />
 
             <div className="max-w-[28rem] w-full space-y-10 p-12 rounded-[2.5rem] border border-white/5 bg-slate-900/60 backdrop-blur-3xl shadow-2xl relative">
                 <div className="text-center">

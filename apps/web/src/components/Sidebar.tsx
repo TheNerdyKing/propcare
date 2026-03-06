@@ -70,7 +70,7 @@ export default function Sidebar() {
 
             {/* Sidebar */}
             <aside className={`
-                fixed top-0 left-0 h-full bg-slate-950 w-80 z-40 transition-all duration-700 ease-in-out transform border-r border-white/5
+                fixed top-0 left-0 h-full bg-[#0f172a] w-80 z-40 transition-all duration-700 ease-in-out transform border-r border-white/5
                 ${isOpen ? 'translate-x-0' : '-translate-x-full'}
                 lg:translate-x-0 lg:static flex flex-col shadow-[20px_0_60px_rgba(0,0,0,0.3)]
             `}>
