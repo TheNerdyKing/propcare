@@ -3,20 +3,20 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import Link from 'next/link';
-import { 
-    Search, 
-    ArrowRight, 
-    Building2, 
-    Users, 
-    Rocket, 
-    Sparkles, 
-    Loader2, 
-    AlertCircle, 
-    Clock, 
-    Navigation, 
-    CheckCircle2, 
-    Shield, 
-    Bell, 
+import {
+    Search,
+    ArrowRight,
+    Building2,
+    Users,
+    Rocket,
+    Sparkles,
+    Loader2,
+    AlertCircle,
+    Clock,
+    Navigation,
+    CheckCircle2,
+    Shield,
+    Bell,
     Activity,
     ChevronRight
 } from 'lucide-react';
@@ -65,10 +65,10 @@ export default function DashboardPage() {
             const userStr = localStorage.getItem('user');
             if (!userStr) return null;
             const user = JSON.parse(userStr);
-            return user.tenantId || 
-                   user.tenant_id || 
-                   (user.tenants?.id) || 
-                   (Array.isArray(user.tenants) ? user.tenants[0]?.id : user.tenants?.id);
+            return user.tenantId ||
+                user.tenant_id ||
+                (user.tenants?.id) ||
+                (Array.isArray(user.tenants) ? user.tenants[0]?.id : user.tenants?.id);
         } catch (e) {
             return null;
         }
@@ -123,15 +123,15 @@ export default function DashboardPage() {
 
     return (
         <AuthenticatedLayout>
-            <div className="p-12 max-w-7xl mx-auto font-sans text-slate-900 animate-in fade-in slide-in-from-bottom-4 duration-1000">
-                <div className="flex flex-col md:flex-row md:items-end justify-between gap-10 mb-20">
-                    <div className="space-y-6">
-                        <div className="inline-flex items-center space-x-3 bg-blue-600/10 backdrop-blur-md text-blue-600 px-5 py-2.5 rounded-2xl border border-blue-200/50">
-                            <Rocket className="w-5 h-5" />
-                            <span className="text-[11px] font-black uppercase tracking-[0.25em]">Kontrollzentrum</span>
+            <div className="p-6 max-w-6xl mx-auto font-sans text-slate-900 animate-in fade-in slide-in-from-bottom-4 duration-1000">
+                <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
+                    <div className="space-y-4">
+                        <div className="inline-flex items-center space-x-2.5 bg-blue-600/10 backdrop-blur-md text-blue-600 px-4 py-2 rounded-xl border border-blue-200/30">
+                            <Rocket className="w-4 h-4" />
+                            <span className="text-[10px] font-black uppercase tracking-[0.2em]">Kontrollzentrum</span>
                         </div>
-                        <h1 className="text-6xl font-black text-slate-900 tracking-tighter uppercase leading-[0.9]">{t('dashboard_welcome_title')}</h1>
-                        <p className="text-slate-500 font-medium text-xl max-w-xl italic leading-relaxed">{t('dashboard_welcome_subtitle')}</p>
+                        <h1 className="text-4xl font-black text-slate-900 tracking-tighter uppercase leading-tight">{t('dashboard_welcome_title')}</h1>
+                        <p className="text-slate-500 font-medium text-lg max-w-lg italic leading-relaxed">{t('dashboard_welcome_subtitle')}</p>
                     </div>
                 </div>
 
@@ -150,7 +150,7 @@ export default function DashboardPage() {
                         <AlertCircle className="w-20 h-20 text-red-500 mx-auto mb-8" />
                         <h2 className="text-3xl font-black text-red-900 uppercase tracking-tight mb-4">{error}</h2>
                         <p className="text-red-600/60 font-medium mb-10 italic">Die Verbindung zum Datenbank-Cluster wurde unterbrochen.</p>
-                        <button 
+                        <button
                             onClick={() => fetchData()}
                             className="bg-red-600 text-white px-14 py-6 rounded-[2rem] font-black uppercase tracking-widest text-[11px] shadow-2xl shadow-red-600/30 hover:scale-105 active:scale-95 transition-all"
                         >
@@ -160,21 +160,21 @@ export default function DashboardPage() {
                 )}
 
                 {!loading && !error && tickets.length === 0 ? (
-                    <div className="space-y-12">
-                        <div className="bg-slate-900 rounded-[4rem] p-24 text-white relative overflow-hidden shadow-3xl group">
-                            <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-blue-600/20 rounded-full -translate-y-1/2 translate-x-1/2 blur-[120px] group-hover:bg-blue-600/30 transition-all duration-1000" />
-                            <div className="relative z-10 max-w-3xl">
-                                <div className="w-24 h-24 bg-white/10 backdrop-blur-3xl rounded-[2rem] flex items-center justify-center mb-12 shadow-inner border border-white/10 group-hover:scale-110 transition-transform">
-                                    <Sparkles className="w-12 h-12 text-blue-400" />
+                    <div className="space-y-8">
+                        <div className="bg-[#1e293b] rounded-[2.5rem] p-16 text-white relative overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.2)] group ring-1 ring-white/10">
+                            <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-blue-600/20 rounded-full -translate-y-1/2 translate-x-1/2 blur-[100px] group-hover:bg-blue-600/30 transition-all duration-1000" />
+                            <div className="relative z-10 max-w-2xl">
+                                <div className="w-16 h-16 bg-white/10 backdrop-blur-3xl rounded-2xl flex items-center justify-center mb-8 shadow-inner border border-white/10 group-hover:scale-110 transition-transform">
+                                    <Sparkles className="w-10 h-10 text-blue-400" />
                                 </div>
-                                <h2 className="text-6xl font-black tracking-tighter mb-10 uppercase leading-[0.9]">Startklar für Ihre Verwaltung</h2>
-                                <p className="text-blue-100/60 text-2xl font-medium mb-16 leading-relaxed italic">Dies ist Ihr zentrales Nervensystem. Beginnen Sie mit der Konfiguration Ihrer Objekte oder nutzen Sie das KI-Service-Portal.</p>
-                                <div className="flex flex-wrap gap-8">
-                                    <Link href="/properties" className="inline-flex items-center justify-center bg-white text-slate-900 px-12 py-7 rounded-[2rem] font-black uppercase tracking-[0.2em] text-[11px] shadow-2xl hover:scale-105 active:scale-95 transition-all">
+                                <h2 className="text-4xl font-black tracking-tighter mb-6 uppercase leading-tight">Startklar für Ihre Verwaltung</h2>
+                                <p className="text-blue-100/60 text-xl font-medium mb-10 leading-relaxed italic">Zentrales Nervensystem für Ihre Liegenschaften.</p>
+                                <div className="flex flex-wrap gap-4">
+                                    <Link href="/properties" className="inline-flex items-center justify-center bg-white text-slate-900 px-8 py-4 rounded-xl font-black uppercase tracking-[0.1em] text-[10px] shadow-xl hover:scale-105 active:scale-95 transition-all">
                                         Objekte Anlegen
                                     </Link>
-                                    <Link href="/schadensmeldung" className="inline-flex items-center justify-center bg-white/5 backdrop-blur-xl text-white border border-white/10 px-12 py-7 rounded-[2rem] font-black uppercase tracking-[0.2em] text-[11px] hover:bg-white/10 transition-all">
-                                        Portal-Vorschau ➔
+                                    <Link href="/schadensmeldung" className="inline-flex items-center justify-center bg-white/5 backdrop-blur-xl text-white border border-white/10 px-8 py-4 rounded-xl font-black uppercase tracking-[0.1em] text-[10px] hover:bg-white/10 transition-all">
+                                        Vorschau ➔
                                     </Link>
                                 </div>
                             </div>
@@ -183,63 +183,63 @@ export default function DashboardPage() {
                 ) : !loading && !error && (
                     <>
                         {/* Metrics Grid */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-10 mb-20">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
                             <MetricCard title={t('dashboard_metrics_total')} value={stats.total} icon={Activity} color="white" dark={true} />
                             <MetricCard title={t('dashboard_metrics_open')} value={stats.open} icon={Navigation} color="amber" />
                             <MetricCard title={t('dashboard_metrics_resolved')} value={stats.resolved} icon={CheckCircle2} color="emerald" />
                         </div>
 
                         {/* Recent Activity Table */}
-                        <div className="bg-white/70 backdrop-blur-3xl rounded-[4rem] shadow-3xl shadow-slate-200/50 border border-slate-100 overflow-hidden">
-                            <div className="p-14 border-b border-slate-50 flex items-center justify-between">
-                                <div className="flex items-center space-x-4">
-                                    <div className="w-3 h-3 bg-blue-600 rounded-full animate-pulse" />
-                                    <h3 className="text-3xl font-black text-slate-900 tracking-tighter uppercase">{t('dashboard_recent_activity')}</h3>
+                        <div className="bg-white/70 backdrop-blur-3xl rounded-[2.5rem] shadow-[0_0_40px_rgba(0,0,0,0.05)] border border-slate-100 overflow-hidden">
+                            <div className="p-8 border-b border-slate-50 flex items-center justify-between">
+                                <div className="flex items-center space-x-3">
+                                    <div className="w-2.5 h-2.5 bg-blue-600 rounded-full animate-pulse" />
+                                    <h3 className="text-xl font-black text-slate-900 tracking-tighter uppercase">{t('dashboard_recent_activity')}</h3>
                                 </div>
-                                <Link href="/tickets" className="bg-slate-50 text-slate-500 px-8 py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-slate-900 hover:text-white transition-all duration-500 flex items-center">
-                                    {t('dashboard_see_all')} <ChevronRight className="w-5 h-5 ml-2" />
+                                <Link href="/tickets" className="bg-slate-50 text-slate-500 px-6 py-2.5 rounded-xl font-black uppercase tracking-widest text-[9px] hover:bg-slate-900 hover:text-white transition-all duration-500 flex items-center">
+                                    {t('dashboard_see_all')} <ChevronRight className="w-4 h-4 ml-1.5" />
                                 </Link>
                             </div>
                             <div className="divide-y divide-slate-50">
                                 {tickets.slice(0, 6).map((ticket, index) => {
                                     const status = getStatusConfig(ticket.status);
                                     const StatusIcon = status.icon;
-                                    
+
                                     return (
-                                        <Link 
-                                            key={ticket.id} 
+                                        <Link
+                                            key={ticket.id}
                                             href={`/tickets/${ticket.id}`}
-                                            className="flex items-center p-12 hover:bg-blue-50/40 transition-all group animate-in slide-in-from-left-4 duration-700"
+                                            className="flex items-center p-8 hover:bg-blue-50/40 transition-all group animate-in slide-in-from-left-4 duration-700"
                                             style={{ animationDelay: `${index * 50}ms` }}
                                         >
-                                            <div className="w-16 h-16 bg-slate-100 rounded-[1.5rem] flex items-center justify-center shrink-0 border border-slate-200 group-hover:bg-white transition-colors duration-500 mr-10 group-hover:scale-110">
-                                                <Building2 className="w-8 h-8 text-slate-400 group-hover:text-blue-600 transition-colors" />
+                                            <div className="w-12 h-12 bg-slate-100 rounded-xl flex items-center justify-center shrink-0 border border-slate-200 group-hover:bg-white transition-colors duration-500 mr-8 group-hover:scale-110 shadow-sm">
+                                                <Building2 className="w-6 h-6 text-slate-400 group-hover:text-blue-600 transition-colors" />
                                             </div>
-                                            
-                                            <div className="flex-1 min-w-0">
-                                                <div className="flex items-center space-x-4 mb-3">
-                                                    <span className="font-mono font-black text-blue-600 text-[10px] tracking-widest uppercase">{ticket.reference_code || '---'}</span>
-                                                    <div className={`px-4 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-[0.1em] border shadow-sm bg-${status.color}-50 text-${status.color}-600 border-${status.color}-100 flex items-center`}>
-                                                        <StatusIcon className="w-3 h-3 mr-2" />
+
+                                            <div className="flex-1 min-w-0 font-sans">
+                                                <div className="flex items-center space-x-3 mb-2">
+                                                    <span className="font-mono font-black text-blue-600 text-[9px] tracking-widest uppercase">{ticket.reference_code || '---'}</span>
+                                                    <div className={`px-3 py-1 rounded-lg text-[8px] font-black uppercase tracking-[0.1em] border shadow-sm bg-${status.color}-50 text-${status.color}-600 border-${status.color}-100 flex items-center`}>
+                                                        <StatusIcon className="w-2.5 h-2.5 mr-1.5" />
                                                         {status.label}
                                                     </div>
                                                 </div>
-                                                <h4 className="text-xl font-black text-slate-900 tracking-tight group-hover:text-blue-600 transition-colors mb-1 truncate">{ticket.property?.name || 'Liegenschaft'}</h4>
-                                                <p className="text-slate-400 font-medium text-sm line-clamp-1 italic">{ticket.description || 'Keine Beschreibung hinterlegt.'}</p>
+                                                <h4 className="text-lg font-black text-slate-900 tracking-tight group-hover:text-blue-600 transition-colors mb-0.5 truncate">{ticket.property?.name || 'Liegenschaft'}</h4>
+                                                <p className="text-slate-400 font-medium text-xs line-clamp-1 italic">{ticket.description || 'Keine Beschreibung hinterlegt.'}</p>
                                             </div>
-                                            
-                                            <div className="text-right ml-10 hidden sm:block">
-                                                <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em] mb-2 flex items-center justify-end">
-                                                    <Clock className="w-3 h-3 mr-2" />
+
+                                            <div className="text-right ml-8 hidden sm:block">
+                                                <p className="text-[9px] font-black text-slate-300 uppercase tracking-[0.2em] mb-1.5 flex items-center justify-end font-sans">
+                                                    <Clock className="w-2.5 h-2.5 mr-1.5" />
                                                     Eingang
                                                 </p>
-                                                <p className="text-lg font-black text-slate-900 tracking-tighter">
+                                                <p className="text-base font-black text-slate-900 tracking-tighter">
                                                     {new Date(ticket.createdAt || ticket.created_at || Date.now()).toLocaleDateString('de-CH')}
                                                 </p>
                                             </div>
-                                            
-                                            <div className="ml-10 w-16 h-16 bg-white border border-slate-100 rounded-[1.75rem] flex items-center justify-center text-slate-200 group-hover:bg-slate-900 group-hover:text-white group-hover:border-slate-800 group-hover:shadow-3xl group-hover:-translate-x-3 transition-all duration-500 shadow-sm shrink-0">
-                                                <ArrowRight className="w-8 h-8" />
+
+                                            <div className="ml-8 w-12 h-12 bg-white border border-slate-100 rounded-xl flex items-center justify-center text-slate-200 group-hover:bg-slate-900 group-hover:text-white group-hover:border-slate-800 group-hover:shadow-[0_0_15px_rgba(0,0,0,0.2)] group-hover:-translate-x-2 transition-all duration-500 shadow-sm shrink-0">
+                                                <ArrowRight className="w-6 h-6" />
                                             </div>
                                         </Link>
                                     );
@@ -256,26 +256,26 @@ export default function DashboardPage() {
 function MetricCard({ title, value, icon: Icon, color, dark = false }: any) {
     if (dark) {
         return (
-            <div className="bg-slate-900 p-12 rounded-[3.5rem] shadow-3xl shadow-slate-900/40 relative overflow-hidden group hover:scale-[1.02] transition-all duration-500">
-                <div className="absolute top-0 right-0 w-40 h-40 bg-blue-600/20 rounded-full blur-[60px] translate-x-1/4 -translate-y-1/4" />
+            <div className="bg-[#1e293b] p-8 rounded-3xl shadow-[0_0_30px_rgba(0,0,0,0.1)] relative overflow-hidden group hover:scale-[1.02] transition-all duration-500 ring-1 ring-white/10">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-blue-600/20 rounded-full blur-[50px] translate-x-1/4 -translate-y-1/4" />
                 <div className="relative z-10">
-                    <div className="w-16 h-16 bg-white/10 backdrop-blur-xl rounded-2xl flex items-center justify-center mb-10 border border-white/10 group-hover:bg-blue-600 group-hover:border-blue-500 transition-all">
-                        <Icon className="w-8 h-8 text-white" />
+                    <div className="w-12 h-12 bg-white/10 backdrop-blur-xl rounded-xl flex items-center justify-center mb-6 border border-white/10 group-hover:bg-blue-600 group-hover:border-blue-500 transition-all shadow-inner">
+                        <Icon className="w-6 h-6 text-white" />
                     </div>
-                    <p className="text-[11px] font-black text-blue-200/40 uppercase tracking-[0.3em] mb-2">{title}</p>
-                    <p className="text-5xl font-black text-white tracking-tighter">{value}</p>
+                    <p className="text-[10px] font-black text-blue-200/40 uppercase tracking-[0.2em] mb-1">{title}</p>
+                    <p className="text-3xl font-black text-white tracking-tighter">{value}</p>
                 </div>
             </div>
         );
     }
-    
+
     return (
-        <div className="bg-white p-12 rounded-[3.5rem] shadow-xl shadow-slate-200/40 border border-slate-100 group hover:shadow-3xl hover:-translate-y-2 transition-all duration-700">
-            <div className={`w-16 h-16 rounded-[1.5rem] flex items-center justify-center mb-10 bg-${color}-50 text-${color}-600 border border-${color}-100 group-hover:scale-110 transition-transform duration-500`}>
-                <Icon className="w-8 h-8" />
+        <div className="bg-white p-8 rounded-3xl shadow-[0_0_20px_rgba(0,0,0,0.02)] border border-slate-100 group hover:shadow-xl hover:-translate-y-1 transition-all duration-700 font-sans">
+            <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-6 bg-${color}-50 text-${color}-600 border border-${color}-100 group-hover:scale-110 transition-transform duration-500`}>
+                <Icon className="w-6 h-6" />
             </div>
-            <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.3em] mb-2">{title}</p>
-            <p className="text-5xl font-black text-slate-900 tracking-tighter">{value}</p>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">{title}</p>
+            <p className="text-3xl font-black text-slate-900 tracking-tighter">{value}</p>
         </div>
     );
 }

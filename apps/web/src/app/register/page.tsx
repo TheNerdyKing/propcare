@@ -85,16 +85,16 @@ export default function RegisterPage() {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-[#0f172a] py-12 px-4 sm:px-6 lg:px-8 font-sans relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_30%_30%,#1e293b_0%,transparent_60%)] pointer-events-none" />
-            <div className="absolute top-1/4 left-1/4 w-[600px] h-[600px] bg-blue-600/15 rounded-full blur-[120px] pointer-events-none" />
-            <div className="absolute bottom-1/4 right-1/4 w-[600px] h-[600px] bg-blue-900/10 rounded-full blur-[120px] pointer-events-none" />
+        <div className="min-h-screen flex items-center justify-center bg-[#1e293b] py-12 px-4 sm:px-6 lg:px-8 font-sans relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_30%_30%,#334155_0%,transparent_60%)] pointer-events-none" />
+            <div className="absolute top-1/4 left-1/4 w-[600px] h-[600px] bg-blue-500/10 rounded-full blur-[120px] pointer-events-none" />
+            <div className="absolute bottom-1/4 right-1/4 w-[600px] h-[600px] bg-blue-900/5 rounded-full blur-[120px] pointer-events-none" />
 
-            <div className="max-w-md w-full space-y-10 p-12 rounded-[3.5rem] border border-white/5 bg-slate-900/60 backdrop-blur-3xl shadow-[0_30px_100px_rgba(0,0,0,0.5)] relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl p-1 pointer-events-none" />
+            <div className="max-w-[22rem] w-full space-y-8 p-8 rounded-[2rem] border border-white/5 bg-slate-900/60 backdrop-blur-3xl shadow-[0_0_40px_rgba(0,0,0,0.3)] ring-1 ring-white/10 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-48 h-48 bg-blue-600/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl p-1 pointer-events-none" />
 
-                <div className="relative z-10 text-center mb-10 overflow-visible">
-                    <Logo light showStatus className="mx-auto scale-110" />
+                <div className="relative z-10 text-center mb-6 overflow-visible">
+                    <Logo light showStatus className="mx-auto scale-90" />
                 </div>
 
                 {setupSecret ? (
@@ -107,17 +107,17 @@ export default function RegisterPage() {
                             <p className="text-slate-400 text-sm mt-2 font-medium">Ihr Account wurde erstellt. Sichern Sie Ihren Zugangsschlüssel:</p>
                         </div>
 
-                        <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-3xl p-8 text-center ring-1 ring-emerald-500/20">
-                            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-500/60 mb-3">Persönlicher Setup-Code</p>
-                            <p className="text-4xl font-mono font-black text-white tracking-widest bg-emerald-500/10 py-4 rounded-xl">{setupSecret}</p>
+                        <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-2xl p-6 text-center ring-1 ring-emerald-500/10">
+                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-500/60 mb-2">Setup-Code</p>
+                            <p className="text-2xl font-mono font-black text-white tracking-widest bg-emerald-500/10 py-3 rounded-lg border border-emerald-500/30">{setupSecret}</p>
                         </div>
 
                         <div className="space-y-4">
                             <Link
                                 href="/login"
-                                className="w-full h-16 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl font-black uppercase tracking-[0.2em] text-[11px] shadow-2xl shadow-blue-600/30 flex items-center justify-center transition-all"
+                                className="w-full h-11 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-black uppercase tracking-[0.2em] text-[10px] shadow-[0_0_15px_rgba(37,99,235,0.2)] flex items-center justify-center transition-all"
                             >
-                                Jetzt Anmelden <ArrowRight className="w-4 h-4 ml-3" />
+                                Jetzt Anmelden <ArrowRight className="w-4 h-4 ml-2" />
                             </Link>
                             <p className="text-[9px] text-slate-500 text-center italic leading-relaxed uppercase tracking-widest px-8">
                                 Bewahren Sie diesen Code sicher auf. Er kann für den ersten Login oder zur Verifizierung genutzt werden.
@@ -134,60 +134,60 @@ export default function RegisterPage() {
 
                         <div className="space-y-4 font-sans">
                             <div className="relative group">
-                                <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-slate-500 group-focus-within:text-blue-400 transition-colors">
-                                    <Building className="w-4 h-4" />
+                                <div className="absolute inset-y-0 left-0 pl-10 flex items-center pointer-events-none text-slate-500 group-focus-within:text-blue-400 transition-colors">
+                                    <Building className="w-3.5 h-3.5" />
                                 </div>
                                 <input
                                     {...register('tenantName')}
                                     placeholder="Name der Hausverwaltung"
-                                    className="w-full pl-12 pr-5 py-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder-slate-600 focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500/50 transition-all font-bold text-sm shadow-inner"
+                                    className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all font-bold text-xs shadow-inner"
                                 />
                                 {errors.tenantName && (
-                                    <p className="text-red-400 text-[10px] font-black uppercase mt-2 ml-1 tracking-widest">{errors.tenantName.message}</p>
+                                    <p className="text-red-400 text-[9px] font-black uppercase mt-1.5 ml-1 tracking-widest">{errors.tenantName.message}</p>
                                 )}
                             </div>
 
                             <div className="relative group">
-                                <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-slate-500 group-focus-within:text-blue-400 transition-colors">
-                                    <User className="w-4 h-4" />
+                                <div className="absolute inset-y-0 left-0 pl-10 flex items-center pointer-events-none text-slate-500 group-focus-within:text-blue-400 transition-colors">
+                                    <User className="w-3.5 h-3.5" />
                                 </div>
                                 <input
                                     {...register('name')}
                                     placeholder="Ihr vollständiger Name"
-                                    className="w-full pl-12 pr-5 py-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder-slate-600 focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500/50 transition-all font-bold text-sm shadow-inner"
+                                    className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all font-bold text-xs shadow-inner"
                                 />
                                 {errors.name && (
-                                    <p className="text-red-400 text-[10px] font-black uppercase mt-2 ml-1 tracking-widest">{errors.name.message}</p>
+                                    <p className="text-red-400 text-[9px] font-black uppercase mt-1.5 ml-1 tracking-widest">{errors.name.message}</p>
                                 )}
                             </div>
 
                             <div className="relative group">
-                                <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-slate-500 group-focus-within:text-blue-400 transition-colors">
-                                    <Mail className="w-4 h-4" />
+                                <div className="absolute inset-y-0 left-0 pl-10 flex items-center pointer-events-none text-slate-500 group-focus-within:text-blue-400 transition-colors">
+                                    <Mail className="w-3.5 h-3.5" />
                                 </div>
                                 <input
                                     {...register('email')}
                                     type="email"
                                     placeholder="E-Mail Adresse"
-                                    className="w-full pl-12 pr-5 py-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder-slate-600 focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500/50 transition-all font-bold text-sm shadow-inner"
+                                    className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all font-bold text-xs shadow-inner"
                                 />
                                 {errors.email && (
-                                    <p className="text-red-400 text-[10px] font-black uppercase mt-2 ml-1 tracking-widest">{errors.email.message}</p>
+                                    <p className="text-red-400 text-[9px] font-black uppercase mt-1.5 ml-1 tracking-widest">{errors.email.message}</p>
                                 )}
                             </div>
 
                             <div className="relative group">
-                                <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-slate-500 group-focus-within:text-blue-400 transition-colors">
-                                    <Lock className="w-4 h-4" />
+                                <div className="absolute inset-y-0 left-0 pl-10 flex items-center pointer-events-none text-slate-500 group-focus-within:text-blue-400 transition-colors">
+                                    <Lock className="w-3.5 h-3.5" />
                                 </div>
                                 <input
                                     {...register('password')}
                                     type="password"
                                     placeholder="Passwort"
-                                    className="w-full pl-12 pr-5 py-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder-slate-600 focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500/50 transition-all font-bold text-sm shadow-inner"
+                                    className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all font-bold text-xs shadow-inner"
                                 />
                                 {errors.password && (
-                                    <p className="text-red-400 text-[10px] font-black uppercase mt-2 ml-1 tracking-widest">{errors.password.message}</p>
+                                    <p className="text-red-400 text-[9px] font-black uppercase mt-1.5 ml-1 tracking-widest">{errors.password.message}</p>
                                 )}
                             </div>
                         </div>
@@ -196,12 +196,12 @@ export default function RegisterPage() {
                             <button
                                 type="submit"
                                 disabled={loading}
-                                className="w-full h-16 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black uppercase tracking-[0.2em] text-[11px] shadow-2xl shadow-blue-600/30 flex items-center justify-center transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 group font-sans"
+                                className="w-full h-11 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-black uppercase tracking-[0.2em] text-[10px] shadow-[0_0_15px_rgba(37,99,235,0.2)] flex items-center justify-center transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 group font-sans"
                             >
-                                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (
+                                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : (
                                     <>
                                         Konto Jetzt Erstellen
-                                        <ArrowRight className="w-4 h-4 ml-3 group-hover:translate-x-1 transition-transform" />
+                                        <ArrowRight className="w-3 h-3 ml-2 group-hover:translate-x-1 transition-transform" />
                                     </>
                                 )}
                             </button>

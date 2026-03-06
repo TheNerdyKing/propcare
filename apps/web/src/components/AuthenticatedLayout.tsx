@@ -77,38 +77,38 @@ export default function AuthenticatedLayout({ children }: { children: React.Reac
 
     if (accessState === 'BLOCKED' || accessState === 'TRIAL_EXPIRED') {
         return (
-            <div className="flex h-screen bg-[#F8FAFC] overflow-hidden items-center justify-center p-6">
-                <div className="bg-white rounded-[3rem] p-16 max-w-2xl w-full text-center shadow-2xl border border-slate-100">
-                    <div className="w-24 h-24 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-8 border border-red-100">
-                        <ShieldAlert className="w-12 h-12 text-red-500" />
+            <div className="flex h-screen bg-[#1e293b] overflow-hidden items-center justify-center p-4">
+                <div className="bg-slate-900/60 backdrop-blur-3xl rounded-[2rem] p-10 max-w-md w-full text-center shadow-[0_0_40px_rgba(0,0,0,0.3)] border border-white/5 ring-1 ring-white/10">
+                    <div className="w-16 h-16 bg-red-600/10 rounded-2xl flex items-center justify-center mx-auto mb-6 border border-red-500/20 shadow-[0_0_20px_rgba(220,38,38,0.1)]">
+                        <ShieldAlert className="w-8 h-8 text-red-500" />
                     </div>
 
-                    <h1 className="text-4xl font-black text-slate-900 tracking-tighter uppercase mb-4">
+                    <h1 className="text-2xl font-black text-white tracking-tighter uppercase mb-3 leading-tight">
                         {accessState === 'BLOCKED' ? 'Zugang Gesperrt' : 'Testphase Abgelaufen'}
                     </h1>
 
-                    <p className="text-slate-500 font-medium text-lg italic mb-12">
+                    <p className="text-slate-400 font-medium text-xs italic mb-8 leading-relaxed">
                         {accessState === 'BLOCKED'
-                            ? 'Ihr Account wurde aufgrund unbezahlter Rechnungen vorübergehend gesperrt. Bitte kontaktieren Sie den Support.'
-                            : 'Ihre 5-tägige kostenlose Testphase ist abgelaufen. Um weiterhin Zugriff auf Ihre Objekte zu haben, müssen Sie ein Abonnement abschließen.'}
+                            ? 'Ihr Account wurde vorübergehend gesperrt. Bitte kontaktieren Sie den Support.'
+                            : 'Ihre Testphase ist abgelaufen. Bitte wählen Sie ein Abonnement.'}
                     </p>
 
                     {accessState === 'TRIAL_EXPIRED' && (
-                        <div className="space-y-6">
-                            <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Zahlungsmethode Wählen</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <button onClick={() => alert('Weiterleitung zu Stripe Checkout...')} className="flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white p-6 rounded-2xl font-black tracking-widest text-[11px] uppercase transition-all shadow-xl shadow-blue-600/20">
-                                    <CreditCard className="w-5 h-5 mr-3" /> Kreditkarte hinterlegen
+                        <div className="space-y-4">
+                            <h3 className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] mb-3">Zahlungsmethode</h3>
+                            <div className="grid grid-cols-1 gap-2">
+                                <button onClick={() => alert('Stripe Checkout...')} className="flex items-center justify-center bg-blue-600 hover:bg-blue-500 text-white h-11 rounded-lg font-black tracking-widest text-[9px] uppercase transition-all shadow-[0_0_15px_rgba(37,99,235,0.2)]">
+                                    <CreditCard className="w-4 h-4 mr-2" /> Karte hinterlegen
                                 </button>
-                                <button onClick={() => alert('Rechnungsanforderung gesendet.')} className="flex items-center justify-center bg-white hover:bg-slate-50 text-slate-900 border-2 border-slate-200 p-6 rounded-2xl font-black tracking-widest text-[11px] uppercase transition-all shadow-sm">
-                                    <FileText className="w-5 h-5 mr-3" /> Zahlung per Rechnung
+                                <button onClick={() => alert('Rechnung gesendet.')} className="flex items-center justify-center bg-white/5 hover:bg-white/10 text-white border border-white/10 h-11 rounded-lg font-black tracking-widest text-[9px] uppercase transition-all">
+                                    <FileText className="w-4 h-4 mr-2" /> Per Rechnung
                                 </button>
                             </div>
                         </div>
                     )}
 
-                    <button onClick={() => { localStorage.clear(); window.location.href = '/login'; }} className="mt-12 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-slate-900 transition-colors">
-                        Sitzung Beenden / Logout
+                    <button onClick={() => { localStorage.clear(); window.location.href = '/login'; }} className="mt-8 text-[9px] font-black uppercase tracking-[0.2em] text-slate-500 hover:text-white transition-colors">
+                        Logout
                     </button>
                 </div>
             </div>
@@ -116,7 +116,7 @@ export default function AuthenticatedLayout({ children }: { children: React.Reac
     }
 
     return (
-        <div className="flex h-screen bg-[#F8FAFC] overflow-hidden notranslate" translate="no">
+        <div className="flex h-screen bg-[#f1f5f9] overflow-hidden notranslate" translate="no">
             {/* Sticky Sidebar */}
             <div className="flex-shrink-0 h-full">
                 <Sidebar />
@@ -125,18 +125,18 @@ export default function AuthenticatedLayout({ children }: { children: React.Reac
             {/* Main Content Area */}
             <div className="flex-1 flex flex-col min-w-0 h-full">
                 {/* Visual Connector Header - Unifies the layout */}
-                <header className="h-14 bg-white/70 backdrop-blur-md border-b border-slate-200/60 flex-shrink-0 px-10 flex items-center justify-between z-10">
-                    <div className="flex items-center space-x-3">
-                        <div className="w-1.5 h-1.5 rounded-full bg-blue-600 shadow-[0_0_8px_rgba(37,99,235,0.4)] animate-pulse" />
-                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Cloud Sync Aktiv</span>
-                        <span className="text-slate-200 mx-2 text-xs">/</span>
-                        <span className="text-[9px] font-black text-blue-600 uppercase tracking-[0.2em]">Verwaltungsportal</span>
+                <header className="h-11 bg-white/70 backdrop-blur-md border-b border-slate-200/60 flex-shrink-0 px-8 flex items-center justify-between z-10">
+                    <div className="flex items-center space-x-2.5">
+                        <div className="w-1 h-1 rounded-full bg-blue-600 shadow-[0_0_8px_rgba(37,99,235,0.4)] animate-pulse" />
+                        <span className="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em]">Cloud Sync Aktiv</span>
+                        <span className="text-slate-200 mx-1.5 text-xs">/</span>
+                        <span className="text-[8px] font-black text-blue-600 uppercase tracking-[0.2em]">Portal</span>
                     </div>
 
                     {/* Display Days Remaining if in trial */}
                     {daysRemaining !== null && daysRemaining <= 5 && (
-                        <div className="flex items-center bg-amber-50 px-4 py-1.5 rounded-full border border-amber-100">
-                            <span className="text-[9px] font-black uppercase text-amber-700 tracking-widest">Testphase: {daysRemaining} Tage übrig</span>
+                        <div className="flex items-center bg-amber-50 px-3 py-1 rounded-full border border-amber-100">
+                            <span className="text-[8px] font-black uppercase text-amber-600 tracking-widest">Testphase: {daysRemaining} Tage übrig</span>
                         </div>
                     )}
                 </header>

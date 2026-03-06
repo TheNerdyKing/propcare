@@ -158,17 +158,15 @@ function LoginForm() {
 
     if (showSetupBox) {
         return (
-            <div className="max-w-[28rem] w-full space-y-8 p-12 rounded-[2.5rem] border border-white/10 bg-slate-900/80 backdrop-blur-3xl shadow-2xl relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-600/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-[80px] pointer-events-none" />
-                <div className="relative z-10 text-center">
-                    <div className="w-16 h-16 bg-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-8 shadow-2xl shadow-emerald-600/20 transform rotate-45 group">
-                        <Lock className="w-8 h-8 text-white -rotate-45" />
-                    </div>
-                    <h2 className="text-3xl font-black tracking-tight text-white uppercase mb-2 leading-tight">
-                        Initialer <span className="text-emerald-500">Zugang</span>
-                    </h2>
-                    <p className="text-slate-400 font-medium text-xs italic">Geben Sie Ihren persönlichen Setup-Code ein.</p>
+            <div className="max-w-[22rem] w-full space-y-6 p-8 rounded-[2rem] border border-white/10 bg-slate-900/60 backdrop-blur-3xl shadow-[0_0_40px_rgba(0,0,0,0.3)] ring-1 ring-white/10 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-48 h-48 bg-emerald-600/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-[60px] pointer-events-none" />
+                <div className="w-12 h-12 bg-emerald-600 rounded-xl flex items-center justify-center mx-auto mb-6 shadow-[0_0_20px_rgba(16,185,129,0.3)] transform rotate-45 group">
+                    <Lock className="w-5 h-5 text-white -rotate-45" />
                 </div>
+                <h2 className="text-xl font-black tracking-tight text-white uppercase mb-1 leading-tight">
+                    Initialer <span className="text-emerald-500">Zugang</span>
+                </h2>
+                <p className="text-slate-400 font-medium text-[10px] italic">Geben Sie Ihren persönlichen Setup-Code ein.</p>
 
                 {!setupResult ? (
                     <form className="mt-8 space-y-4" onSubmit={handleVerifySetup}>
@@ -185,7 +183,7 @@ function LoginForm() {
                                 type="password"
                                 required
                                 placeholder="Setup-Code eingeben"
-                                className="w-full pl-12 pr-5 py-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder-slate-600 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500/50 transition-all font-bold text-sm"
+                                className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500/50 transition-all font-bold text-xs"
                                 value={setupSecret}
                                 onChange={(e) => setSetupSecret(e.target.value)}
                             />
@@ -193,9 +191,9 @@ function LoginForm() {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="w-full h-14 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold uppercase tracking-[0.1em] text-[11px] shadow-lg shadow-emerald-600/20 flex items-center justify-center transition-all disabled:opacity-50"
+                            className="w-full h-11 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-bold uppercase tracking-[0.1em] text-[10px] shadow-[0_0_15px_rgba(16,185,129,0.2)] flex items-center justify-center transition-all disabled:opacity-50"
                         >
-                            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Code Prüfen'}
+                            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Code Prüfen'}
                         </button>
                         <button onClick={() => setShowSetupBox(false)} type="button" className="w-full text-[10px] text-slate-500 uppercase font-black tracking-widest hover:text-white transition-colors">
                             Abbrechen & Zurück
@@ -203,21 +201,21 @@ function LoginForm() {
                     </form>
                 ) : (
                     <div className="mt-8 space-y-6 animate-in fade-in slide-in-from-bottom-4">
-                        <div className="p-6 bg-emerald-500/5 border border-emerald-500/20 rounded-2xl space-y-4">
+                        <div className="p-4 bg-emerald-500/5 border border-emerald-500/10 rounded-xl space-y-3">
                             <div>
-                                <label className="text-[9px] uppercase font-black tracking-[0.2em] text-emerald-500 block mb-1">E-Mail</label>
-                                <div className="text-white font-mono text-sm break-all font-bold">{setupResult.email}</div>
+                                <label className="text-[8px] uppercase font-black tracking-[0.2em] text-emerald-500 block mb-1">E-Mail</label>
+                                <div className="text-white font-mono text-xs break-all font-bold">{setupResult.email}</div>
                             </div>
                             <div>
-                                <label className="text-[9px] uppercase font-black tracking-[0.2em] text-emerald-500 block mb-1">Passwort</label>
-                                <div className="text-white font-mono text-xl break-all font-black text-emerald-400 tracking-tight">{setupResult.pass}</div>
+                                <label className="text-[8px] uppercase font-black tracking-[0.2em] text-emerald-500 block mb-1">Passwort</label>
+                                <div className="text-white font-mono text-lg break-all font-black text-emerald-400 tracking-tight">{setupResult.pass}</div>
                             </div>
                         </div>
                         <button
                             onClick={() => setShowSetupBox(false)}
-                            className="w-full h-14 bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-xl font-bold uppercase tracking-[0.1em] text-[11px] flex items-center justify-center transition-all"
+                            className="w-full h-11 bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-lg font-bold uppercase tracking-[0.1em] text-[10px] flex items-center justify-center transition-all"
                         >
-                            Jetzt mit diesen Daten Anmelden
+                            Jetzt Anmelden
                         </button>
                         <p className="text-[8px] text-slate-500 text-center italic uppercase tracking-widest leading-relaxed">
                             Dieses Passwort ist zufällig für Sie generiert und nur einmal gültig.
@@ -230,17 +228,15 @@ function LoginForm() {
 
     if (showResetForm) {
         return (
-            <div className="max-w-[28rem] w-full space-y-8 p-12 rounded-[2.5rem] border border-white/10 bg-slate-900/80 backdrop-blur-3xl shadow-2xl relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/20 rounded-full -translate-y-1/2 translate-x-1/2 blur-[80px] pointer-events-none" />
-                <div className="relative z-10 text-center">
-                    <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-8 shadow-2xl shadow-blue-600/20 transform rotate-6">
-                        <Sparkles className="w-8 h-8 text-white -rotate-6" />
-                    </div>
-                    <h2 className="text-3xl font-black tracking-tight text-white uppercase mb-2 leading-tight">
-                        Account <span className="text-blue-500">Initialisieren</span>
-                    </h2>
-                    <p className="text-slate-400 font-medium text-xs italic">Legen Sie Ihre echten Zugangsdaten fest.</p>
+            <div className="max-w-[22rem] w-full space-y-6 p-8 rounded-[2rem] border border-white/10 bg-slate-900/60 backdrop-blur-3xl shadow-[0_0_40px_rgba(0,0,0,0.3)] ring-1 ring-white/10 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-48 h-48 bg-blue-600/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-[60px] pointer-events-none" />
+                <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center mx-auto mb-6 shadow-[0_0_20px_rgba(37,99,235,0.3)] transform rotate-6">
+                    <Sparkles className="w-5 h-5 text-white -rotate-6" />
                 </div>
+                <h2 className="text-xl font-black tracking-tight text-white uppercase mb-1 leading-tight">
+                    Account <span className="text-blue-500">Initialisieren</span>
+                </h2>
+                <p className="text-slate-400 font-medium text-[10px] italic">Legen Sie Ihre echten Zugangsdaten fest.</p>
 
                 <form className="mt-8 space-y-4" onSubmit={handleInitialSetup}>
                     {error && (
@@ -263,7 +259,7 @@ function LoginForm() {
                                 type="email"
                                 required
                                 placeholder="Ihre neue E-Mail Adresse"
-                                className="w-full pl-12 pr-5 py-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder-slate-600 focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500/50 transition-all font-bold text-sm"
+                                className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all font-bold text-xs"
                                 value={newEmail}
                                 onChange={(e) => setNewEmail(e.target.value)}
                             />
@@ -286,9 +282,9 @@ function LoginForm() {
                     <button
                         type="submit"
                         disabled={loading || emailSent}
-                        className="w-full h-14 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold uppercase tracking-[0.1em] text-[11px] shadow-lg shadow-blue-600/20 flex items-center justify-center transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
+                        className="w-full h-11 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold uppercase tracking-[0.1em] text-[10px] shadow-[0_0_15px_rgba(37,99,235,0.2)] flex items-center justify-center transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
                     >
-                        {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Konto einrichten & starten'}
+                        {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Konto einrichten & starten'}
                     </button>
                     {!emailSent && (
                         <p className="text-[9px] text-slate-500 text-center italic leading-relaxed uppercase tracking-widest px-4">
@@ -301,11 +297,11 @@ function LoginForm() {
     }
 
     return (
-        <div className="max-w-[26rem] w-full space-y-8 p-10 rounded-[2rem] border border-white/10 bg-slate-900/80 backdrop-blur-3xl shadow-2xl relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/20 rounded-full -translate-y-1/2 translate-x-1/2 blur-[80px] pointer-events-none" />
+        <div className="max-w-[22rem] w-full space-y-6 p-8 rounded-[2rem] border border-white/10 bg-[#1e293b]/60 backdrop-blur-3xl shadow-[0_0_40px_rgba(0,0,0,0.3)] ring-1 ring-white/10 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-48 h-48 bg-blue-600/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-[60px] pointer-events-none" />
 
-            <div className="relative z-10 text-center mb-10 overflow-visible">
-                <Logo showStatus light className="mx-auto" />
+            <div className="relative z-10 text-center mb-6 overflow-visible">
+                <Logo showStatus light className="mx-auto scale-90" />
             </div>
 
             <form className="mt-8 space-y-5" onSubmit={handleSubmit(onSubmit)}>
@@ -329,7 +325,7 @@ function LoginForm() {
                             {...register('email')}
                             type="email"
                             placeholder="E-Mail Adresse"
-                            className="w-full pl-12 pr-5 py-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder-slate-600 focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500/50 transition-all font-bold text-sm shadow-inner"
+                            className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all font-bold text-xs shadow-inner"
                         />
                         {errors.email && (
                             <p className="text-red-400 text-[10px] font-black uppercase mt-2 ml-1 tracking-widest">{errors.email.message}</p>
@@ -356,9 +352,9 @@ function LoginForm() {
                     <button
                         type="submit"
                         disabled={loading}
-                        className="w-full h-14 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold uppercase tracking-[0.1em] text-[11px] shadow-lg shadow-blue-600/20 flex items-center justify-center transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 group"
+                        className="w-full h-11 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold uppercase tracking-[0.1em] text-[10px] shadow-[0_0_15px_rgba(37,99,235,0.2)] flex items-center justify-center transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 group"
                     >
-                        {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (
+                        {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : (
                             <>
                                 Jetzt Anmelden
                                 <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
@@ -401,11 +397,11 @@ function LoginForm() {
 
 export default function LoginPage() {
     return (
-        <div className="min-h-screen flex items-center justify-center bg-slate-800/20 py-12 px-4 sm:px-6 lg:px-8 font-sans relative overflow-hidden bg-[#0f172a]">
+        <div className="min-h-screen flex items-center justify-center bg-[#1e293b] py-12 px-4 sm:px-6 lg:px-8 font-sans relative overflow-hidden">
             {/* Enhanced radial gradients for a more "luminous" feel */}
-            <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_20%_20%,#1e293b_0%,transparent_50%)] pointer-events-none" />
-            <div className="absolute top-1/4 left-1/4 w-[600px] h-[600px] bg-blue-600/15 rounded-full blur-[140px] pointer-events-none animate-pulse" />
-            <div className="absolute bottom-1/4 right-1/4 w-[600px] h-[600px] bg-indigo-600/15 rounded-full blur-[140px] pointer-events-none animate-pulse duration-700" />
+            <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_20%_20%,#334155_0%,transparent_50%)] pointer-events-none" />
+            <div className="absolute top-1/4 left-1/4 w-[600px] h-[600px] bg-blue-500/20 rounded-full blur-[140px] pointer-events-none animate-pulse" />
+            <div className="absolute bottom-1/4 right-1/4 w-[600px] h-[600px] bg-indigo-500/20 rounded-full blur-[140px] pointer-events-none animate-pulse duration-700" />
 
             <Suspense fallback={<div className="text-white"><Loader2 className="animate-spin text-blue-600" /></div>}>
                 <LoginForm />
