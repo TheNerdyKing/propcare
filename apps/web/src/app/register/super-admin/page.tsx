@@ -38,8 +38,7 @@ export default function SuperAdminSetup() {
                     .from('tenants')
                     .insert([{
                         name: 'PropCare Global Administration',
-                        subscription_status: 'ACTIVE',
-                        subscription_plan: 'PLATFORM'
+                        subscription_status: 'ACTIVE'
                     }])
                     .select()
                     .single();
@@ -97,15 +96,15 @@ export default function SuperAdminSetup() {
             <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_50%_-20%,#475569_0%,transparent_70%)] pointer-events-none" />
             <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-red-600/10 rounded-full blur-[100px] pointer-events-none animate-pulse" />
 
-            <div className="max-w-[20rem] w-full space-y-5 p-6 rounded-[1.5rem] border border-white/5 bg-blue-950/60 backdrop-blur-3xl shadow-[0_0_30px_rgba(0,0,0,0.2)] ring-1 ring-white/10 relative">
+            <div className="max-w-[20rem] w-full space-y-6 p-7 rounded-[1.5rem] border border-white/5 bg-blue-950/60 backdrop-blur-3xl shadow-[0_0_30px_rgba(0,0,0,0.2)] ring-1 ring-white/10 relative">
                 <div className="text-center">
                     <div className="w-10 h-10 bg-red-600 rounded-lg flex items-center justify-center mx-auto mb-4 shadow-[0_0_15px_rgba(220,38,38,0.2)] transform rotate-45 group">
                         <ShieldAlert className="w-5 h-5 text-white -rotate-45" />
                     </div>
-                    <h2 className="text-lg font-black tracking-tight text-white uppercase mb-1 leading-tight">
-                        Super Admin <span className="text-red-500">Erstellung</span>
+                    <h2 className="text-xl font-black tracking-tight text-white uppercase mb-1 leading-tight">
+                        Admin <span className="text-red-500">Creation</span>
                     </h2>
-                    <p className="text-slate-500 font-medium text-[9px] italic uppercase tracking-tighter">Sicherheitskritischer Bereich</p>
+                    <p className="text-slate-500 font-medium text-[8px] uppercase tracking-[0.2em]">Initial System Setup</p>
                 </div>
 
                 {!credentials ? (
@@ -163,8 +162,22 @@ export default function SuperAdminSetup() {
                             disabled={loading}
                             className="w-full h-11 bg-red-600 hover:bg-red-500 text-white rounded-lg font-bold uppercase tracking-[0.1em] text-[10px] shadow-[0_0_15px_rgba(220,38,38,0.2)] flex items-center justify-center transition-all disabled:opacity-50"
                         >
-                            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Zugang Generieren'}
+                            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Admin-Konto Erstellen'}
                         </button>
+
+                        <div className="pt-4 border-t border-white/5">
+                            <p className="text-[8px] font-black uppercase tracking-[0.2em] text-slate-500 mb-2 text-center italic">Authentifizierungs-Schlüssel</p>
+                            <div
+                                onClick={() => {
+                                    navigator.clipboard.writeText('KREATIVEROCKET2026');
+                                    alert('Master-Secret kopiert!');
+                                }}
+                                className="bg-white/5 border border-white/5 rounded-lg p-2.5 flex items-center justify-between group cursor-pointer hover:bg-white/10 transition-all"
+                            >
+                                <code className="text-[10px] font-mono font-bold text-red-400">KREATIVEROCKET2026</code>
+                                <Copy className="w-3 h-3 text-slate-500 group-hover:text-white transition-colors" />
+                            </div>
+                        </div>
                     </form>
                 ) : (
                     <div className="space-y-5 animate-in fade-in slide-in-from-bottom-5">

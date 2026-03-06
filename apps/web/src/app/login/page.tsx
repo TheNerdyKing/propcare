@@ -241,28 +241,29 @@ function LoginForm() {
                 </h2>
                 <p className="text-slate-500 font-medium text-[9px] italic">Plattform-Administration & Setup</p>
 
-                <div className="mt-8 space-y-3">
-                    <button
-                        onClick={() => { setShowSetupBox(true); }}
-                        className="w-full h-11 bg-white/5 hover:bg-emerald-500/10 text-white border border-white/5 rounded-lg font-bold uppercase tracking-[0.1em] text-[9px] flex items-center justify-center transition-all group"
-                    >
-                        <Sparkles className="w-3.5 h-3.5 mr-2 text-emerald-500 group-hover:scale-110 transition-transform" />
-                        Erster Login? Code verwenden
-                    </button>
-
+                <div className="mt-8 space-y-6">
                     <Link
                         href="/register/super-admin"
-                        className="w-full h-11 bg-white/5 hover:bg-red-500/10 text-white border border-white/5 rounded-lg font-bold uppercase tracking-[0.1em] text-[9px] flex items-center justify-center transition-all group"
+                        className="w-full h-12 bg-red-600 hover:bg-red-500 text-white rounded-xl font-bold uppercase tracking-[0.1em] text-[10px] shadow-[0_0_15px_rgba(220,38,38,0.2)] flex items-center justify-center transition-all"
                     >
-                        <ShieldAlert className="w-3.5 h-3.5 mr-2 text-red-500 group-hover:scale-110 transition-transform" />
-                        System initial einrichten
+                        <ShieldAlert className="w-4 h-4 mr-2" />
+                        Super Admin Initial Erstellen
                     </Link>
+
+                    <div className="pt-4 border-t border-white/5 text-center">
+                        <button
+                            onClick={() => setShowSetupBox(true)}
+                            className="text-[8px] font-black uppercase tracking-[0.2em] text-slate-500 hover:text-emerald-400 transition-colors"
+                        >
+                            Bereits Code vorhanden? Hier eingeben
+                        </button>
+                    </div>
 
                     <button
                         onClick={() => setShowAdminPortal(false)}
-                        className="w-full pt-4 text-[10px] text-slate-500 uppercase font-black tracking-widest hover:text-white transition-colors"
+                        className="w-full text-[9px] font-black uppercase tracking-[0.3em] text-slate-600 hover:text-slate-400 transition-colors"
                     >
-                        Zurück zum Login
+                        Abbrechen
                     </button>
                 </div>
             </div>
