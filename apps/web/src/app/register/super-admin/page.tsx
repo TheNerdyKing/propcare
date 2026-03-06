@@ -206,16 +206,16 @@ export default function SuperAdminSetup() {
                         <div className="p-4 bg-emerald-500/5 border border-emerald-500/10 rounded-xl space-y-3 shadow-[0_0_20px_rgba(16,185,129,0.05)]">
                             <div>
                                 <label className="text-[8px] uppercase font-black tracking-[0.2em] text-emerald-500 block mb-1">Einmal-Setup-Code</label>
-                                <div className="text-white font-mono text-sm break-all bg-emerald-500/10 p-2.5 rounded-lg border border-emerald-500/20 text-center font-black tracking-widest">{credentials.secret}</div>
+                                <div className="text-white font-mono text-sm break-all bg-emerald-500/10 p-2.5 rounded-lg border border-emerald-500/20 text-center font-black tracking-widest">{credentials?.secret}</div>
                             </div>
                             <div className="grid grid-cols-1 gap-2">
                                 <div>
                                     <label className="text-[8px] uppercase font-black tracking-[0.2em] text-slate-500 block mb-1">E-Mail</label>
-                                    <div className="text-white/60 font-mono text-[9px] break-all bg-white/5 p-2 rounded-lg border border-white/5">{credentials.email}</div>
+                                    <div className="text-white/60 font-mono text-[9px] break-all bg-white/5 p-2 rounded-lg border border-white/5">{credentials?.email}</div>
                                 </div>
                                 <div>
                                     <label className="text-[8px] uppercase font-black tracking-[0.2em] text-slate-500 block mb-1">Passwort</label>
-                                    <div className="text-white font-mono text-[11px] break-all bg-emerald-500/10 p-2 rounded-lg border border-emerald-500/20 font-black text-emerald-400 tracking-tight">{credentials.pass}</div>
+                                    <div className="text-white font-mono text-[11px] break-all bg-emerald-500/10 p-2 rounded-lg border border-emerald-500/20 font-black text-emerald-400 tracking-tight">{credentials?.pass}</div>
                                 </div>
                             </div>
                         </div>
