@@ -36,35 +36,41 @@ export default function AuthenticatedLayout({ children }: { children: React.Reac
                 return;
             }
 
-            const { data: tenant } = await supabase.from('tenants').select('created_at, subscription_status').eq('id', tenantId).single();
-            if (!tenant) {
-                setAccessState('GRANTED');
-                return;
-            }
+            try {
+                const { data: tenant, error: queryError } = await supabase.from('tenants').select('*').eq('id', tenantId).single();
 
-            if (tenant.subscription_status === 'BLOCKED') {
-                setAccessState('BLOCKED');
-                return;
-            }
+                if (queryError || !tenant) {
+                    setAccessState('GRANTED');
+                    return;
+                }
 
-            if (tenant.subscription_status === 'ACTIVE') {
-                setAccessState('GRANTED');
-                return;
-            }
+                if (tenant.subscription_status === 'BLOCKED') {
+                    setAccessState('BLOCKED');
+                    return;
+                }
 
-            // Calculate 5-day trial limits
-            const createdAt = new Date(tenant.created_at || new Date());
-            const now = new Date();
-            const diffTime = Math.abs(now.getTime() - createdAt.getTime());
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                if (tenant.subscription_status === 'ACTIVE') {
+                    setAccessState('GRANTED');
+                    return;
+                }
 
-            const remaining = Math.max(0, 5 - diffDays);
-            setDaysRemaining(remaining);
+                // Calculate 5-day trial limits - fallback if created_at is missing
+                const createdAt = new Date(tenant.created_at || new Date());
+                const now = new Date();
+                const diffTime = Math.abs(now.getTime() - createdAt.getTime());
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-            if (diffDays > 5 && tenant.subscription_status !== 'ACTIVE') {
-                setAccessState('TRIAL_EXPIRED');
-            } else {
-                setAccessState('GRANTED');
+                const remaining = Math.max(0, 5 - diffDays);
+                setDaysRemaining(remaining);
+
+                if (diffDays > 5 && tenant.subscription_status !== 'ACTIVE') {
+                    setAccessState('TRIAL_EXPIRED');
+                } else {
+                    setAccessState('GRANTED');
+                }
+            } catch (err) {
+                console.error('Access check error:', err);
+                setAccessState('GRANTED'); // Default to granted if schema check fails
             }
         };
 

@@ -61,7 +61,7 @@ function LoginForm() {
 
             const { data: userData, error: userError } = await supabase
                 .from('users')
-                .select('*, tenants(*)')
+                .select('*, tenants(id, name)')
                 .eq('id', authData.user.id)
                 .single();
 
@@ -112,13 +112,23 @@ function LoginForm() {
                 password_reset_required: false
             }).eq('id', pendingUser.id);
 
-            if (dbError) throw dbError;
+            if (dbError) throw new Error('Datenbank-Update fehlgeschlagen: ' + dbError.message);
 
-            // 4. Send Confirmation Email via API
-            await fetch('/api/auth/setup-complete', {
-                method: 'POST',
-                body: JSON.stringify({ email: newEmail, name: pendingUser.name || 'Admin' })
-            });
+            // 4. Force session refresh
+            const { error: refreshError } = await supabase.auth.refreshSession();
+            if (refreshError) {
+                console.warn('Session refresh failed:', refreshError);
+            }
+
+            // 5. Send Confirmation Email via API (Optional/Background)
+            try {
+                await fetch('/api/auth/setup-complete', {
+                    method: 'POST',
+                    body: JSON.stringify({ email: newEmail, name: pendingUser.name || 'Admin' })
+                });
+            } catch (e) {
+                console.error('Email notification error:', e);
+            }
 
             setSuccess('Konto erfolgreich eingerichtet! Eine Bestätigungsmail wurde gesendet.');
             setEmailSent(true);

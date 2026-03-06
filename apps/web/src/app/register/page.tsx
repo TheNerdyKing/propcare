@@ -35,9 +35,13 @@ export default function RegisterPage() {
     } = useForm<TicketFormValues>({
         resolver: zodResolver(registerSchema),
         defaultValues: {
-            setupCode: `REG-${Math.random().toString(36).toUpperCase().slice(-8)}`
+            setupCode: ''
         }
     });
+
+    useEffect(() => {
+        setValue('setupCode', `REG-${Math.random().toString(36).toUpperCase().slice(-8)}`);
+    }, [setValue]);
 
     const currentSetupCode = watch('setupCode');
 

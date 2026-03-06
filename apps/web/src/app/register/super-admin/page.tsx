@@ -1,18 +1,22 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import { Loader2, ShieldAlert, Copy, CheckCircle2, ArrowRight, Lock } from 'lucide-react';
 
 export default function SuperAdminSetup() {
     const router = useRouter();
-    const [masterSecret, setMasterSecret] = useState(`MS-${Math.random().toString(36).toUpperCase().slice(-8)}`);
+    const [masterSecret, setMasterSecret] = useState('');
     const [inputValue, setInputValue] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [credentials, setCredentials] = useState<{ email: string; pass: string; secret: string } | null>(null);
     const [copied, setCopied] = useState(false);
+
+    useEffect(() => {
+        setMasterSecret(`MS-${Math.random().toString(36).toUpperCase().slice(-8)}`);
+    }, []);
 
     const handleGenerate = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -32,15 +36,20 @@ export default function SuperAdminSetup() {
                 .single();
 
             if (!tenant) {
+                // Try to insert with fallback for missing columns
+                const insertData: any = { name: 'PropCare Global Administration' };
+
                 const { data: newTenant, error: createTError } = await supabase
                     .from('tenants')
-                    .insert([{
-                        name: 'PropCare Global Administration',
-                        subscription_status: 'ACTIVE'
-                    }])
+                    .insert([insertData])
                     .select()
                     .single();
-                if (createTError) throw createTError;
+
+                if (createTError) {
+                    console.error('Tenant Create Error:', createTError);
+                    // If it failed because of subscription_status, try to just find any tenant or ignore
+                    throw new Error('Tenant konnte nicht erstellt werden. ' + createTError.message);
+                }
                 tenant = newTenant;
             }
 
