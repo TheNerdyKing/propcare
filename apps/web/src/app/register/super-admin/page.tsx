@@ -7,11 +7,11 @@ import { Loader2, ShieldAlert, Copy, CheckCircle2, ArrowRight, Lock } from 'luci
 
 export default function SuperAdminSetup() {
     const router = useRouter();
-    const [secret, setSecret] = useState('');
+    const [masterSecret, setMasterSecret] = useState(`MS-${Math.random().toString(36).toUpperCase().slice(-8)}`);
+    const [inputValue, setInputValue] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [credentials, setCredentials] = useState<{ email: string; pass: string; secret: string } | null>(null);
-    const [setupCode, setSetupCode] = useState(`ADM-${Math.random().toString(36).toUpperCase().slice(-8)}`);
     const [copied, setCopied] = useState(false);
 
     const handleGenerate = async (e: React.FormEvent) => {
@@ -20,10 +20,8 @@ export default function SuperAdminSetup() {
         setLoading(true);
 
         try {
-            // In a real app, this secret would be in process.env
-            // Using 'KREATIVEROCKET2026' as the master secret
-            if (secret !== 'KREATIVEROCKET2026') {
-                throw new Error('Ungültiger Master-Secret-Code.');
+            if (inputValue !== masterSecret) {
+                throw new Error('Der eingegebene Master-Secret ist ungültig.');
             }
 
             // Create or Find Global Tenant
@@ -48,7 +46,7 @@ export default function SuperAdminSetup() {
 
             const tempEmail = `setup-${Math.floor(Math.random() * 10000)}@propcare.internal`;
             const tempPass = `Tmp_${Math.random().toString(36).slice(-8)}!`;
-            const finalSetupSecret = setupCode;
+            const finalSetupSecret = masterSecret;
 
             // Create Admin User in Auth
             const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -108,51 +106,45 @@ export default function SuperAdminSetup() {
                 </div>
 
                 {!credentials ? (
-                    <form onSubmit={handleGenerate} className="space-y-6">
-                        <div className="space-y-4">
-                            <div className="relative group">
-                                <div className="absolute inset-y-0 left-0 pl-10 flex items-center pointer-events-none text-slate-500 group-focus-within:text-red-400 transition-colors">
-                                    <Lock className="w-3.5 h-3.5" />
+                    <form onSubmit={handleGenerate} className="space-y-8">
+                        <div className="space-y-5">
+                            <div className="space-y-2">
+                                <label className="text-[8px] font-black uppercase tracking-[0.2em] text-slate-500 block ml-1 text-center">Master Secret Verifizierung</label>
+                                <div className="relative group">
+                                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-red-500/50 group-focus-within:text-red-500 transition-colors">
+                                        <Lock className="w-3.5 h-3.5" />
+                                    </div>
+                                    <input
+                                        type="text"
+                                        required
+                                        value={inputValue}
+                                        onChange={(e) => setInputValue(e.target.value)}
+                                        placeholder="Secret hier eingeben..."
+                                        className="w-full pl-11 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-700 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500/40 transition-all font-mono font-bold text-xs text-center tracking-widest"
+                                    />
                                 </div>
-                                <input
-                                    type="password"
-                                    required
-                                    value={secret}
-                                    onChange={(e) => setSecret(e.target.value)}
-                                    placeholder="Master-Secret (KREATIVEROCKET2026)"
-                                    className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500/50 transition-all font-bold text-xs shadow-inner"
-                                />
                             </div>
 
-                            <div className="pt-3 border-t border-white/5 space-y-2">
-                                <label className="text-[8px] font-black uppercase tracking-[0.2em] text-slate-500 block ml-1">Setup-Pinn (Zufällig)</label>
-                                <div className="flex space-x-2">
-                                    <div className="relative flex-1 group">
-                                        <div className="absolute inset-y-0 left-0 pl-10 flex items-center pointer-events-none text-slate-500 group-focus-within:text-emerald-400 transition-colors">
-                                            <ShieldAlert className="w-3 h-3" />
-                                        </div>
-                                        <input
-                                            type="text"
-                                            required
-                                            value={setupCode}
-                                            onChange={(e) => setSetupCode(e.target.value)}
-                                            placeholder="Setup Code"
-                                            className="w-full pl-9 pr-3 py-2.5 bg-emerald-500/5 border border-emerald-500/10 rounded-lg text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/10 focus:border-emerald-500/40 transition-all font-mono font-bold text-[10px] shadow-inner"
-                                        />
+                            <div className="pt-4 border-t border-white/5 text-center">
+                                <p className="text-[8px] font-black uppercase tracking-[0.2em] text-slate-500 mb-3 italic">Erforderlicher Schlüssel:</p>
+                                <div
+                                    onClick={() => {
+                                        navigator.clipboard.writeText(masterSecret);
+                                        setCopied(true);
+                                        setTimeout(() => setCopied(false), 2000);
+                                    }}
+                                    className="bg-red-500/5 border border-red-500/10 rounded-xl p-3 flex items-center justify-between group cursor-pointer hover:bg-red-500/10 transition-all active:scale-[0.98]"
+                                >
+                                    <code className="text-[12px] font-mono font-black text-red-500 tracking-wider mx-auto">{masterSecret}</code>
+                                    <div className="text-slate-500 group-hover:text-red-400 transition-colors">
+                                        {copied ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                                     </div>
-                                    <button
-                                        type="button"
-                                        onClick={() => setSetupCode(`ADM-${Math.random().toString(36).toUpperCase().slice(-8)}`)}
-                                        className="px-3 py-2.5 bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-lg transition-all group"
-                                    >
-                                        <Loader2 className="w-3.5 h-3.5 group-hover:rotate-180 transition-transform duration-500" />
-                                    </button>
                                 </div>
                             </div>
                         </div>
 
                         {error && (
-                            <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-[10px] font-black uppercase text-center tracking-widest leading-relaxed">
+                            <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-[9px] font-black uppercase text-center tracking-widest leading-relaxed">
                                 {error}
                             </div>
                         )}
@@ -162,22 +154,8 @@ export default function SuperAdminSetup() {
                             disabled={loading}
                             className="w-full h-11 bg-red-600 hover:bg-red-500 text-white rounded-lg font-bold uppercase tracking-[0.1em] text-[10px] shadow-[0_0_15px_rgba(220,38,38,0.2)] flex items-center justify-center transition-all disabled:opacity-50"
                         >
-                            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Admin-Konto Erstellen'}
+                            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Super Admin Erstellen'}
                         </button>
-
-                        <div className="pt-4 border-t border-white/5">
-                            <p className="text-[8px] font-black uppercase tracking-[0.2em] text-slate-500 mb-2 text-center italic">Authentifizierungs-Schlüssel</p>
-                            <div
-                                onClick={() => {
-                                    navigator.clipboard.writeText('KREATIVEROCKET2026');
-                                    alert('Master-Secret kopiert!');
-                                }}
-                                className="bg-white/5 border border-white/5 rounded-lg p-2.5 flex items-center justify-between group cursor-pointer hover:bg-white/10 transition-all"
-                            >
-                                <code className="text-[10px] font-mono font-bold text-red-400">KREATIVEROCKET2026</code>
-                                <Copy className="w-3 h-3 text-slate-500 group-hover:text-white transition-colors" />
-                            </div>
-                        </div>
                     </form>
                 ) : (
                     <div className="space-y-5 animate-in fade-in slide-in-from-bottom-5">
