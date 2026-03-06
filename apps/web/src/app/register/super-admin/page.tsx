@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import { Loader2, ShieldAlert, Copy, CheckCircle2, ArrowRight, Lock } from 'lucide-react';
@@ -88,11 +88,15 @@ export default function SuperAdminSetup() {
                 }
             }
 
+            if (!authData?.user?.id) {
+                throw new Error('Benutzer konnte nicht erstellt werden (Auth ID fehlt).');
+            }
+
             // Create in Users table
             const { error: userError } = await supabase
                 .from('users')
                 .insert([{
-                    id: authData.user?.id,
+                    id: authData.user.id,
                     tenant_id: tenant.id,
                     email: tempEmail,
                     name: 'Super Admin Initial',
@@ -106,17 +110,25 @@ export default function SuperAdminSetup() {
 
             setCredentials({ email: tempEmail, pass: tempPass, secret: finalSetupSecret });
         } catch (err: any) {
+            console.error('SuperAdmin Setup Error:', err);
             setError(err.message);
         } finally {
             setLoading(false);
         }
     };
 
-    const copyToClipboard = () => {
-        if (credentials) {
-            navigator.clipboard.writeText(`Email: ${credentials.email}\nPasswort: ${credentials.pass}`);
-            setCopied(true);
-            setTimeout(() => setCopied(false), 2000);
+    const copyToClipboard = async () => {
+        try {
+            if (credentials && typeof navigator !== 'undefined' && navigator.clipboard) {
+                await navigator.clipboard.writeText(`Email: ${credentials.email}\nPasswort: ${credentials.pass}`);
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2000);
+            } else {
+                alert(`Email: ${credentials?.email}\nPasswort: ${credentials?.pass}`);
+            }
+        } catch (err) {
+            console.error('Clipboard error:', err);
+            alert('Kopieren fehlgeschlagen. Bitte markieren Sie den Text manuell.');
         }
     };
 
