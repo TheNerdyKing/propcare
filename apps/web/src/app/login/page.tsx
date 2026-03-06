@@ -453,9 +453,14 @@ export default function LoginPage() {
             <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-blue-500/10 rounded-full blur-[100px] pointer-events-none animate-pulse" />
             <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] bg-indigo-500/10 rounded-full blur-[100px] pointer-events-none animate-pulse duration-700" />
 
-            <Suspense fallback={<div className="text-white"><Loader2 className="w-8 h-8 animate-spin text-blue-500" /></div>}>
+            <Suspense fallback={<div className="text-white flex items-center justify-center p-20"><Loader2 className="w-8 h-8 animate-spin text-blue-500" /></div>}>
                 <LoginForm />
             </Suspense>
+
+            {/* Version Flag for Verification */}
+            <div className="absolute bottom-4 right-4 text-[8px] font-black uppercase tracking-[0.3em] text-white/10 hover:text-white/40 transition-colors pointer-events-none">
+                BUILD_REF: E990A5E_V1.1
+            </div>
         </div>
     );
 }
